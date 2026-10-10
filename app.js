@@ -63,7 +63,7 @@ const I18N = {
     "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp" }
 };
 
-let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "id";
+let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "en";
 let activeCat = "cakery";
 
 function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
