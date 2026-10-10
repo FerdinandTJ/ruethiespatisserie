@@ -37,6 +37,7 @@ const MENU = [
 const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi",
     "hero.eyebrow":"N°01 — Patisserie Artisan, Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
+    "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Croissant berlapis, cakery lembut, dan savoury favorit — pastel, kroket, risol — diseduh dengan espresso pilihan. Elegan, hangat, #MadeWithDelicacy.",
     "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East NO.51","hero.p2":"Fresh dari oven tiap pagi","hero.p3":"Buka tiap hari",
     "hero.b1":"Fresh Daily","hero.b2":"Signature Croissant",
@@ -50,6 +51,7 @@ const I18N = {
     "wa.title":"Reservasi Meja","wa.sub":"Isi detail, kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp" },
   en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.reserve":"Reserve",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
+    "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Flaky croissants, delicate cakery and beloved savouries — pastel, kroket, risol — paired with fine espresso. Elegant, warm, #MadeWithDelicacy.",
     "hero.cta1":"Explore Menu","hero.cta2":"Reserve via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Fresh from the oven daily","hero.p3":"Open daily",
     "hero.b1":"Fresh Daily","hero.b2":"Signature Croissant",
@@ -136,8 +138,9 @@ mmenu.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{
 
 // WA modal
 const bd = document.getElementById("backdrop");
-const openWA = ()=>{ bd.hidden=false; document.getElementById("f-name").focus(); };
-const closeWA = ()=>{ bd.hidden=true; };
+const stickybar = document.getElementById("stickybar");
+const openWA = ()=>{ bd.hidden=false; stickybar.classList.add("hide"); document.getElementById("f-name").focus(); };
+const closeWA = ()=>{ bd.hidden=true; stickybar.classList.remove("hide"); onScroll(); };
 document.querySelectorAll("[data-open-wa]").forEach(b=>b.onclick=openWA);
 document.getElementById("closewa").onclick=closeWA;
 bd.addEventListener("click",e=>{ if(e.target===bd) closeWA(); });
@@ -158,5 +161,12 @@ document.getElementById("copyaddr").onclick=(e)=>{
   setTimeout(applyLang,1500);
 };
 window.addEventListener("resize",movePill);
-window.addEventListener("scroll",()=>document.getElementById("nav").style.boxShadow = scrollY>24?"0 12px 32px -18px rgba(61,0,0,.25)":"none");
+function onScroll(){
+  document.getElementById("nav").style.boxShadow = scrollY>24?"0 12px 32px -18px rgba(61,0,0,.25)":"none";
+  const hero = document.querySelector(".hero");
+  const past = hero ? scrollY > hero.offsetTop + hero.offsetHeight - 120 : scrollY > 600;
+  stickybar.classList.toggle("show", past);
+}
+window.addEventListener("scroll",onScroll,{passive:true});
 applyLang();
+onScroll();

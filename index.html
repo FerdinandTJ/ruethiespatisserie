@@ -52,13 +52,16 @@
     <div class="hero-text">
       <p class="eyebrow"><span class="line"></span><span data-i18n="hero.eyebrow">N°01 — Patisserie Artisan, Cikarang</span></p>
       <h1 class="display" data-i18n-html="hero.title">Dipanggang dengan <em>Kelembutan</em></h1>
+      <p class="french" data-i18n="hero.french">croissants · cakery · pastel — depuis Cikarang</p>
       <p class="sub" data-i18n="hero.sub">Croissant berlapis, cakery lembut, dan savoury favorit — pastel, kroket, risol — diseduh dengan espresso pilihan. Elegan, hangat, #MadeWithDelicacy.</p>
       <div class="hero-btns">
         <a href="#menu" class="btn primary" data-i18n="hero.cta1">Lihat Menu</a>
         <button class="btn secondary" data-open-wa data-i18n="hero.cta2">Reservasi via WhatsApp</button>
       </div>
-      <div class="proof">
-        <span data-i18n="hero.p1">Ruko Neo Patio East NO.51</span><i>•</i><span data-i18n="hero.p2">Fresh dari oven tiap pagi</span><i>•</i><span data-i18n="hero.p3">Buka tiap hari</span>
+      <div class="meta">
+        <div><span data-i18n="hero.p1">Ruko Neo Patio East NO.51</span></div><i></i>
+        <div><span data-i18n="hero.p2">Fresh dari oven tiap pagi</span></div><i></i>
+        <div><span data-i18n="hero.p3">Buka tiap hari</span></div>
       </div>
     </div>
     <div class="hero-visual">
@@ -66,8 +69,13 @@
       <div class="arch main"><img fetchpriority="high" src="https://images.unsplash.com/photo-1530610476181-d83430b64dcd?q=80&w=900&auto=format&fit=crop" alt="Croissant hangat di atas marmer" /></div>
       <div class="arch mini m1"><img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=500&auto=format&fit=crop" alt="Latte art" /></div>
       <div class="badge b1">✦ <span data-i18n="hero.b1">Fresh Daily</span></div>
-      <div class="badge b2">✦ <span data-i18n="hero.b2">Signature Croissant</span></div>
-      <div class="badge b3">N°51</div>
+      <div class="seal" aria-hidden="true">
+        <svg viewBox="0 0 120 120">
+          <defs><path id="sealcirc" d="M60,60 m-44,0 a44,44 0 1,1 88,0 a44,44 0 1,1 -88,0"/></defs>
+          <text><textPath href="#sealcirc">RUETHIES PATISSERIE • N°51 • CIKARANG • </textPath></text>
+        </svg>
+        <b>N°51</b>
+      </div>
     </div>
     </div>
   </section>
@@ -142,9 +150,14 @@
         <div class="pin"><strong>📍 Ruethies Patisserie</strong><span>N°51 — The Neo Patio East</span></div>
       </div>
     </div>
-    </div>
   </section>
 </main>
+
+<!-- STICKY MOBILE BAR -->
+<div class="stickybar" id="stickybar">
+  <a href="#menu" class="sb-link" data-i18n="hero.cta1">Explore Menu</a>
+  <button class="btn primary sm" data-open-wa data-i18n="nav.reserve">Reserve</button>
+</div>
 
 <footer>
   <div class="container foot">
@@ -154,7 +167,7 @@
   </div>
   <p class="copy">© 2026 Ruethies Patisserie • ID | EN</p>
 </footer>
-. 
+
 <!-- WA MODAL -->
 <div class="backdrop" id="backdrop" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-label="Reservasi">
