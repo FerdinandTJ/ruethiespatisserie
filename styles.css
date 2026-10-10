@@ -284,9 +284,10 @@ footer a{color:var(--beige)}
   .quote{padding:56px 24px}
   .quote p{font-size:clamp(1.4rem,6.4vw,1.9rem)}
   /* Menu tabs — scrollable pill */
-  .tabs{overflow-x:auto;max-width:100%;scrollbar-width:none;gap:2px}
+  .tabs{overflow-x:auto;max-width:100%;scrollbar-width:none;gap:2px;padding:4px}
   .tabs::-webkit-scrollbar{display:none}
-  .tab{padding:10px 16px;font-size:.8rem;white-space:nowrap;flex-shrink:0}
+  .tab{padding:7px 12px;font-size:.72rem;white-space:nowrap;flex-shrink:0;letter-spacing:.01em}
+  .tab .tcount{min-width:18px;font-size:.64rem;padding:0 6px;margin-left:5px}
   .mrow{grid-template-columns:34px 1fr 92px;grid-template-areas:"num body peek";gap:12px;align-items:center;padding:18px 8px}
   .mnum{grid-area:num;font-size:1.1rem}
   .mbody{grid-area:body}
