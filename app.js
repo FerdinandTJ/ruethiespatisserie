@@ -35,7 +35,7 @@ fetch("menu.json", { cache: "no-cache" })
   .catch(()=>{ /* fallback bawaan tetap dipakai */ });
 
 const I18N = {
-  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi",
+  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi","nav.skip":"Lewati ke menu",
     "hero.eyebrow":"N°01 — Patisserie Artisan, Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Croissant berlapis, cakery lembut, dan savoury favorit — pastel, kroket, risol — diseduh dengan espresso pilihan. Elegan, hangat, #MadeWithDelicacy.",
@@ -45,14 +45,15 @@ const I18N = {
     "quote.text":'"Kami tidak menjual kue. Kami menjual <em>momen lembut</em> yang bisa dimakan."',
     "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Cita Rasamu</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
     "menu.note":"Pastel • Kroket • Risol digoreng dadakan — mohon tunggu ±10 menit. Tanya ketersediaan harian via WhatsApp.",
+    "menu.searchPh":"Cari croissant, kopi, risol…","menu.empty":"Tidak ketemu. Coba kata lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu & cahaya sore","atmos.c2":"Dibuat tangan, dengan teliti","atmos.c3":"Detail berlapis yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
-    "visit.dir":"Buka di Google Maps","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja",
+    "visit.dir":"Buka di Google Maps","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
     "foot.visit":"Kunjungi","foot.contact":"Kontak",
     "wa.title":"Reservasi Meja","wa.sub":"Isi detail, kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
     "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Buka WhatsApp untuk kirim.","wa.back":"Ubah detail",
     "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
-  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.reserve":"Reserve",
+  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.reserve":"Reserve","nav.skip":"Skip to menu",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Flaky croissants, delicate cakery and beloved savouries — pastel, kroket, risol — paired with fine espresso. Elegant, warm, #MadeWithDelicacy.",
@@ -62,9 +63,10 @@ const I18N = {
     "quote.text":'"We don\'t sell cake. We sell <em>tender moments</em> you can taste."',
     "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
     "menu.note":"Pastel • Kroket • Risol are fried to order — approx. 10 min. Ask daily availability via WhatsApp.",
+    "menu.searchPh":"Search croissant, coffee, risol…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
-    "visit.dir":"Open in Google Maps","visit.copy":"Copy Address","visit.res":"Reserve a Table",
+    "visit.dir":"Open in Google Maps","visit.copy":"Copy Address","visit.res":"Reserve a Table","visit.call":"Call",
     "foot.visit":"Visit","foot.contact":"Contact",
     "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp",
     "wa.okt":"Ready to send!","wa.oks":"Details look good. Open WhatsApp to send.","wa.back":"Edit details",
@@ -80,10 +82,12 @@ function applyLang(){
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-html]").forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
   document.getElementById("btn-id").classList.toggle("on", lang==="id");
   document.getElementById("btn-en").classList.toggle("on", lang==="en");
-  if(!document.getElementById("lightbox").hidden) lbCap.textContent = t(LB[lbIdx].key);
+  if(!document.getElementById("lightbox").hidden && ATMOS[lbIdx]) lbCap.textContent = atmosCap(ATMOS[lbIdx]);
   renderMenus();
+  renderAtmos();
 }
 
 function cardHTML(m, i){
@@ -97,13 +101,21 @@ function rowHTML(m, i){
   const v = m[lang] || m.id;
   const tag = m.tag ? (m.tag[lang] || m.tag.id) : "";
   const num = String(i+1).padStart(2,"0");
+  const idx = MENU.indexOf(m);
   return `<article class="mrow rv">
     <span class="mnum">${num}</span>
     <div class="mbody"><h3>${v.n}</h3><p>${v.d}</p>
-      <div class="mtags">${m.badge?`<span class="chip">${m.badge}</span>`:""}${tag?`<span class="tagline">${tag}</span>`:""}</div></div>
+      <div class="mtags">${m.badge?`<span class="chip">${m.badge}</span>`:""}${tag?`<span class="tagline">${tag}</span>`:""}<button class="askbtn" data-ask="${idx}">${t("menu.ask")} →</button></div></div>
     <span class="mdots" aria-hidden="true"></span>
     <span class="mpeek"><img loading="lazy" decoding="async" src="${m.img}" alt="" /></span>
   </article>`;
+}
+
+let query = "";
+function matchQ(m){
+  if(!query) return true;
+  const q = query.toLowerCase();
+  return ((m.id?.n||"")+" "+(m.id?.d||"")+" "+(m.en?.n||"")+" "+(m.en?.d||"")).toLowerCase().includes(q);
 }
 
 function renderMenus(){
@@ -111,13 +123,83 @@ function renderMenus(){
   const sig = flagged.length >= 3 ? flagged.slice(0,3) : [MENU[0], MENU[3], MENU[8]].filter(Boolean);
   document.getElementById("signature").innerHTML = sig.map((m,i)=>cardHTML(m,i)).join("");
   document.getElementById("signature").removeAttribute("aria-busy");
-  const items = MENU.filter(m=>m.cat===activeCat);
+  const items = MENU.filter(m=>m.cat===activeCat).filter(matchQ);
   const grid = document.getElementById("menugrid");
-  grid.innerHTML = items.map(rowHTML).join("");
+  grid.innerHTML = items.length ? items.map(rowHTML).join("") : `<p class="muted empty-note">${t("menu.empty")}</p>`;
   grid.removeAttribute("aria-busy");
   grid.classList.remove("swap"); void grid.offsetWidth; grid.classList.add("swap");
+  document.querySelectorAll(".tab").forEach(tb=>{
+    const on = tb.dataset.cat===activeCat;
+    tb.setAttribute("aria-selected", on);
+    const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="coffee" ? "menu.t2" : "menu.t3";
+    const n = MENU.filter(m=>m.cat===tb.dataset.cat).length;
+    tb.innerHTML = `${t(key)} <span class="tcount">${n}</span>`;
+  });
   movePill();
   observeReveals();
+  attachCardTilt();
+}
+
+document.getElementById("msearch").addEventListener("input", e=>{
+  query = e.target.value.trim();
+  renderMenus();
+});
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-ask]");
+  if(!b) return;
+  const m = MENU[+b.dataset.ask];
+  if(!m) return;
+  const v = m[lang] || m.id;
+  const pre = lang==="id" ? `Halo! Apakah "${v.n}" tersedia hari ini? ` : `Hello! Is "${v.n}" available today? `;
+  document.getElementById("f-note").value = pre;
+  openWA();
+});
+
+// Nav aktif mengikuti section
+const secIO = new IntersectionObserver(es=>{
+  es.forEach(en=>{
+    if(!en.isIntersecting) return;
+    const id = en.target.id || "home";
+    document.querySelectorAll(".links a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+id));
+  });
+},{rootMargin:"-40% 0px -55% 0px"});
+["home","menu","atmosphere","visit"].forEach(id=>{ const s=document.getElementById(id); if(s) secIO.observe(s); });
+
+// 3D subtle — hanya pointer presisi + tanpa reduced-motion (HP otomatis skip)
+const can3D = matchMedia("(pointer:fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+const heroVis = document.querySelector(".hero-visual");
+let tiltX = 0, tiltY = 0, plx = 0, heroQueued = false;
+function paintHero(){
+  heroQueued = false;
+  if(!heroVis) return;
+  heroVis.style.transform = `translate3d(0,${plx.toFixed(1)}px,0) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`;
+}
+function queueHero(){ if(!heroQueued){ heroQueued = true; requestAnimationFrame(paintHero); } }
+if(can3D && heroVis){
+  heroVis.classList.add("has-tilt");
+  const heroSec = document.querySelector(".hero");
+  heroSec.addEventListener("pointermove", e=>{
+    const r = heroVis.getBoundingClientRect();
+    const dx = (e.clientX - (r.left + r.width/2)) / r.width;
+    const dy = (e.clientY - (r.top + r.height/2)) / r.height;
+    tiltY = Math.max(-5, Math.min(5, dx * 10));
+    tiltX = Math.max(-5, Math.min(5, -dy * 10));
+    queueHero();
+  });
+  heroSec.addEventListener("pointerleave", ()=>{ tiltX = 0; tiltY = 0; queueHero(); });
+}
+function attachCardTilt(){
+  if(!can3D) return;
+  document.querySelectorAll("#signature .card").forEach(c=>{
+    c.addEventListener("pointermove", e=>{
+      const r = c.getBoundingClientRect();
+      const dx = (e.clientX - (r.left + r.width/2)) / r.width;
+      const dy = (e.clientY - (r.top + r.height/2)) / r.height;
+      c.style.transform = `translateY(-4px) rotateX(${(-dy*8).toFixed(2)}deg) rotateY(${(dx*8).toFixed(2)}deg)`;
+    });
+    c.addEventListener("pointerleave", ()=>{ c.style.transform = ""; });
+    c.addEventListener("click", ()=>{ c.style.transform = ""; });
+  });
 }
 
 const io = new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),{threshold:.12});
@@ -221,25 +303,62 @@ function onScroll(){
   const past = hero ? scrollY > hero.offsetTop + hero.offsetHeight - 120 : scrollY > 600;
   stickybar.classList.toggle("show", past && !modalOpen);
   stickybar.classList.toggle("hide", modalOpen);
+  if(can3D && heroVis && hero && scrollY < hero.offsetHeight){
+    plx = Math.min(12, scrollY * 0.05);
+    queueHero();
+  }
 }
 
-// Lightbox
-const LB = [
-  { src:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop", key:"atmos.c1" },
-  { src:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&auto=format&fit=crop", key:"atmos.c2" },
-  { src:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop", key:"atmos.c3" },
+// Galeri atmosphere — sumber utama atmosphere.json (edit di sana saja)
+let ATMOS = [
+  { img:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=700&auto=format&fit=crop",
+    imgFull:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop",
+    id:{cap:"Interior hangat — kayu & cahaya sore"}, en:{cap:"Warm interior — wood & evening light"} },
+  { img:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=700&auto=format&fit=crop",
+    imgFull:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&auto=format&fit=crop",
+    id:{cap:"Dibuat tangan, dengan teliti"}, en:{cap:"Handcrafted with care"} },
+  { img:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=700&auto=format&fit=crop",
+    imgFull:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop",
+    id:{cap:"Detail berlapis yang renyah"}, en:{cap:"Crisp layered details"} },
 ];
+function atmosCap(a){ return (a[lang] && a[lang].cap) || a.id.cap; }
+function renderAtmos(){
+  const row = document.getElementById("archrow");
+  if(!row) return;
+  row.innerHTML = ATMOS.map((a,i)=>{
+    const cap = atmosCap(a);
+    return `<figure class="rv"><button class="arch-btn" data-lb="${i}" aria-haspopup="dialog" aria-label="${cap}"><span class="arch"><img loading="lazy" decoding="async" src="${a.img}" alt="${cap}" /></span></button><figcaption>${cap}</figcaption></figure>`;
+  }).join("");
+  observeReveals();
+}
+function normAtmos(items){
+  if(!Array.isArray(items)) return null;
+  const clean = items.filter(a => a && a.img && (a.id || a.en)).map(a => ({
+    img: IMG(a.img), imgFull: IMG(a.imgFull || a.img), id: a.id || a.en, en: a.en || a.id,
+  }));
+  return clean.length ? clean : null;
+}
+fetch("atmosphere.json", { cache: "no-cache" })
+  .then(r => { if(!r.ok) throw 0; return r.json(); })
+  .then(j => { const c = normAtmos(j); if(c){ ATMOS = c; renderAtmos(); } })
+  .catch(()=>{ /* fallback bawaan tetap dipakai */ });
+
+// Lightbox (dari data master ATMOS yang sama)
 let lbIdx = 0;
 const lb = document.getElementById("lightbox"), lbImg = document.getElementById("lb-img"), lbCap = document.getElementById("lb-cap"), lbCount = document.getElementById("lb-count");
 function showLB(i){
-  lbIdx = (i + LB.length) % LB.length;
-  lbImg.src = LB[lbIdx].src; lbImg.alt = t(LB[lbIdx].key); lbCap.textContent = t(LB[lbIdx].key);
-  if(lbCount) lbCount.textContent = `0${lbIdx+1} / 0${LB.length}`;
+  lbIdx = (i + ATMOS.length) % ATMOS.length;
+  const a = ATMOS[lbIdx], cap = atmosCap(a);
+  lbImg.src = a.imgFull || a.img; lbImg.alt = cap; lbCap.textContent = cap;
+  if(lbCount) lbCount.textContent = `0${lbIdx+1} / 0${ATMOS.length}`;
   lb.hidden = false; modalOpen = true; stickybar.classList.add("hide");
   document.getElementById("lb-close").focus();
 }
 function hideLB(){ lb.hidden = true; modalOpen = false; stickybar.classList.remove("hide"); onScroll(); }
-document.querySelectorAll("[data-lb]").forEach(b=>b.addEventListener("click",()=>showLB(+b.dataset.lb)));
+document.getElementById("archrow").addEventListener("click", e=>{
+  const b = e.target.closest("[data-lb]");
+  if(b) showLB(+b.dataset.lb);
+});
 document.getElementById("lb-close").onclick = hideLB;
 document.getElementById("lb-prev").onclick = (e)=>{ e.stopPropagation(); showLB(lbIdx-1); };
 document.getElementById("lb-next").onclick = (e)=>{ e.stopPropagation(); showLB(lbIdx+1); };

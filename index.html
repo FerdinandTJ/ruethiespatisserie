@@ -27,6 +27,11 @@
 <meta name="twitter:description" content="Haute French Patisserie & Specialty Espresso di Cikarang. #MadeWithDelicacy" />
 <meta name="twitter:image" content="https://ruethiespatisserie.com/logo.jpeg" />
 <meta name="theme-color" content="#7A0000" />
+<link rel="manifest" href="manifest.json" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Ruethies" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="preconnect" href="https://images.unsplash.com" />
@@ -51,6 +56,7 @@
 </script>
 </head>
 <body>
+<a class="skip" href="#menu" data-i18n="nav.skip">Lewati ke menu</a>
 <div class="grain" aria-hidden="true"></div>
 
 <header class="nav" id="nav">
@@ -149,13 +155,16 @@
     <div class="sec-head">
       <h2 class="h2" data-i18n-html="menu.title">Pilih <em>Cita Rasamu</em></h2>
       <div class="tabs" role="tablist">
-        <button class="tab on" data-cat="cakery" data-i18n="menu.t1">Cakery</button>
-        <button class="tab" data-cat="coffee" data-i18n="menu.t2">Coffee & Drinks</button>
-        <button class="tab" data-cat="savoury" data-i18n="menu.t3">Savoury Patisserie</button>
+        <button class="tab on" role="tab" data-cat="cakery" data-i18n="menu.t1">Cakery</button>
+        <button class="tab" role="tab" data-cat="coffee" data-i18n="menu.t2">Coffee & Drinks</button>
+        <button class="tab" role="tab" data-cat="savoury" data-i18n="menu.t3">Savoury Patisserie</button>
         <span class="pill" id="pill"></span>
       </div>
     </div>
-    <div class="menulist" id="menugrid" aria-busy="true">
+    <div class="menu-tools">
+      <input id="msearch" type="search" data-i18n-ph="menu.searchPh" placeholder="Cari croissant, kopi, risol…" autocomplete="off" />
+    </div>
+    <div class="menulist" id="menugrid" aria-busy="true" aria-live="polite">
       <div class="mrow sk" aria-hidden="true"><span class="mnum sk-dot"></span><div class="mbody"><div class="sk-line w40"></div><div class="sk-line"></div></div><span class="mdots" aria-hidden="true"></span><span class="mpeek sk-ph"></span></div>
       <div class="mrow sk" aria-hidden="true"><span class="mnum sk-dot"></span><div class="mbody"><div class="sk-line w40"></div><div class="sk-line"></div></div><span class="mdots" aria-hidden="true"></span><span class="mpeek sk-ph"></span></div>
       <div class="mrow sk" aria-hidden="true"><span class="mnum sk-dot"></span><div class="mbody"><div class="sk-line w40"></div><div class="sk-line"></div></div><span class="mdots" aria-hidden="true"></span><span class="mpeek sk-ph"></span></div>
@@ -192,11 +201,12 @@
     <div class="container">
       <p class="eyebrow"><span class="line"></span><span data-i18n="atmos.eyebrow">03 — Suasana</span></p>
       <h2 class="h2" data-i18n-html="atmos.title">Sudut yang <em>Fotogenik</em></h2>
-      <div class="arch-row">
-        <figure><button class="arch-btn" data-lb="0" aria-haspopup="dialog"><span class="arch"><img loading="lazy" src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=700&auto=format&fit=crop" alt="Interior cafe" /></span></button><figcaption data-i18n="atmos.c1">Interior hangat — kayu & cahaya sore</figcaption></figure>
-        <figure><button class="arch-btn" data-lb="1" aria-haspopup="dialog"><span class="arch"><img loading="lazy" src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=700&auto=format&fit=crop" alt="Craft bakery" /></span></button><figcaption data-i18n="atmos.c2">Dibuat tangan, dengan teliti</figcaption></figure>
-        <figure><button class="arch-btn" data-lb="2" aria-haspopup="dialog"><span class="arch"><img loading="lazy" src="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=700&auto=format&fit=crop" alt="Roti detail" /></span></button><figcaption data-i18n="atmos.c3">Detail berlapis yang renyah</figcaption></figure>
-      </div>
+      <div class="arch-row" id="archrow"></div>
+      <noscript><ul>
+        <li>Interior hangat — kayu &amp; cahaya sore di Ruethies Patisserie Cikarang</li>
+        <li>Dibuat tangan, dengan teliti di Ruethies Patisserie Cikarang</li>
+        <li>Detail berlapis yang renyah di Ruethies Patisserie Cikarang</li>
+      </ul></noscript>
     </div>
   </section>
 
@@ -207,7 +217,7 @@
       <div class="info card">
         <h2 class="h2" data-i18n-html="visit.title">Mampir, <em>Duduk Manis</em></h2>
         <p class="addr">Ruko The Neo Patio East NO. 51, Lippo, Cikarang Sel., Kabupaten Bekasi, Jawa Barat 17530</p>
-        <p class="muted"><span data-i18n="visit.hours">Setiap Hari • 09.00 – 21.00</span><br/>WA: <a href="https://wa.me/6285139281257" target="_blank" rel="noopener">0851-3928-1257</a> &nbsp;•&nbsp; IG: <a href="https://instagram.com/ruethiespatisserie" target="_blank" rel="noopener">@ruethiespatisserie</a></p>
+        <p class="muted"><span data-i18n="visit.hours">Setiap Hari • 09.00 – 21.00</span><br/>WA: <a href="https://wa.me/6285139281257" target="_blank" rel="noopener">0851-3928-1257</a> &nbsp;•&nbsp; <a href="tel:+6285139281257" data-i18n="visit.call">Telepon</a> &nbsp;•&nbsp; IG: <a href="https://instagram.com/ruethiespatisserie" target="_blank" rel="noopener">@ruethiespatisserie</a></p>
         <div class="row">
           <a class="btn primary sm" target="_blank" rel="noopener" href="https://maps.app.goo.gl/6kpvgE4QUcHWc7it5" data-i18n="visit.dir">Buka di Google Maps</a>
           <button class="btn secondary sm" id="copyaddr" data-i18n="visit.copy">Salin Alamat</button>

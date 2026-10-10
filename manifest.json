@@ -1,0 +1,14 @@
+{
+  "name": "Ruethies Patisserie — Cafe di Cikarang",
+  "short_name": "Ruethies",
+  "description": "Artisan patisserie & espresso di Lippo Cikarang. #MadeWithDelicacy",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FAF6F0",
+  "theme_color": "#7A0000",
+  "icons": [
+    { "src": "logo-wine.png", "sizes": "any", "type": "image/png" },
+    { "src": "logo.jpeg", "sizes": "any", "type": "image/jpeg" }
+  ]
+}
