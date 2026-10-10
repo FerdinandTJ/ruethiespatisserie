@@ -1,38 +1,38 @@
-const WA_NUMBER = "6281234567890"; // dummy, ganti nomor asli
-const IMG = (id) => `https://images.unsplash.com/${id}?q=80&w=700&auto=format&fit=crop`;
+const WA_NUMBER = "6285139281257";
+const WA_DISPLAY = "0851-3928-1257";
+const IMG = (id) => {
+  if(!id) return "";
+  if(id.startsWith("http") || id.startsWith("images/") || id.startsWith("/") || id.startsWith("./")) return id;
+  return `https://images.unsplash.com/${id}?q=80&w=700&auto=format&fit=crop`;
+};
 
-const MENU = [
-  // CAKERY
-  { cat:"cakery", badge:"Best Seller", tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:IMG("photo-1578985545062-69928b1d9587"),
+// Fallback bawaan (dipakai jika menu.json gagal dimuat, misal buka via file://).
+// Untuk ubah menu: edit menu.json saja, tidak perlu sentuh file ini.
+// Fallback mini (bukan sumber utama): hanya 3 item agar halaman tidak kosong
+// jika menu.json gagal dimuat (misal buka via file:// atau jaringan gagal).
+// Sumber utama SATU-SATUNYA adalah menu.json — edit di sana saja.
+let MENU = [
+  { cat:"cakery", badge:"Best Seller", signature:true, tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:IMG("photo-1578985545062-69928b1d9587"),
     id:{n:"Opera Cake Noir",d:"Lapis almond, ganache dark chocolate, glaze mengilap."},
     en:{n:"Noir Opera Cake",d:"Almond layers, dark ganache, mirror glaze."} },
-  { cat:"cakery", badge:"Signature", tag:{id:"Manis • Segar",en:"Sweet • Fresh"}, img:IMG("photo-1565958011703-44f9829ba187"),
-    id:{n:"Strawberry Fraisier",d:"Strawberry segar, mousseline vanilla, sponge lembut."},
-    en:{n:"Strawberry Fraisier",d:"Fresh strawberries, vanilla mousseline, soft sponge."} },
-  { cat:"cakery", badge:"", tag:{id:"Manis • Lumer",en:"Sweet • Molten"}, img:IMG("photo-1533134242443-d4fd215305ad"),
-    id:{n:"Burnt Basque Cheesecake",d:"Creamy gosong atas, lumer di tengah. Wajib coba."},
-    en:{n:"Burnt Basque Cheesecake",d:"Caramelised top, molten centre. A must-try."} },
-  // COFFEE
-  { cat:"coffee", badge:"Signature", tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:IMG("photo-1541167760496-1628856ab772"),
+  { cat:"coffee", badge:"Signature", signature:true, tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:IMG("photo-1541167760496-1628856ab772"),
     id:{n:"Café Crème Brûlée Latte",d:"Espresso + susu creamy, gula brûlée di atas."},
     en:{n:"Crème Brûlée Latte",d:"Espresso with creamy milk, torched sugar top."} },
-  { cat:"coffee", badge:"", tag:{id:"Bold • Pekat",en:"Bold • Intense"}, img:IMG("photo-1510591509098-f4fdc6d0ff04"),
-    id:{n:"Espresso Noisette",d:"Double shot pekat dengan sentuhan hazelnut."},
-    en:{n:"Noisette Espresso",d:"Bold double shot with a hazelnut touch."} },
-  { cat:"coffee", badge:"", tag:{id:"Segar • Ringan",en:"Fresh • Light"}, img:IMG("photo-1515823064-d35759e58259"),
-    id:{n:"Iced Lumière Matcha",d:"Matcha premium, susu oat, es bening. Segar elegan."},
-    en:{n:"Iced Lumière Matcha",d:"Premium matcha, oat milk over clear ice."} },
-  // SAVOURY
-  { cat:"savoury", badge:"Favorit", tag:{id:"Gurih • Renyah",en:"Savoury • Crisp"}, img:IMG("photo-1601050690597-df0568f70950"),
-    id:{n:"Pastel Ayam Ragout",d:"Kulit renyah berlapis, isi ragout ayam creamy."},
-    en:{n:"Chicken Ragout Pastel",d:"Flaky crust, creamy chicken ragout filling."} },
-  { cat:"savoury", badge:"", tag:{id:"Gurih • Keemasan",en:"Savoury • Golden"}, img:IMG("photo-1630384060421-cb20d0e0649d"),
-    id:{n:"Kroket Kentang Sapi",d:"Kentang halus, daging sapi, goreng keemasan."},
-    en:{n:"Beef Potato Kroket",d:"Silky potato, beef, golden-fried."} },
-  { cat:"savoury", badge:"Best Seller", tag:{id:"Gurih • Best Nongkrong",en:"Savoury • Crowd Favourite"}, img:IMG("photo-1606755962773-d324e0a13086"),
+  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Best Nongkrong",en:"Savoury • Crowd Favourite"}, img:IMG("photo-1606755962773-d324e0a13086"),
     id:{n:"Risol Mayo Smoked Beef",d:"Smoked beef + mayo + telur, kulit tipis renyah."},
     en:{n:"Smoked Beef Risol Mayo",d:"Smoked beef, mayo & egg in crisp thin skin."} },
 ];
+
+function normMenu(items){
+  if(!Array.isArray(items)) return null;
+  const clean = items.filter(m => m && m.cat && (m.id || m.en)).map(m => ({ ...m, img: IMG(m.img || "") }));
+  return clean.length ? clean : null;
+}
+
+fetch("menu.json", { cache: "no-cache" })
+  .then(r => { if(!r.ok) throw 0; return r.json(); })
+  .then(j => { const c = normMenu(j); if(c){ MENU = c; renderMenus(); } })
+  .catch(()=>{ /* fallback bawaan tetap dipakai */ });
 
 const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi",
@@ -48,7 +48,10 @@ const I18N = {
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu & cahaya sore","atmos.c2":"Dibuat tangan, dengan teliti","atmos.c3":"Detail berlapis yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
     "visit.dir":"Buka di Google Maps","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja",
-    "wa.title":"Reservasi Meja","wa.sub":"Isi detail, kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp" },
+    "foot.visit":"Kunjungi","foot.contact":"Kontak",
+    "wa.title":"Reservasi Meja","wa.sub":"Isi detail, kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
+    "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Buka WhatsApp untuk kirim.","wa.back":"Ubah detail",
+    "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
   en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.reserve":"Reserve",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
@@ -62,7 +65,10 @@ const I18N = {
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
     "visit.dir":"Open in Google Maps","visit.copy":"Copy Address","visit.res":"Reserve a Table",
-    "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp" }
+    "foot.visit":"Visit","foot.contact":"Contact",
+    "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp",
+    "wa.okt":"Ready to send!","wa.oks":"Details look good. Open WhatsApp to send.","wa.back":"Edit details",
+    "wa.ereq":"Required.","wa.epax":"1–20 guests.","wa.edate":"Pick today or later.","wa.etime":"9 AM – 9 PM only.","wa.open":"Open WhatsApp" }
 };
 
 let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "en";
@@ -76,13 +82,15 @@ function applyLang(){
   document.querySelectorAll("[data-i18n-html]").forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
   document.getElementById("btn-id").classList.toggle("on", lang==="id");
   document.getElementById("btn-en").classList.toggle("on", lang==="en");
+  if(!document.getElementById("lightbox").hidden) lbCap.textContent = t(LB[lbIdx].key);
   renderMenus();
 }
 
-function cardHTML(m){
+function cardHTML(m, i){
   const v = m[lang] || m.id;
-  return `<article class="card rv"><div class="ph"><img loading="lazy" src="${m.img}" alt="${v.n}" /></div>
-    <div class="bd">${m.badge?`<span class="chip">${m.badge}</span>`:""}<h3>${v.n}</h3><p>${v.d}</p></div></article>`;
+  const no = String(i+1).padStart(2,"0");
+  return `<article class="card rv"><div class="ph"><img loading="lazy" decoding="async" src="${m.img}" alt="${v.n}" /></div>
+    <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${m.badge}</span>`:""}<h3>${v.n}</h3><p>${v.d}</p></div></article>`;
 }
 
 function rowHTML(m, i){
@@ -94,15 +102,20 @@ function rowHTML(m, i){
     <div class="mbody"><h3>${v.n}</h3><p>${v.d}</p>
       <div class="mtags">${m.badge?`<span class="chip">${m.badge}</span>`:""}${tag?`<span class="tagline">${tag}</span>`:""}</div></div>
     <span class="mdots" aria-hidden="true"></span>
-    <span class="mpeek"><img loading="lazy" src="${m.img}" alt="" /></span>
+    <span class="mpeek"><img loading="lazy" decoding="async" src="${m.img}" alt="" /></span>
   </article>`;
 }
 
 function renderMenus(){
-  const sig = [MENU[0], MENU[3], MENU[8]];
-  document.getElementById("signature").innerHTML = sig.map(cardHTML).join("");
+  const flagged = MENU.filter(m=>m.signature);
+  const sig = flagged.length >= 3 ? flagged.slice(0,3) : [MENU[0], MENU[3], MENU[8]].filter(Boolean);
+  document.getElementById("signature").innerHTML = sig.map((m,i)=>cardHTML(m,i)).join("");
+  document.getElementById("signature").removeAttribute("aria-busy");
   const items = MENU.filter(m=>m.cat===activeCat);
-  document.getElementById("menugrid").innerHTML = items.map(rowHTML).join("");
+  const grid = document.getElementById("menugrid");
+  grid.innerHTML = items.map(rowHTML).join("");
+  grid.removeAttribute("aria-busy");
+  grid.classList.remove("swap"); void grid.offsetWidth; grid.classList.add("swap");
   movePill();
   observeReveals();
 }
@@ -113,8 +126,12 @@ function observeReveals(){ document.querySelectorAll(".rv:not(.in)").forEach(el=
 function movePill(){
   const btn = document.querySelector(`.tab[data-cat="${activeCat}"]`);
   const pill = document.getElementById("pill");
-  if(!btn) return;
-  pill.style.left = btn.offsetLeft+"px"; pill.style.width = btn.offsetWidth+"px";
+  const tabs = document.querySelector(".tabs");
+  if(!btn || !pill) return;
+  requestAnimationFrame(()=>{
+    pill.style.left = (btn.offsetLeft - (tabs ? tabs.scrollLeft : 0))+"px";
+    pill.style.width = btn.offsetWidth+"px";
+  });
 }
 
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
@@ -136,37 +153,109 @@ mmenu.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{
   mmenu.hidden = true; burger.classList.remove("open"); burger.setAttribute("aria-expanded","false");
 }));
 
-// WA modal
+// WA modal + validation + success
 const bd = document.getElementById("backdrop");
 const stickybar = document.getElementById("stickybar");
-const openWA = ()=>{ bd.hidden=false; stickybar.classList.add("hide"); document.getElementById("f-name").focus(); };
-const closeWA = ()=>{ bd.hidden=true; stickybar.classList.remove("hide"); onScroll(); };
+let modalOpen = false;
+let lastMsg = "", lastPretty = "";
+const openWA = ()=>{
+  modalOpen = true;
+  document.getElementById("wa-form").hidden = false;
+  document.getElementById("wa-success").hidden = true;
+  bd.hidden = false; stickybar.classList.add("hide");
+  setTimeout(()=>document.getElementById("f-name").focus(), 50);
+};
+const closeWA = ()=>{ modalOpen = false; bd.hidden = true; stickybar.classList.remove("hide"); onScroll(); };
 document.querySelectorAll("[data-open-wa]").forEach(b=>b.onclick=openWA);
 document.getElementById("closewa").onclick=closeWA;
 bd.addEventListener("click",e=>{ if(e.target===bd) closeWA(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !bd.hidden) closeWA(); });
-document.getElementById("f-date").valueAsDate = new Date();
-document.getElementById("sendwa").onclick=()=>{
-  const n=document.getElementById("f-name").value||"-", p=document.getElementById("f-pax").value,
-        d=document.getElementById("f-date").value, tm=document.getElementById("f-time").value,
-        no=document.getElementById("f-note").value||"-";
+const fDate = document.getElementById("f-date");
+const todayStr = new Date().toISOString().slice(0,10);
+fDate.min = todayStr;
+if(!fDate.value) fDate.value = todayStr;
+function setErr(id, msg){ const el = document.getElementById(id); if(!msg){ el.hidden = true; return true; } el.textContent = msg; el.hidden = false; return false; }
+function buildMsg(){
+  const n=document.getElementById("f-name").value.trim(),
+        p=parseInt(document.getElementById("f-pax").value,10),
+        d=fDate.value, tm=document.getElementById("f-time").value,
+        no=document.getElementById("f-note").value.trim()||"-";
+  let ok = true;
+  ok = setErr("e-name", n ? "" : t("wa.ereq")) && ok;
+  ok = setErr("e-pax", (p>=1 && p<=20) ? "" : t("wa.epax")) && ok;
+  ok = setErr("e-date", (d && d >= todayStr) ? "" : t("wa.edate")) && ok;
+  ok = setErr("e-time", (tm >= "09:00" && tm <= "21:00") ? "" : t("wa.etime")) && ok;
+  if(!ok) return null;
   const msg = lang==="id"
     ? `Halo Ruethies Patisserie! Saya ${n} — reservasi ${p} orang, ${d} pukul ${tm}. Catatan: ${no}. Terima kasih! #MadeWithDelicacy`
     : `Hello Ruethies Patisserie! I'm ${n} — reserving for ${p}, ${d} at ${tm}. Notes: ${no}. Thank you! #MadeWithDelicacy`;
-  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`,"_blank");
+  return { msg, pretty: `${n} • ${p} 👥 • ${d} ${tm}` };
+}
+document.getElementById("sendwa").onclick=()=>{
+  const r = buildMsg(); if(!r) return;
+  lastMsg = r.msg; lastPretty = r.pretty;
+  document.getElementById("wa-preview").textContent = lastPretty;
+  document.getElementById("wa-form").hidden = true;
+  document.getElementById("wa-success").hidden = false;
 };
-document.getElementById("copyaddr").onclick=(e)=>{
-  navigator.clipboard?.writeText("Ruko The Neo Patio East NO. 51, Lippo, Cikarang Sel., Kabupaten Bekasi, Jawa Barat 17530");
-  e.target.textContent = lang==="id" ? "Tersalin ✓" : "Copied ✓";
-  setTimeout(applyLang,1500);
+document.getElementById("openwa").onclick=()=>{ window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lastMsg)}`,"_blank"); };
+document.getElementById("backwa").onclick=()=>{
+  document.getElementById("wa-success").hidden = true;
+  document.getElementById("wa-form").hidden = false;
 };
+const copyBtn = document.getElementById("copyaddr");
+const copyOrig = { id:"Salin Alamat", en:"Copy Address" };
+copyBtn.onclick=async ()=>{
+  try{ await navigator.clipboard.writeText("Ruko The Neo Patio East NO. 51, Lippo, Cikarang Sel., Kabupaten Bekasi, Jawa Barat 17530"); }catch(e){}
+  const done = lang==="id" ? "Tersalin ✓" : "Copied ✓";
+  copyBtn.textContent = done;
+  copyBtn.disabled = true;
+  setTimeout(()=>{ copyBtn.textContent = copyOrig[lang] || copyOrig.en; copyBtn.disabled = false; },1500);
+};
+document.querySelector(".tabs")?.addEventListener("scroll", movePill, {passive:true});
 window.addEventListener("resize",movePill);
+if(document.fonts?.ready) document.fonts.ready.then(movePill);
 function onScroll(){
   document.getElementById("nav").style.boxShadow = scrollY>24?"0 12px 32px -18px rgba(61,0,0,.25)":"none";
   const hero = document.querySelector(".hero");
   const past = hero ? scrollY > hero.offsetTop + hero.offsetHeight - 120 : scrollY > 600;
-  stickybar.classList.toggle("show", past);
+  stickybar.classList.toggle("show", past && !modalOpen);
+  stickybar.classList.toggle("hide", modalOpen);
 }
+
+// Lightbox
+const LB = [
+  { src:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop", key:"atmos.c1" },
+  { src:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&auto=format&fit=crop", key:"atmos.c2" },
+  { src:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop", key:"atmos.c3" },
+];
+let lbIdx = 0;
+const lb = document.getElementById("lightbox"), lbImg = document.getElementById("lb-img"), lbCap = document.getElementById("lb-cap"), lbCount = document.getElementById("lb-count");
+function showLB(i){
+  lbIdx = (i + LB.length) % LB.length;
+  lbImg.src = LB[lbIdx].src; lbImg.alt = t(LB[lbIdx].key); lbCap.textContent = t(LB[lbIdx].key);
+  if(lbCount) lbCount.textContent = `0${lbIdx+1} / 0${LB.length}`;
+  lb.hidden = false; modalOpen = true; stickybar.classList.add("hide");
+  document.getElementById("lb-close").focus();
+}
+function hideLB(){ lb.hidden = true; modalOpen = false; stickybar.classList.remove("hide"); onScroll(); }
+document.querySelectorAll("[data-lb]").forEach(b=>b.addEventListener("click",()=>showLB(+b.dataset.lb)));
+document.getElementById("lb-close").onclick = hideLB;
+document.getElementById("lb-prev").onclick = (e)=>{ e.stopPropagation(); showLB(lbIdx-1); };
+document.getElementById("lb-next").onclick = (e)=>{ e.stopPropagation(); showLB(lbIdx+1); };
+lb.addEventListener("click",e=>{ if(e.target===lb) hideLB(); });
+document.addEventListener("keydown",e=>{
+  if(lb.hidden) return;
+  if(e.key==="Escape") hideLB();
+  if(e.key==="ArrowLeft") showLB(lbIdx-1);
+  if(e.key==="ArrowRight") showLB(lbIdx+1);
+});
+let tx = 0;
+lb.addEventListener("touchstart",e=>{ tx = e.touches[0].clientX; },{passive:true});
+lb.addEventListener("touchend",e=>{
+  const dx = e.changedTouches[0].clientX - tx;
+  if(Math.abs(dx) > 40) showLB(lbIdx + (dx < 0 ? 1 : -1));
+},{passive:true});
 window.addEventListener("scroll",onScroll,{passive:true});
 applyLang();
 onScroll();

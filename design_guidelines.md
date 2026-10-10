@@ -23,7 +23,7 @@
 
 | Token | Hex | Peran |
 |---|---|---|
-| `--wine` | `#7A0000` | Satu-satunya warna berani. Headline, tombol primer, harga, ikon aktif, footer gelap. |
+| Satu-satunya warna berani. Headline, tombol primer, harga, ikon aktif, footer gelap. |
 | `--beige` | `#FAF6F0` | Kanvas utama. Background page, ruang napas. |
 | `--baby` | `#89CFF0` | HANYA cahaya/dekorasi. Glow, sheen, dot kecil. **Dilarang untuk teks.** |
 
