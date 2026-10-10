@@ -255,9 +255,10 @@ footer a{color:var(--beige)}
   .section{padding:52px 0;scroll-margin-top:64px}
   .sec-head{margin-bottom:20px;align-items:flex-start}
   /* Signature → horizontal snap scroll, premium on mobile */
-  .cards3{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:4px 24px 16px;margin:0 -24px;scrollbar-width:none;scroll-padding:0 24px}
+  .cards3{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:8px 24px 20px;margin:0 -24px;scrollbar-width:none;scroll-padding:0 24px}
   .cards3::-webkit-scrollbar{display:none}
-  .cards3 .card{flex:0 0 78%;scroll-snap-align:center}
+  .cards3 .card{flex:0 0 72%;scroll-snap-align:center}
+  .card .bd{padding:22px 22px 26px}
   .cards3,.arch-row{-webkit-mask-image:linear-gradient(90deg,#000 93%,transparent);mask-image:linear-gradient(90deg,#000 93%,transparent)}
   .card .ph{height:auto;aspect-ratio:4/3}
   .card.info{padding:24px}
@@ -315,7 +316,7 @@ footer a{color:var(--beige)}
 @media(max-width:380px){
   .nav-cta .btn.primary.sm{display:none}
   .display{font-size:clamp(2.1rem,12vw,2.6rem)}
-  .cards3 .card{flex-basis:84%}
+  .cards3 .card{flex-basis:78%}
   .arch-row figure{flex-basis:80%}
   .two{grid-template-columns:1fr}
   .info .row{grid-template-columns:1fr}
