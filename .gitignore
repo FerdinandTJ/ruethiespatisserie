@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# Dokumen internal (tidak ikut deploy, tetap ada lokal)
+design_guidelines.md
+DEPLOY-HOSTINGER.md
