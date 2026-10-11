@@ -17,7 +17,7 @@ ExpiresActive On
 ExpiresByType text/html "access plus 1 hour"
 ExpiresByType text/css "access plus 30 days"
 ExpiresByType application/javascript "access plus 30 days"
-ExpiresByType application/json "access plus 1 hour"
+ExpiresByType application/json "access plus 5 minutes"
 ExpiresByType image/jpeg "access plus 30 days"
 ExpiresByType image/png "access plus 30 days"
 ExpiresByType image/svg+xml "access plus 30 days"
@@ -25,9 +25,16 @@ ExpiresByType image/svg+xml "access plus 30 days"
 
 <IfModule mod_headers.c>
 Header set X-Content-Type-Options "nosniff"
-Header set Referrer-Policy "strict-origin-when-cross-origin"
+Header set Referrer-Policy "strict-origin-when-downgrade"
 Header set Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
 </IfModule>
+
+# Data JSON tayang instan: revalidasi tiap 5 menit
+<FilesMatch "\.json$">
+<IfModule mod_headers.c>
+Header set Cache-Control "public, max-age=300, must-revalidate"
+</IfModule>
+</FilesMatch>
 
 ErrorDocument 404 /404.html
 

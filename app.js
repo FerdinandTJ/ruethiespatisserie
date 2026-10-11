@@ -29,7 +29,7 @@ function normMenu(items){
   return clean.length ? clean : null;
 }
 
-fetch("menu.json", { cache: "no-cache" })
+fetch("menu.json", { cache: "reload" })
   .then(r => { if(!r.ok) throw 0; return r.json(); })
   .then(j => { const c = normMenu(j); if(c){ MENU = c; renderMenus(); } })
   .catch(()=>{ /* fallback bawaan tetap dipakai */ });
@@ -338,7 +338,7 @@ function normAtmos(items){
   }));
   return clean.length ? clean : null;
 }
-fetch("atmosphere.json", { cache: "no-cache" })
+fetch("atmosphere.json", { cache: "reload" })
   .then(r => { if(!r.ok) throw 0; return r.json(); })
   .then(j => { const c = normAtmos(j); if(c){ ATMOS = c; renderAtmos(); } })
   .catch(()=>{ /* fallback bawaan tetap dipakai */ });
