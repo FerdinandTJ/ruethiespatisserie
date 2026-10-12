@@ -1,6 +1,10 @@
 # macOS
 .DS_Store
 
+# Arsip deploy lokal (jangan masuk repo)
+*.zip
+
 # Dokumen internal (tidak ikut deploy, tetap ada lokal)
 design_guidelines.md
 DEPLOY-HOSTINGER.md
+PANDUAN-SEARCH-CONSOLE.md
