@@ -78,6 +78,9 @@ let activeCat = "cakery";
 
 function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
 
+// Escape teks data sebelum masuk HTML (anti-XSS abadi untuk era Sheets/admin)
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
 function applyLang(){
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
@@ -93,8 +96,8 @@ function applyLang(){
 function cardHTML(m, i){
   const v = m[lang] || m.id;
   const no = String(i+1).padStart(2,"0");
-  return `<article class="card rv"><div class="ph"><img loading="lazy" decoding="async" src="${m.img}" alt="${v.n}" /></div>
-    <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${m.badge}</span>`:""}<h3>${v.n}</h3><p>${v.d}</p></div></article>`;
+  return `<article class="card rv"><div class="ph"><img loading="lazy" decoding="async" src="${esc(m.img)}" alt="${esc(v.n)}" /></div>
+    <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}<h3>${esc(v.n)}</h3><p>${esc(v.d)}</p></div></article>`;
 }
 
 function rowHTML(m, i){
@@ -104,10 +107,10 @@ function rowHTML(m, i){
   const idx = MENU.indexOf(m);
   return `<article class="mrow rv">
     <span class="mnum">${num}</span>
-    <div class="mbody"><h3>${v.n}</h3><p>${v.d}</p>
-      <div class="mtags">${m.badge?`<span class="chip">${m.badge}</span>`:""}${tag?`<span class="tagline">${tag}</span>`:""}<button class="askbtn" data-ask="${idx}">${t("menu.ask")} →</button></div></div>
+    <div class="mbody"><h3>${esc(v.n)}</h3><p>${esc(v.d)}</p>
+      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<button class="askbtn" data-ask="${idx}">${t("menu.ask")} →</button></div></div>
     <span class="mdots" aria-hidden="true"></span>
-    <span class="mpeek"><img loading="lazy" decoding="async" src="${m.img}" alt="" /></span>
+    <span class="mpeek"><img loading="lazy" decoding="async" src="${esc(m.img)}" alt="" /></span>
   </article>`;
 }
 
@@ -327,7 +330,7 @@ function renderAtmos(){
   if(!row) return;
   row.innerHTML = ATMOS.map((a,i)=>{
     const cap = atmosCap(a);
-    return `<figure class="rv"><button class="arch-btn" data-lb="${i}" aria-haspopup="dialog" aria-label="${cap}"><span class="arch"><img loading="lazy" decoding="async" src="${a.img}" alt="${cap}" /></span></button><figcaption>${cap}</figcaption></figure>`;
+    return `<figure class="rv"><button class="arch-btn" data-lb="${i}" aria-haspopup="dialog" aria-label="${esc(cap)}"><span class="arch"><img loading="lazy" decoding="async" src="${esc(a.img)}" alt="${esc(cap)}" /></span></button><figcaption>${esc(cap)}</figcaption></figure>`;
   }).join("");
   observeReveals();
 }
