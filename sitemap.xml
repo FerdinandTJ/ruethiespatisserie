@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://ruethiespatisserie.com/</loc><lastmod>2026-10-12</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://ruethiespatisserie.com/?lang=id</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://ruethiespatisserie.com/?lang=en</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ruethiespatisserie.com/</loc><lastmod>2026-10-14</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://ruethiespatisserie.com/#menu</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ruethiespatisserie.com/#visit</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://ruethiespatisserie.com/#faq</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

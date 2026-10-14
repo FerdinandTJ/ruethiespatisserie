@@ -13,13 +13,13 @@ const IMG = (id) => {
 // Sumber utama SATU-SATUNYA adalah menu.json — edit di sana saja.
 let MENU = [
   { cat:"cakery", badge:"Best Seller", signature:true, tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:IMG("photo-1578985545062-69928b1d9587"),
-    id:{n:"Opera Cake Noir",d:"Lapis almond, ganache dark chocolate, glaze mengilap."},
+    id:{n:"Opera Cake Noir",d:"Lapisan almond, ganache dark chocolate, glaze mengilap."},
     en:{n:"Noir Opera Cake",d:"Almond layers, dark ganache, mirror glaze."} },
   { cat:"coffee", badge:"Signature", signature:true, tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:IMG("photo-1541167760496-1628856ab772"),
-    id:{n:"Café Crème Brûlée Latte",d:"Espresso + susu creamy, gula brûlée di atas."},
+    id:{n:"Café Crème Brûlée Latte",d:"Espresso, susu creamy, gula brûlée di atas."},
     en:{n:"Crème Brûlée Latte",d:"Espresso with creamy milk, torched sugar top."} },
-  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Best Nongkrong",en:"Savoury • Crowd Favourite"}, img:IMG("photo-1606755962773-d324e0a13086"),
-    id:{n:"Risol Mayo Smoked Beef",d:"Smoked beef + mayo + telur, kulit tipis renyah."},
+  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Favorit",en:"Savoury • Crowd Favourite"}, img:IMG("photo-1606755962773-d324e0a13086"),
+    id:{n:"Risol Mayo Smoked Beef",d:"Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."},
     en:{n:"Smoked Beef Risol Mayo",d:"Smoked beef, mayo & egg in crisp thin skin."} },
 ];
 
@@ -35,23 +35,23 @@ fetch("menu.json", { cache: "reload" })
   .catch(()=>{ /* fallback bawaan tetap dipakai */ });
 
 const I18N = {
-  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi","nav.skip":"Lewati ke menu",
-    "hero.eyebrow":"N°01 — Patisserie Artisan, Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
+  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi","nav.skip":"Langsung ke menu",
+    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
-    "hero.sub":"Croissant berlapis, cakery lembut, dan savoury favorit — pastel, kroket, risol — diseduh dengan espresso pilihan. Elegan, hangat, #MadeWithDelicacy.",
-    "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East NO.51","hero.p2":"Fresh dari oven tiap pagi","hero.p3":"Buka tiap hari",
-    "hero.b1":"Fresh Daily","hero.b2":"Signature Croissant",
-    "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang paling <em>Dirindukan</em>',"sig.sub":"Tiga yang wajib dicoba saat pertama datang.",
-    "quote.text":'"Kami tidak menjual kue. Kami menjual <em>momen lembut</em> yang bisa dimakan."',
-    "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Cita Rasamu</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
-    "menu.note":"Pastel • Kroket • Risol digoreng dadakan — mohon tunggu ±10 menit. Tanya ketersediaan harian via WhatsApp.",
-    "menu.searchPh":"Cari croissant, kopi, risol…","menu.empty":"Tidak ketemu. Coba kata lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
-    "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu & cahaya sore","atmos.c2":"Dibuat tangan, dengan teliti","atmos.c3":"Detail berlapis yang renyah",
+    "hero.sub":"Croissant berlapis, kue lembut, serta pastel, kroket, dan risol favorit — lengkap dengan espresso pilihan. Elegan dan hangat. #MadeWithDelicacy.",
+    "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Fresh dari oven setiap pagi","hero.p3":"Buka setiap hari",
+    "hero.b1":"Fresh Setiap Hari","hero.b2":"Croissant Andalan",
+    "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Tiga menu yang paling sering dipesan tamu saat pertama datang.",
+    "quote.text":'"Bagi kami, kue bukan sekadar hidangan — melainkan <em>momen lembut</em> untuk dinikmati."',
+    "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
+    "menu.note":"Pastel, kroket, dan risol digoreng dadakan — waktu tunggu sekitar 10 menit. Silakan tanya ketersediaan harian via WhatsApp.",
+    "menu.searchPh":"Cari croissant, kopi, risol…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
+    "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
     "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
     "foot.visit":"Kunjungi","foot.contact":"Kontak",
-    "wa.title":"Reservasi Meja","wa.sub":"Isi detail, kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
-    "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Buka WhatsApp untuk kirim.","wa.back":"Ubah detail",
+    "wa.title":"Reservasi Meja","wa.sub":"Isi detail berikut, akan kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
+    "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Silakan buka WhatsApp untuk mengirim.","wa.back":"Ubah detail",
     "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
   en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.reserve":"Reserve","nav.skip":"Skip to menu",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
@@ -73,7 +73,7 @@ const I18N = {
     "wa.ereq":"Required.","wa.epax":"1–20 guests.","wa.edate":"Pick today or later.","wa.etime":"9 AM – 9 PM only.","wa.open":"Open WhatsApp" }
 };
 
-let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "en";
+let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "id";
 let activeCat = "cakery";
 
 function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
@@ -316,13 +316,13 @@ function onScroll(){
 let ATMOS = [
   { img:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=700&auto=format&fit=crop",
     imgFull:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop",
-    id:{cap:"Interior hangat — kayu & cahaya sore"}, en:{cap:"Warm interior — wood & evening light"} },
+    id:{cap:"Interior hangat — kayu dan cahaya sore"}, en:{cap:"Warm interior — wood & evening light"} },
   { img:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=700&auto=format&fit=crop",
     imgFull:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&auto=format&fit=crop",
-    id:{cap:"Dibuat tangan, dengan teliti"}, en:{cap:"Handcrafted with care"} },
+    id:{cap:"Dibuat manual dengan teliti"}, en:{cap:"Handcrafted with care"} },
   { img:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=700&auto=format&fit=crop",
     imgFull:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop",
-    id:{cap:"Detail berlapis yang renyah"}, en:{cap:"Crisp layered details"} },
+    id:{cap:"Detail lapisan yang renyah"}, en:{cap:"Crisp layered details"} },
 ];
 function atmosCap(a){ return (a[lang] && a[lang].cap) || a.id.cap; }
 function renderAtmos(){
