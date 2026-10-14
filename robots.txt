@@ -2,6 +2,16 @@ User-agent: *
 Allow: /
 Allow: /llms.txt
 
-# Bot AI dipersilakan (sinyal GEO): jangan tambah Disallow untuk GPTBot / ClaudeBot / PerplexityBot.
+# Bot AI & training dipersilakan (sinyal GEO) — jangan tambah Disallow untuk daftar ini.
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
 
 Sitemap: https://ruethiespatisserie.com/sitemap.xml

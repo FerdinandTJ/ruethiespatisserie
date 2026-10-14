@@ -345,3 +345,11 @@ footer a{color:var(--beige)}
   .seal{width:72px;height:72px;right:6px;bottom:10px}
 }
 @media(prefers-reduced-motion:reduce){.track,.seal svg,.arch.mini,.sk-ph::after,.sk-line::after,.sk-dot::after,.cards3 .card .ph::after{animation:none;transition:none}*{scroll-behavior:auto}.rv{opacity:1;transform:none;transition:none}.menulist.swap{animation:none}}
+/* FAQ */
+#faq details{background:#fff;border:1px solid var(--beige-line);border-radius:14px;margin:10px 0;overflow:hidden}
+#faq summary{cursor:pointer;list-style:none;font-weight:600;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#faq summary::-webkit-details-marker{display:none}
+#faq summary::after{content:"+";flex:none;width:28px;height:28px;border-radius:50%;border:1px solid var(--wine-12);display:grid;place-items:center;color:var(--wine);font-weight:400;transition:transform .25s}
+#faq details[open] summary::after{transform:rotate(45deg)}
+#faq details p{margin:0;padding:0 20px 18px;color:var(--muted);line-height:1.7}
+#faq details p a{color:var(--wine)}

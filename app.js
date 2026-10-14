@@ -35,7 +35,7 @@ fetch("menu.json", { cache: "reload" })
   .catch(()=>{ /* fallback bawaan tetap dipakai */ });
 
 const I18N = {
-  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.reserve":"Reservasi","nav.skip":"Langsung ke menu",
+  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.reserve":"Reservasi","nav.skip":"Langsung ke menu",
     "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Croissant berlapis, kue lembut, serta pastel, kroket, dan risol favorit — lengkap dengan espresso pilihan. Elegan dan hangat. #MadeWithDelicacy.",
@@ -49,11 +49,12 @@ const I18N = {
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
     "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
+    "faq.eyebrow":"05 — Informasi","faq.title":"Pertanyaan Umum",
     "foot.visit":"Kunjungi","foot.contact":"Kontak",
     "wa.title":"Reservasi Meja","wa.sub":"Isi detail berikut, akan kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
     "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Silakan buka WhatsApp untuk mengirim.","wa.back":"Ubah detail",
     "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
-  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.reserve":"Reserve","nav.skip":"Skip to menu",
+  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.reserve":"Reserve","nav.skip":"Skip to menu",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Flaky croissants, delicate cakery and beloved savouries — pastel, kroket, risol — paired with fine espresso. Elegant, warm, #MadeWithDelicacy.",
@@ -67,6 +68,7 @@ const I18N = {
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
     "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.res":"Reserve a Table","visit.call":"Call",
+    "faq.eyebrow":"05 — Information","faq.title":"Frequently Asked Questions",
     "foot.visit":"Visit","foot.contact":"Contact",
     "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp",
     "wa.okt":"Ready to send!","wa.oks":"Details look good. Open WhatsApp to send.","wa.back":"Edit details",
@@ -166,7 +168,7 @@ const secIO = new IntersectionObserver(es=>{
     document.querySelectorAll(".links a").forEach(a=>a.classList.toggle("on", a.getAttribute("href")==="#"+id));
   });
 },{rootMargin:"-40% 0px -55% 0px"});
-["home","menu","atmosphere","visit"].forEach(id=>{ const s=document.getElementById(id); if(s) secIO.observe(s); });
+["home","menu","atmosphere","visit","faq"].forEach(id=>{ const s=document.getElementById(id); if(s) secIO.observe(s); });
 
 // 3D subtle — hanya pointer presisi + tanpa reduced-motion (HP otomatis skip)
 const can3D = matchMedia("(pointer:fine)").matches && !matchMedia("(prefers-reduced-motion: reduce)").matches;
