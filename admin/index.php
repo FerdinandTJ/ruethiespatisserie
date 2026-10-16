@@ -215,15 +215,20 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <?php else: ?>
 <div class="shell">
 <aside class="side" aria-label="Navigasi admin">
-<div class="mark"><span class="sealmini">N°51</span><div><b>Ruethies Admin</b><span>PATISSERIE</span></div></div>
+<div class="mark"><span class="sealmini">N°51</span><div><b>Ruethies Admin</b><span>PATISSERIE · CIKARANG</span></div></div>
+<?php $_nm = count(menu_load()); $_ng = count(atmos_load()); ?>
 <nav class="nav">
-<a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu') ?> Menu</a>
-<a href="?#galeri" class="<?= '' ?>"><?= icon('img') ?> Galeri</a>
+<p class="navcap">Kelola</p>
+<a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
+<a href="?#galeri"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
+<p class="navcap">Lainnya</p>
+<a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>
 </nav>
-<div class="who"><b><?= icon('user', 16) ?> <?= h($me['name']) ?></b><br /><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small>
+<div class="who"><div class="who-id"><?= icon('user', 16) ?><div><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></div>
 <form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
+<p class="sidefoot">Perubahan tampil di web ±5 menit.</p>
 </aside>
 <div class="maincol">
 <div class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span>
@@ -271,7 +276,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </div>
 <?php else: ?>
 <div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan tampil di web ±5 menit.</p></div><a class="btn" href="?p=tambah"><?= icon('plus', 16) ?> Tambah menu</a></div>
-<?php if (is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Penting:</b> hapus file <span class="mono">admin/setup.php</span> dari hosting sekarang — akun awal sudah jadi.</p><?php endif; ?>
+<?php if (is_owner($me) && is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Satu langkah terakhir:</b> buka File Manager hosting, hapus file <span class="mono">admin/setup.php</span>, lalu muat ulang halaman ini. Peringatan ini hilang sendiri setelah file dihapus.</p><?php endif; ?>
 <?php if ($p !== 'pengaturan' && $p !== 'tambah' && $p !== 'ubah' && $p !== 'galeri-tambah' && $p !== 'galeri-ubah'):
   $_items = menu_load(); $_vis = array_filter($_items, fn($m) => !empty($m['available']));
   $_sig = array_filter($_items, fn($m) => !empty($m['signature']) && !empty($m['available']));
@@ -295,9 +300,9 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
   $sec = $_SESSION['totp_baru'];
   $uri = 'otpauth://totp/Ruethies:' . rawurlencode($me['name']) . '?secret=' . $sec . '&issuer=Ruethies&digits=6&period=30';
 ?>
-<p class="sub">1. Buka aplikasi Authenticator (Google/Microsoft/Apple) → tambah akun manual.<br />2. Masukkan kode rahasia ini:</p>
-<p class="mono"><?= h(chunk_split($sec, 4, ' ')) ?></p>
-<p class="sub">Atau URI: <span class="mono"><?= h($uri) ?></span></p>
+<p class="sub">1. Buka aplikasi Authenticator di HP (Google/Microsoft/Apple) → tambah akun manual.<br />2. Ketik kode rahasia di bawah ini:</p>
+<p class="mono secret"><?= h(chunk_split($sec, 4, ' ')) ?></p>
+<details><summary>Butuh cara lain? (opsional)</summary><p class="sub">Tempel tautan ini di aplikasi yang mendukung impor URI:</p><p class="mono"><?= h($uri) ?></p></details>
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="2fa-aktif" />
 <label>Kode 6 digit dari aplikasi<input name="c" inputmode="numeric" maxlength="6" required /></label>
@@ -331,8 +336,8 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </div>
 <div class="card">
 <h2><?= icon("clock") ?> Log aktivitas</h2>
-<table><?php foreach (ruethies_logs() as $l): ?>
-<tr><td><?= h($l['t']) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
+<table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach (ruethies_logs() as $l): ?>
+<tr><td><?= h(date('d M Y, H:i', strtotime($l['t']) ?: time())) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
 <?php endforeach; ?></table>
 </div>
 <?php endif; ?>
