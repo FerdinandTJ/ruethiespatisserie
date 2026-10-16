@@ -79,6 +79,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
     $img = $old['img'] ?? '';
+    $ulock = upload_lock();
     if (!empty($_FILES['foto']['name'] ?? '')) {
       [$path, $perr] = photo_upload($_FILES['foto'], $_POST['n'] ?? 'menu');
       if ($perr) $err = $perr; else $img = $path;
@@ -87,6 +88,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       if ($berr) $err = $berr;
       else { [$path, $perr] = photo_upload_raw($braw, $_POST['n'] ?? 'menu'); if ($perr) $err = $perr; else $img = $path; }
     }
+    upload_unlock($ulock);
     if ($err === '') {
       $row = menu_validate(array_merge($_POST, ['img' => $img]));
       if (!$row) $err = 'Periksa isian: nama wajib, kategori valid.';
@@ -150,6 +152,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = atmos_load(); $i = (int)($_POST['gi'] ?? -1);
     $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
     $img = $old['img'] ?? ''; $full = $old['imgFull'] ?? '';
+    $ulock = upload_lock();
     if (!empty($_FILES['gfoto']['name'] ?? '')) {
       [$p1, $p2, $perr] = galeri_upload($_FILES['gfoto'], $_POST['cap'] ?? 'suasana');
       if ($perr) $err = $perr; else { $img = $p1; $full = $p2; }
@@ -158,6 +161,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       if ($berr) $err = $berr;
       else { [$p1, $p2, $perr] = galeri_upload_raw($braw, $_POST['cap'] ?? 'suasana'); if ($perr) $err = $perr; else { $img = $p1; $full = $p2; } }
     }
+    upload_unlock($ulock);
     if ($err === '') {
       $cap = trim(strip_tags($_POST['cap'] ?? '')); $cape = trim(strip_tags($_POST['cape'] ?? ''));
       if ($cap === '' || mb_strlen($cap) > 80 || mb_strlen($cape) > 80) $err = 'Caption wajib diisi (maks 80).';
@@ -251,8 +255,9 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Admin — Ruethies Patisserie</title>
-<script src="admin.js" defer></script>
-<link rel="stylesheet" href="admin.css" />
+<!-- ADMIN_BUILD=2026-10-17-lacak -->
+<script src="admin.js?v=1" defer></script>
+<link rel="stylesheet" href="admin.css?v=1" />
 </head>
 <body>
 <?php $isGate = ($p === 'login' || $p === 'kode'); ?>
@@ -277,7 +282,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <div class="who"><div class="who-id"><?= icon('user', 16) ?><div><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></div>
 <form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
-<p class="sidefoot">Perubahan langsung tampil di web.</p>
+<p class="sidefoot">Perubahan langsung tampil di web.<br />Admin v1 · 17 Okt 2026</p>
 </aside>
 <div class="maincol">
 <div class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span>

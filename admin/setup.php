@@ -28,7 +28,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Setup Admin — Ruethies Patisserie</title>
-<link rel="stylesheet" href="admin.css" />
+<link rel="stylesheet" href="admin.css?v=1" />
 </head>
 <body>
 <div class="gate"><div class="gatecard">

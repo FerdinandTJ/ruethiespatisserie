@@ -428,3 +428,15 @@ function galeri_upload_raw(string $raw, string $caption): array {
   if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
   return ["images/$try.jpg", "images/$try-xl.jpg", null];
 }
+
+/* ---------- kunci upload: cegah dua upload bersamaan berebut nama file ---------- */
+function upload_lock() {
+  $fh = @fopen(ruethies_data_dir() . '/upload.lock', 'c');
+  if ($fh && flock($fh, LOCK_EX)) return $fh;
+  if ($fh) fclose($fh);
+  return null; // gagal kunci = lanjut tanpa kunci (lebih baik daripada mati total)
+}
+function upload_unlock($fh): void {
+  if (!$fh) return;
+  flock($fh, LOCK_UN); fclose($fh);
+}

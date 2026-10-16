@@ -45,7 +45,6 @@
       if (!f || !/^image\/(jpeg|png|webp)$/i.test(f.type || '')) return; // biar server yang menolak tipe lain
       e.preventDefault();
       var btn = form.querySelector('.stickybar button');
-      var txt = btn ? btn.innerHTML : '';
       if (btn) { btn.disabled = true; btn.innerHTML = 'Menyiapkan foto…'; }
       var finish = function (dataUrl) {
         if (dataUrl) {
@@ -55,8 +54,7 @@
           input.value = '';
           form.enctype = 'application/x-www-form-urlencoded';
         }
-        if (btn) { btn.disabled = false; btn.innerHTML = txt; }
-        form.submit();
+        form.submit(); // tombol sengaja tetap nonaktif: cegah klik ganda saat pindah halaman
       };
       var img = new Image();
       img.onload = function () {
@@ -81,6 +79,17 @@
     var max = parseInt(el.getAttribute('maxlength'), 10);
     var upd = function () { out.textContent = (el.value.length) + '/' + max; };
     el.addEventListener('input', upd); upd();
+  });
+
+  // Anti double-submit umum: kunci tombol kirim saat form berangkat
+  // (mencegah klik ganda yang bisa menukar pasangan file).
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (!f || f.tagName !== 'FORM') return;
+    setTimeout(function () {
+      if (e.defaultPrevented) return;
+      f.querySelectorAll('button:not([type]), button[type="submit"]').forEach(function (b) { b.disabled = true; });
+    }, 0);
   });
 
   // Tampilkan/sembunyikan kata sandi.
