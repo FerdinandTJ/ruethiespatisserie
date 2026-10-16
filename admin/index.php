@@ -205,68 +205,148 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <title>Admin — Ruethies Patisserie</title>
 <script src="admin.js" defer></script>
 <style>
-:root{--wine:#7A0000;--wine-deep:#4a0d0d;--bg:#FAF6F0;--card:#FFFDF9;--ink:#2B2320;--mut:#6F625B;--line:#E7DACA;--ok:#1E7A3C;--bad:#8f1d1d}
+:root{--wine:#7A0000;--wine-deep:#460b0b;--bg:#FAF6F0;--card:#FFFDF9;--ink:#2B2320;--mut:#6F625B;--line:#E7DACA;--ok:#1E7A3C;--bad:#8f1d1d;--amber:#7a5b00;--sh:0 10px 28px -18px rgba(74,13,13,.35)}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);margin:0;padding:0 0 64px;font-size:16px;line-height:1.55}
-.w{max-width:780px;margin:0 auto;padding:20px 16px}
-.brandbar{background:var(--wine-deep);color:#F6E9E4;margin:0 -16px;padding:18px 20px;border-radius:0 0 22px 22px}
-.brandbar .no{font-size:.72rem;letter-spacing:.3em;opacity:.75}
-.brandbar h1{font-size:1.35rem;margin:2px 0;color:#fff}
-.brandbar p{margin:0;font-size:.85rem;opacity:.85}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin:14px 0;box-shadow:0 6px 20px -14px rgba(74,13,13,.25)}
-.card h2{font-size:1.1rem;color:var(--wine);margin:0 0 4px}
-.sub{color:var(--mut);font-size:.9rem;margin:0 0 10px}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);margin:0;font-size:16px;line-height:1.55}
+svg{flex:none;vertical-align:-3px}
+/* ===== layout ===== */
+.shell{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{background:linear-gradient(180deg,var(--wine-deep),#2e0606);color:#F6E9E4;padding:26px 18px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
+.side .mark{display:flex;align-items:center;gap:12px;padding:4px 6px 18px;border-bottom:1px solid rgba(246,233,228,.16);margin-bottom:14px}
+.sealmini{width:44px;height:44px;border-radius:50%;background:var(--wine);display:grid;place-items:center;font-weight:800;font-size:.8rem;letter-spacing:.05em;flex:none;border:1.5px solid rgba(246,233,228,.4)}
+.side .mark b{display:block;font-size:1rem;line-height:1.2}
+.side .mark span{font-size:.72rem;letter-spacing:.22em;opacity:.7}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav a{display:flex;align-items:center;gap:12px;color:#F6E9E4;text-decoration:none;font-weight:600;font-size:.95rem;padding:12px 14px;border-radius:12px;opacity:.85}
+.nav a:hover{background:rgba(246,233,228,.1);opacity:1}
+.nav a.on{background:var(--wine);opacity:1;box-shadow:var(--sh)}
+.side .who{margin-top:auto;background:rgba(246,233,228,.08);border:1px solid rgba(246,233,228,.16);border-radius:14px;padding:12px 14px;font-size:.85rem}
+.side .who b{display:flex;align-items:center;gap:8px}
+.side .who form{margin:8px 0 0}
+.main{padding:26px 26px 80px;min-width:0}
+.topbar{display:none}
+/* ===== type & cards ===== */
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px 14px;background:radial-gradient(120% 90% at 50% 0%,#5c1010 0%,#2e0606 60%,#1d0404 100%)}
+.gatecard{width:100%;max-width:430px;background:var(--card);border-radius:22px;padding:30px 26px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);text-align:center}
+.gateseal{width:64px;height:64px;border-radius:50%;background:var(--wine);color:#fff;display:inline-grid;place-items:center;font-weight:800;margin-bottom:10px}
+.gateno{font-size:.7rem;letter-spacing:.3em;color:var(--mut);margin:0 0 14px}
+.gatecard .card{border:0;box-shadow:none;padding:0;margin:0;text-align:left}
+.pagehead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 4px}
+.pagehead h1{font-size:1.5rem;color:var(--wine-deep);margin:0}
+.pagehead .btn{margin-top:0}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 4px}
+.pagehead h1{font-size:1.5rem;color:var(--wine-deep);margin:0}
+.sub{color:var(--mut);font-size:.9rem;margin:2px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:var(--sh)}
+.card h2{font-size:1.08rem;color:var(--wine);margin:0 0 4px;display:flex;align-items:center;gap:10px}
+/* ===== buttons ===== */
+button,.btn{border:0;background:var(--wine);color:#fff;border-radius:12px;padding:12px 22px;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;min-height:48px}
+button:hover,.btn:hover{filter:brightness(1.08)}
+button:active,.btn:active{transform:scale(.98)}
+button:disabled{opacity:.45;cursor:default;transform:none}
+.ghost{background:#fff;color:var(--wine);border:1.5px solid var(--wine)}
+.danger{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
+.iconbtn{padding:10px;min-height:44px;min-width:44px;border-radius:12px}
+.linkbtn{background:none;border:0;color:var(--wine);font-size:.9rem;font-weight:600;text-decoration:underline;padding:8px;min-height:0;margin:6px 0 0;cursor:pointer}
+/* ===== alerts ===== */
+.err,.okmsg,.warn{border-radius:12px;padding:12px 16px;display:flex;gap:10px;align-items:flex-start}
+.err{background:#fdecec;border:1px solid #e8a0a0;color:var(--bad)}
+.okmsg{background:#e9f6ee;border:1px solid #9ed3b2;color:var(--ok)}
+.warn{background:#fff7e6;border:1px solid #e3c47f;color:var(--amber)}
+/* ===== stats ===== */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 12px;text-align:center;box-shadow:var(--sh)}
+.stat .ic{width:38px;height:38px;border-radius:12px;background:#f6ecec;color:var(--wine);display:inline-grid;place-items:center;margin-bottom:6px}
+.stat b{display:block;font-size:1.5rem;color:var(--wine-deep);line-height:1.1}
+.stat span{font-size:.72rem;color:var(--mut)}
+/* ===== items ===== */
+.item{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.item:first-of-type{border-top:0}
+.item img.thumb{width:84px;height:64px;object-fit:cover;border-radius:12px;flex:none;border:1px solid var(--line)}
+.item .grow{flex:1;min-width:160px}
+.item .grow b{font-size:1rem}
+.item .grow small{color:var(--mut)}
+.item.off{opacity:.6}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;background:#efe7dc;color:var(--wine);border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:2px}
+.badge.hide{background:#f3d9d9;color:var(--bad)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
+.actions button,.actions .btn{margin:0;padding:10px 16px;min-height:44px;font-size:.88rem}
+/* ===== forms ===== */
 label{display:block;font-size:.9rem;font-weight:600;margin-top:14px}
 input,select,textarea{width:100%;margin-top:6px;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font:inherit;font-size:1rem;background:#fff;color:var(--ink);min-height:48px}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--wine);outline-offset:1px;border-color:var(--wine)}
 input[type="checkbox"]{width:22px;height:22px;min-height:0;accent-color:var(--wine);vertical-align:-5px;margin-right:8px}
 input[type="file"]{padding:10px}
-button,.btn{border:0;background:var(--wine);color:#fff;border-radius:999px;padding:13px 26px;font:inherit;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;margin-top:16px;min-height:48px;text-align:center}
-button:active,.btn:active{transform:scale(.98)}
-.ghost{background:#fff;color:var(--wine);border:1.5px solid var(--wine)}
-.danger{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
-.linkbtn{background:none;border:0;color:var(--wine);font-size:.9rem;font-weight:600;text-decoration:underline;padding:8px;min-height:0;margin:6px 0 0;cursor:pointer}
-.err{background:#fdecec;border:1px solid #e8a0a0;color:var(--bad);border-radius:12px;padding:12px 16px}
-.okmsg{background:#e9f6ee;border:1px solid #9ed3b2;color:var(--ok);border-radius:12px;padding:12px 16px}
-.warn{background:#fff7e6;border:1px solid #e3c47f;color:#7a5b00;border-radius:12px;padding:12px 16px}
-.tabs{position:sticky;top:0;z-index:5;display:flex;gap:8px;background:rgba(250,246,240,.96);padding:10px 0;flex-wrap:wrap}
-.tabs .btn,.tabs button{margin:0;padding:10px 20px;min-height:44px;font-size:.92rem}
-.tabs form{margin:0}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 8px;text-align:center}
-.stat b{display:block;font-size:1.4rem;color:var(--wine)}
-.stat span{font-size:.72rem;color:var(--mut)}
-.item{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-.item:first-of-type{border-top:0}
-.item img.thumb{width:76px;height:58px;object-fit:cover;border-radius:10px;flex:none}
-.item .grow{flex:1;min-width:150px}
-.item .grow b{font-size:1rem}
-.item .grow small{color:var(--mut)}
-.badge{display:inline-block;font-size:.68rem;font-weight:700;background:#efe7dc;color:var(--wine);border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:2px}
-.badge.hide{background:#f3d9d9;color:var(--bad)}
-.actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
-.actions button,.actions .btn{margin:0;padding:10px 18px;min-height:44px;font-size:.9rem}
-.preview img{max-width:100%;max-height:220px;border-radius:12px;margin-top:10px;display:block}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.preview img{max-width:100%;max-height:220px;border-radius:12px;margin-top:10px;display:block;border:1px solid var(--line)}
 .preview small{color:var(--mut)}
-.count{font-size:.75rem;color:var(--mut);float:right;margin-top:14px}
+.count{font-size:.75rem;color:var(--mut);float:right;margin-top:14px;font-weight:400}
 .pwrow{display:flex;gap:8px}.pwrow input{flex:1}.pwrow button{flex:none;margin-top:6px;padding:13px 16px}
-table{width:100%;font-size:.8rem;border-collapse:collapse}td{padding:7px 4px;border-bottom:1px solid var(--line);word-break:break-all;vertical-align:top}
-.mono{font-family:ui-monospace,monospace;background:#f4efe8;border-radius:8px;padding:10px;word-break:break-all;font-size:.85rem}
 small.hint{color:var(--mut);font-weight:400}
-.stickybar{position:sticky;bottom:0;background:rgba(255,253,249,.97);border-top:1px solid var(--line);padding:10px 0;margin:16px -20px -20px;padding-left:20px;padding-right:20px;border-radius:0 0 18px 18px}
+.stickybar{position:sticky;bottom:0;background:rgba(255,253,249,.97);border-top:1px solid var(--line);padding:12px 0 4px;margin:18px -22px -22px;padding-left:22px;padding-right:22px;border-radius:0 0 18px 18px}
 .stickybar button{width:100%;margin-top:0}
-.item.off{opacity:.6}
-@media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr)}.w{padding:14px 12px}.actions button,.actions .btn{flex:1;text-align:center}}
+/* ===== settings & log ===== */
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+table{width:100%;font-size:.8rem;border-collapse:collapse}
+th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);padding:8px 6px;border-bottom:2px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid var(--line);word-break:break-all;vertical-align:top}
+.mono{font-family:ui-monospace,SFMono-Regular,monospace;background:#f4efe8;border-radius:8px;padding:10px 12px;word-break:break-all;font-size:.85rem}
+.empty{border:1.5px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mut)}
+.empty svg{opacity:.5;margin-bottom:6px}
+/* ===== mobile ===== */
+@media(max-width:899px){
+.shell{display:block}
+.side{display:none}
+.topbar{display:flex;align-items:center;gap:10px;background:var(--wine-deep);color:#F6E9E4;padding:12px 14px;position:sticky;top:0;z-index:10}
+.topbar .sealmini{width:36px;height:36px;font-size:.68rem}
+.topbar b{font-size:.95rem}
+.topbar .sp{flex:1}
+.topbar a.ticon{color:#F6E9E4;text-decoration:none;display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;border:1px solid rgba(246,233,228,.3)}
+.topbar a.ticon.on{background:var(--wine)}
+.main{padding:16px 14px 80px}
+.mnav{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+.mnav a{flex:1;text-align:center;background:var(--card);border:1.5px solid var(--line);color:var(--wine);font-weight:700;font-size:.85rem;border-radius:12px;padding:11px 6px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px}
+.mnav a.on{background:var(--wine);border-color:var(--wine);color:#fff}
+.stats{grid-template-columns:repeat(2,1fr)}
+.fgrid,.setgrid{grid-template-columns:1fr}
+.actions button,.actions .btn{flex:1;text-align:center}
+}
+@media(min-width:900px){.mnav{display:none}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<div class="w">
-<header class="brandbar">
-<div class="no">RUETHIES PATISSERIE</div>
-<h1>Halaman Admin</h1>
-<p>Kelola menu & galeri tanpa menyentuh kode. Perubahan tampil di web ±5 menit.</p>
-</header>
+<?php $isGate = ($p === 'login' || $p === 'kode'); ?>
+<?php if ($isGate): ?>
+<div class="gate"><div class="gatecard">
+<div class="gateseal">N°51</div>
+<p class="gateno">RUETHIES PATISSERIE · ADMIN</p>
+<?php else: ?>
+<div class="shell">
+<aside class="side" aria-label="Navigasi admin">
+<div class="mark"><span class="sealmini">N°51</span><div><b>Ruethies Admin</b><span>PATISSERIE</span></div></div>
+<nav class="nav">
+<a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu') ?> Menu</a>
+<a href="?#galeri" class="<?= '' ?>"><?= icon('img') ?> Galeri</a>
+<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
+</nav>
+<div class="who"><b><?= icon('user', 16) ?> <?= h($me['name']) ?></b><br /><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small>
+<form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost" style="width:100%;margin-top:10px;padding:10px"><?= icon('out', 16) ?> Keluar</button></form>
+</div>
+</aside>
+<div class="maincol">
+<div class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span>
+<a class="ticon <?= $p !== 'pengaturan' ? 'on' : '' ?>" href="?" aria-label="Menu"><?= icon('menu') ?></a>
+<a class="ticon" href="?#galeri" aria-label="Galeri"><?= icon('img') ?></a>
+<?php if (is_owner($me)): ?><a class="ticon <?= $p === 'pengaturan' ? 'on' : '' ?>" href="?p=pengaturan" aria-label="Pengaturan"><?= icon('gear') ?></a><?php endif; ?>
+</div>
+<main class="main">
+<div class="mnav">
+<a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu', 16) ?> Menu</a>
+<a href="?#galeri"><?= icon('img', 16) ?> Galeri</a>
+<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
+</div>
+<?php endif; ?>
 <?php if ($err): ?><p class="err"><?= h($err) ?></p><?php endif; ?>
 <?php if ($ok === 'simpan'): ?><p class="okmsg">Tersimpan. Cek web ±5 menit lagi.</p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
@@ -278,7 +358,7 @@ small.hint{color:var(--mut);font-weight:400}
 
 <?php if ($p === 'login'): ?>
 <div class="card">
-<h2>Selamat datang 👋</h2>
+<h2><?= icon('lock') ?> Selamat datang</h2>
 <p class="sub">Masuk untuk mengelola menu dan galeri.</p>
 <form method="post" autocomplete="off">
 <input type="hidden" name="aksi" value="login" />
@@ -290,7 +370,7 @@ small.hint{color:var(--mut);font-weight:400}
 </div>
 <?php elseif ($p === 'kode'): ?>
 <div class="card">
-<h2>Kode keamanan</h2>
+<h2><?= icon("shield") ?> Kode keamanan</h2>
 <p class="sub"><b>Pemilik:</b> buka aplikasi Authenticator di HP, masukkan 6 digit kode yang tampil.</p>
 <form method="post" autocomplete="off">
 <input type="hidden" name="aksi" value="kode" />
@@ -299,28 +379,23 @@ small.hint{color:var(--mut);font-weight:400}
 </form>
 </div>
 <?php else: ?>
-<div class="tabs">
-<a class="btn ghost" href="?">🍰 Menu</a>
-<a class="btn ghost" href="?#galeri">🖼️ Galeri</a>
-<?php if (is_owner($me)): ?><a class="btn ghost" href="?p=pengaturan">⚙️ Pengaturan</a><?php endif; ?>
-<form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost">Keluar · <?= h($me['name']) ?></button></form>
-</div>
+<div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan tampil di web ±5 menit.</p></div><a class="btn" href="?p=tambah"><?= icon('plus', 16) ?> Tambah menu</a></div>
 <?php if (is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Penting:</b> hapus file <span class="mono">admin/setup.php</span> dari hosting sekarang — akun awal sudah jadi.</p><?php endif; ?>
 <?php if ($p !== 'pengaturan' && $p !== 'tambah' && $p !== 'ubah' && $p !== 'galeri-tambah' && $p !== 'galeri-ubah'):
   $_items = menu_load(); $_vis = array_filter($_items, fn($m) => !empty($m['available']));
   $_sig = array_filter($_items, fn($m) => !empty($m['signature']) && !empty($m['available']));
   $_gal = atmos_load(); ?>
 <div class="stats">
-<div class="stat"><b><?= count($_items) ?></b><span>Total menu</span></div>
-<div class="stat"><b><?= count($_vis) ?></b><span>Tampil</span></div>
-<div class="stat"><b><?= count($_sig) ?></b><span>Signature</span></div>
-<div class="stat"><b><?= count($_gal) ?></b><span>Foto galeri</span></div>
+<div class="stat"><span class="ic"><?= icon('menu', 20) ?></span><b><?= count($_items) ?></b><span>Total menu</span></div>
+<div class="stat"><span class="ic"><?= icon('eye', 20) ?></span><b><?= count($_vis) ?></b><span>Tampil</span></div>
+<div class="stat"><span class="ic"><?= icon('star', 20) ?></span><b><?= count($_sig) ?></b><span>Signature</span></div>
+<div class="stat"><span class="ic"><?= icon('img', 20) ?></span><b><?= count($_gal) ?></b><span>Foto galeri</span></div>
 </div>
 <?php endif; ?>
 
 <?php if ($p === 'pengaturan' && is_owner($me)): ?>
 <div class="card">
-<h2>Kode OTP pemilik (2FA)</h2>
+<h2><?= icon("shield") ?> Kode OTP pemilik</h2>
 <?php if (!empty($me['totp'])): ?>
 <p class="sub">Status: <b>aktif</b>. Setiap login wajib kode 6 digit.</p>
 <form method="post" data-confirm="Matikan OTP? Tidak disarankan."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="2fa-mati" /><button class="danger">Matikan OTP</button></form>
@@ -340,7 +415,7 @@ small.hint{color:var(--mut);font-weight:400}
 <?php endif; ?>
 </div>
 <div class="card">
-<h2>Ganti kata sandi saya</h2>
+<h2><?= icon("lock") ?> Ganti kata sandi</h2>
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="pw" />
 <label>Sandi baru (min. 12 karakter)<input name="p1" type="password" required /></label>
@@ -349,7 +424,7 @@ small.hint{color:var(--mut);font-weight:400}
 </form>
 </div>
 <div class="card">
-<h2>Akun staf</h2>
+<h2><?= icon("user") ?> Akun staf</h2>
 <?php foreach (users_all() as $x): if (($x['role'] ?? '') !== 'staff') continue; ?>
 <form method="post" data-confirm="Cabut akses staf ini?"><div class="item"><span class="grow"><?= h($x['name']) ?></span>
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="user-hapus" /><input type="hidden" name="nu" value="<?= h($x['name']) ?>" />
@@ -364,7 +439,7 @@ small.hint{color:var(--mut);font-weight:400}
 <small>Staf bisa tambah/ubah/tampilkan menu + upload foto. Hapus permanen & pengaturan khusus pemilik.</small>
 </div>
 <div class="card">
-<h2>Log aktivitas (100 terakhir)</h2>
+<h2><?= icon("clock") ?> Log aktivitas</h2>
 <table><?php foreach (ruethies_logs() as $l): ?>
 <tr><td><?= h($l['t']) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
 <?php endforeach; ?></table>
@@ -380,7 +455,7 @@ if (($p === 'ubah' || $p === 'tambah')) {
 if ($p === 'tambah' || $edit):
 ?>
 <div class="card">
-<h2><?= $edit ? 'Ubah menu' : 'Tambah menu' ?></h2>
+<h2><?= icon("edit") ?> <?= $edit ? "Ubah menu" : "Tambah menu" ?></h2>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="save" />
 <input type="hidden" name="i" value="<?= $edit['_i'] ?? -1 ?>" />
@@ -396,27 +471,26 @@ if ($p === 'tambah' || $edit):
 <label><input type="checkbox" name="available" value="1" <?= !isset($edit) || !empty($edit['available']) ? 'checked' : '' ?> /> Tampilkan di web</label>
 <label>Foto <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
 <div class="preview" id="prev-foto"><?php if ($edit && !empty($edit['img'])): ?><img src="../<?= h($edit['img']) ?>" alt="Foto saat ini" style="width:120px;height:90px;object-fit:cover;border-radius:10px" /><?php endif; ?></div>
-<div class="stickybar"><button>💾 Simpan menu</button></div>
-<p style="text-align:center"><a class="linkbtn" href="?">← Kembali tanpa menyimpan</a></p>
+<div class="stickybar"><button><?= icon("save", 18) ?> Simpan menu</button></div>
+<p style="text-align:center"><a class="linkbtn" href="?"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php else: ?>
-<div class="card"><a class="btn" href="?p=tambah">+ Tambah menu</a></div>
 <?php foreach (RUETHIES_CATS as $ck => $cv):
   $items = menu_load(); ?>
 <div class="card">
-<h2><?= h($cv) ?></h2>
+<h2><?= icon("tag") ?> <?= h($cv) ?></h2>
 <?php $ada = false; foreach ($items as $i => $m): if (($m['cat'] ?? '') !== $ck) continue; $ada = true; ?>
 <div class="item <?= empty($m['available']) || $m['available'] === false ? 'off' : '' ?>">
 <?php if (!empty($m['img'])): ?><img class="thumb" src="../<?= h($m['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
 <span class="grow"><b><?= h($m['id']['n'] ?? '-') ?></b><br /><small><?= h($m['id']['d'] ?? '') ?></small>
 <?php if (empty($m['available']) || $m['available'] === false): ?> <span class="badge hide">SEMBUNYI</span><?php endif; ?>
-<?php if (!empty($m['signature'])): ?> <span class="badge">★ SIGNATURE</span><?php endif; ?></span>
+<?php if (!empty($m['signature'])): ?> <span class="badge"><?= icon("star", 12) ?> SIGNATURE</span><?php endif; ?></span>
 <div class="actions">
-<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m['available']) || $m['available'] === false ? '👁️ Tampilkan' : '🚫 Sembunyikan' ?></button></form>
-<a class="btn ghost" href="?p=ubah&i=<?= $i ?>">✏️ Ubah</a>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m["available"]) || $m["available"] === false ? icon("eye", 16) . " Tampilkan" : icon("eyeoff", 16) . " Sembunyikan" ?></button></form>
+<a class="btn ghost" href="?p=ubah&i=<?= $i ?>"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
-<form method="post" data-confirm="Hapus permanen? Data tidak bisa dikembalikan."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger">🗑️ Hapus</button></form>
+<form method="post" data-confirm="Hapus permanen? Data tidak bisa dikembalikan."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
 <?php endif; ?>
 </div>
 </div>
@@ -424,23 +498,23 @@ if ($p === 'tambah' || $edit):
 </div>
 <?php endforeach; ?>
 <div class="card" id="galeri">
-<h2>Galeri Suasana</h2>
+<h2><?= icon("img") ?> Galeri Suasana</h2>
 <p class="sub">Foto tampil berurutan di web. Perubahan maksimal ±5 menit.</p>
 <?php $gal = atmos_load(); foreach ($gal as $gi => $g): ?>
 <div class="item">
 <?php if (!empty($g['img'])): ?><img class="thumb" src="../<?= h($g['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
 <span class="grow"><b><?= h($g['id']['cap'] ?? '-') ?></b><br /><small><?= h($g['en']['cap'] ?? '') ?></small></span>
 <div class="actions">
-<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="-1" /><button class="ghost" <?= $gi === 0 ? 'disabled' : '' ?>>↑</button></form>
-<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="1" /><button class="ghost" <?= $gi === count($gal) - 1 ? 'disabled' : '' ?>>↓</button></form>
-<a class="btn ghost" href="?p=galeri-ubah&gi=<?= $gi ?>">✏️ Ubah</a>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="-1" /><button class="ghost iconbtn" aria-label="Geser ke atas" <?= $gi === 0 ? 'disabled' : '' ?>><?= icon("up", 16) ?></button></form>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="1" /><button class="ghost iconbtn" aria-label="Geser ke bawah" <?= $gi === count($gal) - 1 ? 'disabled' : '' ?>><?= icon("down", 16) ?></button></form>
+<a class="btn ghost" href="?p=galeri-ubah&gi=<?= $gi ?>"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
-<form method="post" data-confirm="Hapus foto ini dari galeri?"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-hapus" /><input type="hidden" name="gi" value="<?= $gi ?>" /><button class="danger">🗑️</button></form>
+<form method="post" data-confirm="Hapus foto ini dari galeri?"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-hapus" /><input type="hidden" name="gi" value="<?= $gi ?>" /><button class="danger iconbtn" aria-label="Hapus foto"><?= icon("trash", 16) ?></button></form>
 <?php endif; ?>
 </div>
 </div>
 <?php endforeach; if (!$gal): ?><p class="sub">Belum ada foto.</p><?php endif; ?>
-<a class="btn" href="?p=galeri-tambah">+ Tambah foto</a>
+<a class="btn" href="?p=galeri-tambah"><?= icon("plus", 16) ?> Tambah foto</a>
 </div>
 <?php
 $gedit = null;
@@ -451,7 +525,7 @@ if (($p === 'galeri-ubah' || $p === 'galeri-tambah')) {
 if ($p === 'galeri-tambah' || $gedit):
 ?>
 <div class="card">
-<h2><?= $gedit ? 'Ubah foto' : 'Tambah foto' ?></h2>
+<h2><?= icon("img") ?> <?= $gedit ? "Ubah foto" : "Tambah foto" ?></h2>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-save" />
 <input type="hidden" name="gi" value="<?= $gedit['_i'] ?? -1 ?>" />
@@ -459,13 +533,13 @@ if ($p === 'galeri-tambah' || $gedit):
 <label>Caption (Inggris, opsional)<span class="count" id="c-cape"></span><input name="cape" maxlength="80" data-count="c-cape" value="<?= h($gedit['en']['cap'] ?? '') ?>" /></label>
 <label>Foto <small class="hint">(JPG/PNG/WebP, maks 8 MB<?= $gedit && !empty($gedit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="gfoto" accept="image/jpeg,image/png,image/webp" data-preview="prev-gfoto" /></label>
 <div class="preview" id="prev-gfoto"><?php if ($gedit && !empty($gedit['img'])): ?><img src="../<?= h($gedit['img']) ?>" alt="Foto saat ini" style="width:120px;height:90px;object-fit:cover;border-radius:10px" /><?php endif; ?></div>
-<div class="stickybar"><button>💾 Simpan foto</button></div>
-<p style="text-align:center"><a class="linkbtn" href="?#galeri">← Kembali tanpa menyimpan</a></p>
+<div class="stickybar"><button><?= icon("save", 18) ?> Simpan foto</button></div>
+<p style="text-align:center"><a class="linkbtn" href="?#galeri"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php endif; ?>
 <?php endif; ?>
 <?php endif; ?>
-</div>
+<?php if ($isGate): ?></div></div><?php else: ?></main></div></div><?php endif; ?>
 </body>
 </html>
