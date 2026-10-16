@@ -204,116 +204,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <meta name="robots" content="noindex, nofollow" />
 <title>Admin — Ruethies Patisserie</title>
 <script src="admin.js" defer></script>
-<style>
-:root{--wine:#7A0000;--wine-deep:#460b0b;--bg:#FAF6F0;--card:#FFFDF9;--ink:#2B2320;--mut:#6F625B;--line:#E7DACA;--ok:#1E7A3C;--bad:#8f1d1d;--amber:#7a5b00;--sh:0 10px 28px -18px rgba(74,13,13,.35)}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);margin:0;font-size:16px;line-height:1.55}
-svg{flex:none;vertical-align:-3px}
-/* ===== layout ===== */
-.shell{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
-.side{background:linear-gradient(180deg,var(--wine-deep),#2e0606);color:#F6E9E4;padding:26px 18px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px}
-.side .mark{display:flex;align-items:center;gap:12px;padding:4px 6px 18px;border-bottom:1px solid rgba(246,233,228,.16);margin-bottom:14px}
-.sealmini{width:44px;height:44px;border-radius:50%;background:var(--wine);display:grid;place-items:center;font-weight:800;font-size:.8rem;letter-spacing:.05em;flex:none;border:1.5px solid rgba(246,233,228,.4)}
-.side .mark b{display:block;font-size:1rem;line-height:1.2}
-.side .mark span{font-size:.72rem;letter-spacing:.22em;opacity:.7}
-.nav{display:flex;flex-direction:column;gap:4px}
-.nav a{display:flex;align-items:center;gap:12px;color:#F6E9E4;text-decoration:none;font-weight:600;font-size:.95rem;padding:12px 14px;border-radius:12px;opacity:.85}
-.nav a:hover{background:rgba(246,233,228,.1);opacity:1}
-.nav a.on{background:var(--wine);opacity:1;box-shadow:var(--sh)}
-.side .who{margin-top:auto;background:rgba(246,233,228,.08);border:1px solid rgba(246,233,228,.16);border-radius:14px;padding:12px 14px;font-size:.85rem}
-.side .who b{display:flex;align-items:center;gap:8px}
-.side .who form{margin:8px 0 0}
-.main{padding:26px 26px 80px;min-width:0}
-.topbar{display:none}
-/* ===== type & cards ===== */
-.gate{min-height:100vh;display:grid;place-items:center;padding:24px 14px;background:radial-gradient(120% 90% at 50% 0%,#5c1010 0%,#2e0606 60%,#1d0404 100%)}
-.gatecard{width:100%;max-width:430px;background:var(--card);border-radius:22px;padding:30px 26px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5);text-align:center}
-.gateseal{width:64px;height:64px;border-radius:50%;background:var(--wine);color:#fff;display:inline-grid;place-items:center;font-weight:800;margin-bottom:10px}
-.gateno{font-size:.7rem;letter-spacing:.3em;color:var(--mut);margin:0 0 14px}
-.gatecard .card{border:0;box-shadow:none;padding:0;margin:0;text-align:left}
-.pagehead{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 4px}
-.pagehead h1{font-size:1.5rem;color:var(--wine-deep);margin:0}
-.pagehead .btn{margin-top:0}
-.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:2px 0 4px}
-.pagehead h1{font-size:1.5rem;color:var(--wine-deep);margin:0}
-.sub{color:var(--mut);font-size:.9rem;margin:2px 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;margin:16px 0;box-shadow:var(--sh)}
-.card h2{font-size:1.08rem;color:var(--wine);margin:0 0 4px;display:flex;align-items:center;gap:10px}
-/* ===== buttons ===== */
-button,.btn{border:0;background:var(--wine);color:#fff;border-radius:12px;padding:12px 22px;font:inherit;font-size:.95rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;min-height:48px}
-button:hover,.btn:hover{filter:brightness(1.08)}
-button:active,.btn:active{transform:scale(.98)}
-button:disabled{opacity:.45;cursor:default;transform:none}
-.ghost{background:#fff;color:var(--wine);border:1.5px solid var(--wine)}
-.danger{background:#fff;color:var(--bad);border:1.5px solid var(--bad)}
-.iconbtn{padding:10px;min-height:44px;min-width:44px;border-radius:12px}
-.linkbtn{background:none;border:0;color:var(--wine);font-size:.9rem;font-weight:600;text-decoration:underline;padding:8px;min-height:0;margin:6px 0 0;cursor:pointer}
-/* ===== alerts ===== */
-.err,.okmsg,.warn{border-radius:12px;padding:12px 16px;display:flex;gap:10px;align-items:flex-start}
-.err{background:#fdecec;border:1px solid #e8a0a0;color:var(--bad)}
-.okmsg{background:#e9f6ee;border:1px solid #9ed3b2;color:var(--ok)}
-.warn{background:#fff7e6;border:1px solid #e3c47f;color:var(--amber)}
-/* ===== stats ===== */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:16px 0}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 12px;text-align:center;box-shadow:var(--sh)}
-.stat .ic{width:38px;height:38px;border-radius:12px;background:#f6ecec;color:var(--wine);display:inline-grid;place-items:center;margin-bottom:6px}
-.stat b{display:block;font-size:1.5rem;color:var(--wine-deep);line-height:1.1}
-.stat span{font-size:.72rem;color:var(--mut)}
-/* ===== items ===== */
-.item{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line);flex-wrap:wrap}
-.item:first-of-type{border-top:0}
-.item img.thumb{width:84px;height:64px;object-fit:cover;border-radius:12px;flex:none;border:1px solid var(--line)}
-.item .grow{flex:1;min-width:160px}
-.item .grow b{font-size:1rem}
-.item .grow small{color:var(--mut)}
-.item.off{opacity:.6}
-.badge{display:inline-flex;align-items:center;gap:4px;font-size:.68rem;font-weight:700;background:#efe7dc;color:var(--wine);border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:2px}
-.badge.hide{background:#f3d9d9;color:var(--bad)}
-.actions{display:flex;gap:8px;flex-wrap:wrap;width:100%}
-.actions button,.actions .btn{margin:0;padding:10px 16px;min-height:44px;font-size:.88rem}
-/* ===== forms ===== */
-label{display:block;font-size:.9rem;font-weight:600;margin-top:14px}
-input,select,textarea{width:100%;margin-top:6px;border:1.5px solid var(--line);border-radius:12px;padding:13px 14px;font:inherit;font-size:1rem;background:#fff;color:var(--ink);min-height:48px}
-input:focus,select:focus,textarea:focus{outline:2px solid var(--wine);outline-offset:1px;border-color:var(--wine)}
-input[type="checkbox"]{width:22px;height:22px;min-height:0;accent-color:var(--wine);vertical-align:-5px;margin-right:8px}
-input[type="file"]{padding:10px}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
-.preview img{max-width:100%;max-height:220px;border-radius:12px;margin-top:10px;display:block;border:1px solid var(--line)}
-.preview small{color:var(--mut)}
-.count{font-size:.75rem;color:var(--mut);float:right;margin-top:14px;font-weight:400}
-.pwrow{display:flex;gap:8px}.pwrow input{flex:1}.pwrow button{flex:none;margin-top:6px;padding:13px 16px}
-small.hint{color:var(--mut);font-weight:400}
-.stickybar{position:sticky;bottom:0;background:rgba(255,253,249,.97);border-top:1px solid var(--line);padding:12px 0 4px;margin:18px -22px -22px;padding-left:22px;padding-right:22px;border-radius:0 0 18px 18px}
-.stickybar button{width:100%;margin-top:0}
-/* ===== settings & log ===== */
-.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
-table{width:100%;font-size:.8rem;border-collapse:collapse}
-th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mut);padding:8px 6px;border-bottom:2px solid var(--line)}
-td{padding:8px 6px;border-bottom:1px solid var(--line);word-break:break-all;vertical-align:top}
-.mono{font-family:ui-monospace,SFMono-Regular,monospace;background:#f4efe8;border-radius:8px;padding:10px 12px;word-break:break-all;font-size:.85rem}
-.empty{border:1.5px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--mut)}
-.empty svg{opacity:.5;margin-bottom:6px}
-/* ===== mobile ===== */
-@media(max-width:899px){
-.shell{display:block}
-.side{display:none}
-.topbar{display:flex;align-items:center;gap:10px;background:var(--wine-deep);color:#F6E9E4;padding:12px 14px;position:sticky;top:0;z-index:10}
-.topbar .sealmini{width:36px;height:36px;font-size:.68rem}
-.topbar b{font-size:.95rem}
-.topbar .sp{flex:1}
-.topbar a.ticon{color:#F6E9E4;text-decoration:none;display:inline-grid;place-items:center;width:42px;height:42px;border-radius:12px;border:1px solid rgba(246,233,228,.3)}
-.topbar a.ticon.on{background:var(--wine)}
-.main{padding:16px 14px 80px}
-.mnav{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
-.mnav a{flex:1;text-align:center;background:var(--card);border:1.5px solid var(--line);color:var(--wine);font-weight:700;font-size:.85rem;border-radius:12px;padding:11px 6px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;min-height:46px}
-.mnav a.on{background:var(--wine);border-color:var(--wine);color:#fff}
-.stats{grid-template-columns:repeat(2,1fr)}
-.fgrid,.setgrid{grid-template-columns:1fr}
-.actions button,.actions .btn{flex:1;text-align:center}
-}
-@media(min-width:900px){.mnav{display:none}}
-@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-</style>
+<link rel="stylesheet" href="admin.css" />
 </head>
 <body>
 <?php $isGate = ($p === 'login' || $p === 'kode'); ?>
@@ -331,7 +222,7 @@ td{padding:8px 6px;border-bottom:1px solid var(--line);word-break:break-all;vert
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 </nav>
 <div class="who"><b><?= icon('user', 16) ?> <?= h($me['name']) ?></b><br /><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small>
-<form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost" style="width:100%;margin-top:10px;padding:10px"><?= icon('out', 16) ?> Keluar</button></form>
+<form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
 </aside>
 <div class="maincol">
@@ -365,7 +256,7 @@ td{padding:8px 6px;border-bottom:1px solid var(--line);word-break:break-all;vert
 <label>Nama pengguna<input name="u" required autocomplete="username" /></label>
 <label>Kata sandi
 <span class="pwrow"><input id="pw-login" name="p" type="password" required autocomplete="current-password" /><button type="button" class="ghost" data-pw-toggle="pw-login">Lihat</button></span></label>
-<button style="width:100%">Masuk</button>
+<button class="w100">Masuk</button>
 </form>
 </div>
 <?php elseif ($p === 'kode'): ?>
@@ -374,8 +265,8 @@ td{padding:8px 6px;border-bottom:1px solid var(--line);word-break:break-all;vert
 <p class="sub"><b>Pemilik:</b> buka aplikasi Authenticator di HP, masukkan 6 digit kode yang tampil.</p>
 <form method="post" autocomplete="off">
 <input type="hidden" name="aksi" value="kode" />
-<label>Kode OTP<input name="c" inputmode="numeric" maxlength="6" required autocomplete="one-time-code" style="font-size:1.4rem;letter-spacing:.3em;text-align:center" /></label>
-<button style="width:100%">Verifikasi</button>
+<label>Kode OTP<input name="c" class="otp" inputmode="numeric" maxlength="6" required autocomplete="one-time-code" /></label>
+<button class="w100">Verifikasi</button>
 </form>
 </div>
 <?php else: ?>
@@ -470,9 +361,9 @@ if ($p === 'tambah' || $edit):
 <label><input type="checkbox" name="signature" value="1" <?= !empty($edit['signature']) ? 'checked' : '' ?> /> Tampilkan di Signature <small class="hint">(maks 3)</small></label>
 <label><input type="checkbox" name="available" value="1" <?= !isset($edit) || !empty($edit['available']) ? 'checked' : '' ?> /> Tampilkan di web</label>
 <label>Foto <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
-<div class="preview" id="prev-foto"><?php if ($edit && !empty($edit['img'])): ?><img src="../<?= h($edit['img']) ?>" alt="Foto saat ini" style="width:120px;height:90px;object-fit:cover;border-radius:10px" /><?php endif; ?></div>
+<div class="preview" id="prev-foto"><?php if ($edit && !empty($edit['img'])): ?><img class="thumb-sm" src="../<?= h($edit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan menu</button></div>
-<p style="text-align:center"><a class="linkbtn" href="?"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
+<p class="center"><a class="linkbtn" href="?"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php else: ?>
@@ -532,9 +423,9 @@ if ($p === 'galeri-tambah' || $gedit):
 <label>Caption (Indonesia)<span class="count" id="c-cap"></span><input name="cap" maxlength="80" required data-count="c-cap" value="<?= h($gedit['id']['cap'] ?? '') ?>" /></label>
 <label>Caption (Inggris, opsional)<span class="count" id="c-cape"></span><input name="cape" maxlength="80" data-count="c-cape" value="<?= h($gedit['en']['cap'] ?? '') ?>" /></label>
 <label>Foto <small class="hint">(JPG/PNG/WebP, maks 8 MB<?= $gedit && !empty($gedit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="gfoto" accept="image/jpeg,image/png,image/webp" data-preview="prev-gfoto" /></label>
-<div class="preview" id="prev-gfoto"><?php if ($gedit && !empty($gedit['img'])): ?><img src="../<?= h($gedit['img']) ?>" alt="Foto saat ini" style="width:120px;height:90px;object-fit:cover;border-radius:10px" /><?php endif; ?></div>
+<div class="preview" id="prev-gfoto"><?php if ($gedit && !empty($gedit['img'])): ?><img class="thumb-sm" src="../<?= h($gedit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan foto</button></div>
-<p style="text-align:center"><a class="linkbtn" href="?#galeri"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
+<p class="center"><a class="linkbtn" href="?#galeri"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php endif; ?>

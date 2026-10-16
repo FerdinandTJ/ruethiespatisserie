@@ -28,19 +28,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
 <title>Setup Admin — Ruethies Patisserie</title>
-<style>body{font-family:system-ui,sans-serif;background:#FAF6F0;color:#2B2320;padding:24px 16px}.w{max-width:480px;margin:0 auto;background:#fff;border:1px solid #E7DACA;border-radius:16px;padding:22px}label{display:block;font-weight:600;font-size:.85rem;margin-top:12px}input{width:100%;margin-top:6px;border:1px solid #E7DACA;border-radius:12px;padding:11px 13px;font:inherit}button{border:0;background:#7A0000;color:#fff;border-radius:999px;padding:11px 22px;font:inherit;font-weight:600;cursor:pointer;margin-top:14px}.err{background:#fdecec;border:1px solid #e8a0a0;color:#8f1d1d;border-radius:12px;padding:10px 14px}</style>
+<link rel="stylesheet" href="admin.css" />
 </head>
 <body>
-<div class="w">
-<h1>Setup akun pemilik</h1>
-<p>Jalankan sekali saja, lalu <b>hapus file ini</b>.</p>
+<div class="gate"><div class="gatecard">
+<div class="gateseal">N°51</div>
+<p class="gateno">RUETHIES PATISSERIE · ADMIN</p>
+<div class="card">
+<h2>Setup akun pemilik</h2>
+<p class="sub">Jalankan sekali saja, lalu <b>hapus file ini</b>.</p>
 <?php if ($err): ?><p class="err"><?= h($err) ?></p><?php endif; ?>
 <form method="post" autocomplete="off">
 <label>Nama pengguna<input name="u" required autocomplete="username" /></label>
 <label>Kata sandi (min. 12 karakter)<input name="p1" type="password" required autocomplete="new-password" /></label>
 <label>Ulangi kata sandi<input name="p2" type="password" required autocomplete="new-password" /></label>
-<button>Buat akun pemilik</button>
+<button class="w100">Buat akun pemilik</button>
 </form>
 </div>
+</div></div>
 </body>
 </html>
