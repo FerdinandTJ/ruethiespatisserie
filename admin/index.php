@@ -67,7 +67,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
       $items[$i]['available'] = empty($items[$i]['available']) || $items[$i]['available'] === false ? true : false;
-      if (menu_save($items)) { ruethies_log($me['name'], 'toggle', ($items[$i]['id']['n'] ?? '') . ' => ' . ($items[$i]['available'] ? 'tampil' : 'sembunyi')); header('Location: ?ok=tampil'); exit; }
+      if (menu_save($items)) { ruethies_log($me['name'], 'toggle', ($items[$i]['id']['n'] ?? '') . ' => ' . ($items[$i]['available'] ? 'tampil' : 'sembunyi')); header('Location: ?ok=tampil#item-' . $i); exit; }
       $err = 'Gagal menyimpan.';
     }
   }
@@ -164,7 +164,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $j = $i + ($d > 0 ? 1 : -1);
     if (isset($items[$i], $items[$j])) {
       [$items[$i], $items[$j]] = [$items[$j], $items[$i]];
-      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-urut', (string)$i); header('Location: ?ok=simpan#galeri'); exit; }
+      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-urut', (string)$i); header('Location: ?ok=simpan#gitem-' . $j); exit; }
       $err = 'Gagal menyimpan.';
     }
   }
@@ -275,7 +275,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </form>
 </div>
 <?php else: ?>
-<div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan langsung tampil di web.</p></div><a class="btn" href="?p=tambah"><?= icon('plus', 16) ?> Tambah menu</a></div>
+<div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan langsung tampil di web.</p></div><a class="btn" href="?p=tambah#formulir"><?= icon('plus', 16) ?> Tambah menu</a></div>
 <?php if (is_owner($me) && is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Satu langkah terakhir:</b> buka File Manager hosting, hapus file <span class="mono">admin/setup.php</span>, lalu muat ulang halaman ini. Peringatan ini hilang sendiri setelah file dihapus.</p><?php endif; ?>
 <?php if ($p !== 'pengaturan' && $p !== 'tambah' && $p !== 'ubah' && $p !== 'galeri-tambah' && $p !== 'galeri-ubah'):
   $_items = menu_load(); $_vis = array_filter($_items, fn($m) => !empty($m['available']));
@@ -350,7 +350,7 @@ if (($p === 'ubah' || $p === 'tambah')) {
 }
 if ($p === 'tambah' || $edit):
 ?>
-<div class="card">
+<div class="card" id="formulir">
 <h2><?= icon("edit") ?> <?= $edit ? "Ubah menu" : "Tambah menu" ?></h2>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="save" />
@@ -377,14 +377,14 @@ if ($p === 'tambah' || $edit):
 <div class="card">
 <h2><?= icon("tag") ?> <?= h($cv) ?></h2>
 <?php $ada = false; foreach ($items as $i => $m): if (($m['cat'] ?? '') !== $ck) continue; $ada = true; ?>
-<div class="item <?= empty($m['available']) || $m['available'] === false ? 'off' : '' ?>">
+<div class="item <?= empty($m['available']) || $m['available'] === false ? 'off' : '' ?>" id="item-<?= $i ?>">
 <?php if (!empty($m['img'])): ?><img class="thumb" src="../<?= h($m['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
 <span class="grow"><b><?= h($m['id']['n'] ?? '-') ?></b><br /><small><?= h($m['id']['d'] ?? '') ?></small>
 <?php if (empty($m['available']) || $m['available'] === false): ?> <span class="badge hide">SEMBUNYI</span><?php endif; ?>
 <?php if (!empty($m['signature'])): ?> <span class="badge"><?= icon("star", 12) ?> SIGNATURE</span><?php endif; ?></span>
 <div class="actions">
 <form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m["available"]) || $m["available"] === false ? icon("eye", 16) . " Tampilkan" : icon("eyeoff", 16) . " Sembunyikan" ?></button></form>
-<a class="btn ghost" href="?p=ubah&i=<?= $i ?>"><?= icon("edit", 16) ?> Ubah</a>
+<a class="btn ghost" href="?p=ubah&i=<?= $i ?>#formulir"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
 <form method="post" data-confirm="Hapus permanen? Data tidak bisa dikembalikan."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
 <?php endif; ?>
@@ -397,20 +397,20 @@ if ($p === 'tambah' || $edit):
 <h2><?= icon("img") ?> Galeri Suasana</h2>
 <p class="sub">Foto tampil berurutan di web dan langsung tayang.</p>
 <?php $gal = atmos_load(); foreach ($gal as $gi => $g): ?>
-<div class="item">
+<div class="item" id="gitem-<?= $gi ?>">
 <?php if (!empty($g['img'])): ?><img class="thumb" src="../<?= h($g['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
 <span class="grow"><b><?= h($g['id']['cap'] ?? '-') ?></b><br /><small><?= h($g['en']['cap'] ?? '') ?></small></span>
 <div class="actions">
 <form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="-1" /><button class="ghost iconbtn" aria-label="Geser ke atas" <?= $gi === 0 ? 'disabled' : '' ?>><?= icon("up", 16) ?></button></form>
 <form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="1" /><button class="ghost iconbtn" aria-label="Geser ke bawah" <?= $gi === count($gal) - 1 ? 'disabled' : '' ?>><?= icon("down", 16) ?></button></form>
-<a class="btn ghost" href="?p=galeri-ubah&gi=<?= $gi ?>"><?= icon("edit", 16) ?> Ubah</a>
+<a class="btn ghost" href="?p=galeri-ubah&gi=<?= $gi ?>#formulir-g"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
 <form method="post" data-confirm="Hapus foto ini dari galeri?"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-hapus" /><input type="hidden" name="gi" value="<?= $gi ?>" /><button class="danger iconbtn" aria-label="Hapus foto"><?= icon("trash", 16) ?></button></form>
 <?php endif; ?>
 </div>
 </div>
 <?php endforeach; if (!$gal): ?><p class="sub">Belum ada foto.</p><?php endif; ?>
-<a class="btn" href="?p=galeri-tambah"><?= icon("plus", 16) ?> Tambah foto</a>
+<a class="btn" href="?p=galeri-tambah#formulir-g"><?= icon("plus", 16) ?> Tambah foto</a>
 </div>
 <?php
 $gedit = null;
@@ -420,7 +420,7 @@ if (($p === 'galeri-ubah' || $p === 'galeri-tambah')) {
 }
 if ($p === 'galeri-tambah' || $gedit):
 ?>
-<div class="card">
+<div class="card" id="formulir-g">
 <h2><?= icon("img") ?> <?= $gedit ? "Ubah foto" : "Tambah foto" ?></h2>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-save" />

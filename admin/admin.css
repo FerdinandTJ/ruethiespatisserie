@@ -111,4 +111,6 @@ td{padding:8px 6px;border-bottom:1px solid var(--line);word-break:break-all;vert
 .otp{font-size:1.4rem;letter-spacing:.3em;text-align:center}
 .thumb-sm{width:120px;height:90px;object-fit:cover;border-radius:10px}
 .outbtn{margin-top:10px;padding:10px}
+/* jangkar lompat tidak tertutup topbar lengket */
+#formulir,#formulir-g,#galeri,.item{scroll-margin-top:76px}
 
