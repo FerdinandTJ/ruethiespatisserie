@@ -12,7 +12,11 @@ $err = ''; $ok = $_GET['ok'] ?? '';
 /* ---------- aksi POST ---------- */
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   $aksi = $_POST['aksi'] ?? '';
-
+  // POST kosong padahal ada isi terkirim = ukuran melewati batas server (post_max_size).
+  // Terjadi SEBELUM kode kita jalan — beri pesan yang bisa ditindaklanjuti.
+  if ($aksi === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    $err = 'Foto terlalu besar untuk server (batas ±8 MB). Kecilkan dulu (mis. screenshot/kompres di HP), lalu coba lagi.';
+  } else
   // Login: username + password (rate-limit + CSRF tidak dipakai di form login pertama agar tidak bocor oracle;
   // proteksi = rate-limit per IP + sesi baru).
   if ($aksi === 'login') {
