@@ -14,16 +14,17 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml
 </IfModule>
 
-# Cache statis 30 hari (HTML jangan di-cache lama, menu.json pendek agar update cepat tayang)
+# Cache: aset versi (query ?v=) 30 hari; HTML 10 menit; JSON selalu revalidasi (menu instan)
 <IfModule mod_expires.c>
 ExpiresActive On
-ExpiresByType text/html "access plus 1 hour"
+ExpiresByType text/html "access plus 10 minutes"
 ExpiresByType text/css "access plus 30 days"
 ExpiresByType application/javascript "access plus 30 days"
-ExpiresByType application/json "access plus 5 minutes"
 ExpiresByType image/jpeg "access plus 30 days"
 ExpiresByType image/png "access plus 30 days"
 ExpiresByType image/svg+xml "access plus 30 days"
+ExpiresByType image/webp "access plus 30 days"
+ExpiresByType application/json "access plus 0 seconds"
 </IfModule>
 
 <IfModule mod_headers.c>
@@ -50,10 +51,12 @@ RewriteRule ^\.git - [F,L]
 Require all denied
 </FilesMatch>
 
-# Data JSON tayang instan: revalidasi tiap 5 menit
+# Data JSON (menu/galeri): JANGAN disimpan — browser wajib tanya versi baru tiap buka web.
+# Server menjawab 304 mungil bila tak berubah. Inilah yang membuat update admin instan.
 <FilesMatch "\.json$">
 <IfModule mod_headers.c>
-Header set Cache-Control "public, max-age=300, must-revalidate"
+Header set Cache-Control "no-cache, must-revalidate"
+Header unset Expires
 </IfModule>
 </FilesMatch>
 

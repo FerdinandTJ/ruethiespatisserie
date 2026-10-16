@@ -228,7 +228,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <div class="who"><div class="who-id"><?= icon('user', 16) ?><div><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></div>
 <form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
-<p class="sidefoot">Perubahan tampil di web ±5 menit.</p>
+<p class="sidefoot">Perubahan langsung tampil di web.</p>
 </aside>
 <div class="maincol">
 <div class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span>
@@ -244,7 +244,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </div>
 <?php endif; ?>
 <?php if ($err): ?><p class="err"><?= h($err) ?></p><?php endif; ?>
-<?php if ($ok === 'simpan'): ?><p class="okmsg">Tersimpan. Cek web ±5 menit lagi.</p><?php endif; ?>
+<?php if ($ok === 'simpan'): ?><p class="okmsg">Tersimpan dan langsung tampil di web.</p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
 <?php if ($ok === 'hapus'): ?><p class="okmsg">Item dihapus permanen.</p><?php endif; ?>
 <?php if ($ok === 'pw'): ?><p class="okmsg">Kata sandi diganti.</p><?php endif; ?>
@@ -275,7 +275,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </form>
 </div>
 <?php else: ?>
-<div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan tampil di web ±5 menit.</p></div><a class="btn" href="?p=tambah"><?= icon('plus', 16) ?> Tambah menu</a></div>
+<div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan langsung tampil di web.</p></div><a class="btn" href="?p=tambah"><?= icon('plus', 16) ?> Tambah menu</a></div>
 <?php if (is_owner($me) && is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Satu langkah terakhir:</b> buka File Manager hosting, hapus file <span class="mono">admin/setup.php</span>, lalu muat ulang halaman ini. Peringatan ini hilang sendiri setelah file dihapus.</p><?php endif; ?>
 <?php if ($p !== 'pengaturan' && $p !== 'tambah' && $p !== 'ubah' && $p !== 'galeri-tambah' && $p !== 'galeri-ubah'):
   $_items = menu_load(); $_vis = array_filter($_items, fn($m) => !empty($m['available']));
@@ -395,7 +395,7 @@ if ($p === 'tambah' || $edit):
 <?php endforeach; ?>
 <div class="card" id="galeri">
 <h2><?= icon("img") ?> Galeri Suasana</h2>
-<p class="sub">Foto tampil berurutan di web. Perubahan maksimal ±5 menit.</p>
+<p class="sub">Foto tampil berurutan di web dan langsung tayang.</p>
 <?php $gal = atmos_load(); foreach ($gal as $gi => $g): ?>
 <div class="item">
 <?php if (!empty($g['img'])): ?><img class="thumb" src="../<?= h($g['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
