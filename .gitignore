@@ -14,3 +14,5 @@ PANDUAN-ADMIN.md
 admin/data/*.json
 admin/data/*.jsonl
 admin/data/backups/
+admin/ruethies-data/
+ruethies-data/

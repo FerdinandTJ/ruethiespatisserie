@@ -3,9 +3,9 @@
 // tidak berisi kredensial (kredensial hanya di RUETHIES_DATA/users.json yang dilindungi .htaccess).
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 
-const RUETHIES_PUBLIC = __DIR__ . '/..'; // public_html (admin adalah subdirektori)
-const RUETHIES_MENU  = RUETHIES_PUBLIC . '/menu.json';
-const RUETHIES_IMGDIR = RUETHIES_PUBLIC . '/images/menu';
+define('RUETHIES_PUBLIC', dirname(__DIR__)); // public_html (admin adalah subdirektori)
+define('RUETHIES_MENU', RUETHIES_PUBLIC . '/menu.json');
+define('RUETHIES_IMGDIR', RUETHIES_PUBLIC . '/images/menu');
 
 // Data sensitif: utamakan di LUAR web root (sejajar public_html), fallback ke admin/data/ (dilindungi .htaccess).
 function ruethies_data_dir(): string {
