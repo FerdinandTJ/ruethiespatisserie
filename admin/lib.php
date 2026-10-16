@@ -367,3 +367,64 @@ function faq_apply(array $items): array {
   if (@file_put_contents($llmsf, $llms, LOCK_EX) === false) return [false, 'index.html updated, TAPI llms.txt gagal — hubungi pengembang.'];
   return [true, ''];
 }
+
+/* ---------- inti gambar bersama + jalur base64 (anti-blokir firewall multipart) ---------- */
+function img_crop_resize($src, int $tw, int $th) {
+  $w = imagesx($src); $hh = imagesy($src);
+  if ($w < 2 || $hh < 2) return null;
+  $tr = $tw / $th; $sr = $w / $hh;
+  if ($sr > $tr) { $nw = (int)($hh * $tr); $x = (int)(($w - $nw) / 2); $c = imagecrop($src, ['x' => $x, 'y' => 0, 'width' => $nw, 'height' => $hh]); }
+  else { $nh = (int)($w / $tr); $y = (int)(($hh - $nh) / 2); $c = imagecrop($src, ['x' => 0, 'y' => $y, 'width' => $w, 'height' => $nh]); }
+  if (!$c) return null;
+  $dst = imagecreatetruecolor($tw, $th);
+  imagecopyresampled($dst, $c, 0, 0, 0, 0, $tw, $th, imagesx($c), imagesy($c));
+  imagedestroy($c);
+  return $dst;
+}
+function img_unique(string $dir, string $slug): string {
+  if (!is_dir($dir)) @mkdir($dir, 0755, true);
+  $try = $slug !== '' ? $slug : 'foto'; $i = 2;
+  while (is_file("$dir/$try.jpg")) { $try = "$slug-$i"; $i++; }
+  return $try;
+}
+// Ambil bytes gambar dari field base64 POST biasa. [raw|null, err|null]; [null,null] = tidak ada.
+function b64_image(string $field, int $maxBytes): array {
+  $v = $_POST[$field] ?? '';
+  if (!is_string($v) || $v === '') return [null, null];
+  if (strlen($v) > (int)($maxBytes * 1.5)) return [null, 'Foto terlalu besar.'];
+  if (!preg_match('#^data:image/(jpeg|png|webp);base64,#', $v)) return [null, 'Format foto tidak dikenali.'];
+  $raw = base64_decode(substr($v, strpos($v, ',') + 1), true);
+  if ($raw === false || strlen($raw) === 0) return [null, 'Foto rusak, coba lagi.'];
+  if (strlen($raw) > $maxBytes) return [null, 'Foto terlalu besar.'];
+  $im = @imagecreatefromstring($raw);
+  if (!$im) return [null, 'File gambar tidak valid.'];
+  imagedestroy($im);
+  return [$raw, null];
+}
+function photo_upload_raw(string $raw, string $name): array {
+  $src = @imagecreatefromstring($raw);
+  if (!$src) return [null, 'File gambar tidak valid.'];
+  $dst = img_crop_resize($src, 640, 480); imagedestroy($src);
+  if (!$dst) return [null, 'Gagal memproses foto.'];
+  $try = img_unique(RUETHIES_IMGDIR, photo_slug($name));
+  if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", 68)) { imagedestroy($dst); return [null, 'Gagal menyimpan foto.']; }
+  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", 66);
+  imagedestroy($dst);
+  return ["images/menu/$try.jpg", null];
+}
+function galeri_upload_raw(string $raw, string $caption): array {
+  $src = @imagecreatefromstring($raw);
+  if (!$src) return [null, null, 'File gambar tidak valid.'];
+  if (!is_dir(RUETHIES_PUBLIC . '/images')) @mkdir(RUETHIES_PUBLIC . '/images', 0755, true);
+  $base = 'suasana-' . photo_slug($caption); $try = $base; $i = 2;
+  while (is_file(RUETHIES_PUBLIC . "/images/$try.jpg")) { $try = "$base-$i"; $i++; }
+  $t1 = img_crop_resize($src, 640, 480);
+  $t2 = img_crop_resize($src, 1200, 900);
+  imagedestroy($src);
+  if (!$t1 || !$t2) { if ($t1) imagedestroy($t1); if ($t2) imagedestroy($t2); return [null, null, 'Gagal memproses foto.']; }
+  $ok = @imagejpeg($t1, RUETHIES_PUBLIC . "/images/$try.jpg", 68) && @imagejpeg($t2, RUETHIES_PUBLIC . "/images/$try-xl.jpg", 70);
+  if (function_exists('imagewebp')) { @imagewebp($t1, RUETHIES_PUBLIC . "/images/$try.webp", 66); @imagewebp($t2, RUETHIES_PUBLIC . "/images/$try-xl.webp", 68); }
+  imagedestroy($t1); imagedestroy($t2);
+  if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
+  return ["images/$try.jpg", "images/$try-xl.jpg", null];
+}

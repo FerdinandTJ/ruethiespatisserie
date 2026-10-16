@@ -82,6 +82,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!empty($_FILES['foto']['name'] ?? '')) {
       [$path, $perr] = photo_upload($_FILES['foto'], $_POST['n'] ?? 'menu');
       if ($perr) $err = $perr; else $img = $path;
+    } elseif (!empty($_POST['foto_b64'] ?? '')) {
+      [$braw, $berr] = b64_image('foto_b64', 3 * 1024 * 1024);
+      if ($berr) $err = $berr;
+      else { [$path, $perr] = photo_upload_raw($braw, $_POST['n'] ?? 'menu'); if ($perr) $err = $perr; else $img = $path; }
     }
     if ($err === '') {
       $row = menu_validate(array_merge($_POST, ['img' => $img]));
@@ -149,6 +153,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!empty($_FILES['gfoto']['name'] ?? '')) {
       [$p1, $p2, $perr] = galeri_upload($_FILES['gfoto'], $_POST['cap'] ?? 'suasana');
       if ($perr) $err = $perr; else { $img = $p1; $full = $p2; }
+    } elseif (!empty($_POST['gfoto_b64'] ?? '')) {
+      [$braw, $berr] = b64_image('gfoto_b64', 3 * 1024 * 1024);
+      if ($berr) $err = $berr;
+      else { [$p1, $p2, $perr] = galeri_upload_raw($braw, $_POST['cap'] ?? 'suasana'); if ($perr) $err = $perr; else { $img = $p1; $full = $p2; } }
     }
     if ($err === '') {
       $cap = trim(strip_tags($_POST['cap'] ?? '')); $cape = trim(strip_tags($_POST['cape'] ?? ''));
