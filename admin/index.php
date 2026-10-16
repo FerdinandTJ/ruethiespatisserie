@@ -178,6 +178,42 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       $err = 'Gagal menghapus.';
     }
   }
+  elseif ($aksi === 'faq-save') {
+    $items = faq_load(); $i = (int)($_POST['fi'] ?? -1);
+    $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
+    $row = faq_validate($_POST);
+    if (!$row) $err = 'Periksa isian: pertanyaan wajib (maks 120), jawaban wajib (maks 400). Tautan format [teks](https://...).';
+    else {
+      if ($old) $items[$i] = $row; else $items[] = $row;
+      [$okf, $msg] = faq_apply($items);
+      if ($okf) { ruethies_log($me['name'], $old ? 'faq-ubah' : 'faq-tambah', $row['q']); header('Location: ?ok=simpan#faqman'); exit; }
+      $err = $msg;
+    }
+  }
+  elseif ($aksi === 'faq-gerak') {
+    $items = faq_load(); $i = (int)($_POST['fi'] ?? -1); $d = (int)($_POST['dir'] ?? 0);
+    $j = $i + ($d > 0 ? 1 : -1);
+    if (isset($items[$i], $items[$j])) {
+      [$items[$i], $items[$j]] = [$items[$j], $items[$i]];
+      [$okf, $msg] = faq_apply($items);
+      if ($okf) { ruethies_log($me['name'], 'faq-urut', (string)$i); header('Location: ?ok=simpan#faqman'); exit; }
+      $err = $msg;
+    }
+  }
+  elseif ($aksi === 'faq-hapus') {
+    if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
+    $items = faq_load(); $i = (int)($_POST['fi'] ?? -1);
+    if (isset($items[$i])) {
+      if (count($items) <= 1) $err = 'Minimal 1 FAQ harus ada.';
+      else {
+        $nm = $items[$i]['q'] ?? '';
+        array_splice($items, $i, 1);
+        [$okf, $msg] = faq_apply($items);
+        if ($okf) { ruethies_log($me['name'], 'faq-hapus', $nm); header('Location: ?ok=hapus#faqman'); exit; }
+        $err = $msg;
+      }
+    }
+  }
   elseif ($aksi === 'user-hapus') {
     if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
     $nm = (string)($_POST['nu'] ?? '');
@@ -221,6 +257,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <p class="navcap">Kelola</p>
 <a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
 <a href="?#galeri"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
+<a href="?#faqman"><?= icon('check') ?> FAQ <span class="cnt"><?= count(faq_load()) ?></span></a>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
 <a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>
@@ -234,12 +271,14 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <div class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span>
 <a class="ticon <?= $p !== 'pengaturan' ? 'on' : '' ?>" href="?" aria-label="Menu"><?= icon('menu') ?></a>
 <a class="ticon" href="?#galeri" aria-label="Galeri"><?= icon('img') ?></a>
+<a class="ticon" href="?#faqman" aria-label="FAQ"><?= icon('check') ?></a>
 <?php if (is_owner($me)): ?><a class="ticon <?= $p === 'pengaturan' ? 'on' : '' ?>" href="?p=pengaturan" aria-label="Pengaturan"><?= icon('gear') ?></a><?php endif; ?>
 </div>
 <main class="main">
 <div class="mnav">
 <a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu', 16) ?> Menu</a>
 <a href="?#galeri"><?= icon('img', 16) ?> Galeri</a>
+<a href="?#faqman"><?= icon('check', 16) ?> FAQ</a>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
 <?php endif; ?>
@@ -431,6 +470,47 @@ if ($p === 'galeri-tambah' || $gedit):
 <div class="preview" id="prev-gfoto"><?php if ($gedit && !empty($gedit['img'])): ?><img class="thumb-sm" src="../<?= h($gedit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan foto</button></div>
 <p class="center"><a class="linkbtn" href="?#galeri"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
+</form>
+</div>
+<?php endif; ?>
+<div class="card" id="faqman">
+<h2><?= icon("check") ?> Tanya-Jawab (FAQ)</h2>
+<p class="sub">Tampil di web sebagai daftar buka-tutup + dibaca Google & AI. Tautan format <span class="mono">[teks](https://...)</span>.</p>
+<?php $faqs = faq_load(); foreach ($faqs as $fi => $f): ?>
+<div class="item" id="fitem-<?= $fi ?>">
+<span class="grow"><b><?= h($f['q']) ?></b><br /><small><?= h(mb_strimwidth(faq_plain($f['a']), 0, 90, '…')) ?></small></span>
+<div class="actions">
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="faq-gerak" /><input type="hidden" name="fi" value="<?= $fi ?>" /><input type="hidden" name="dir" value="-1" /><button class="ghost iconbtn" aria-label="Geser ke atas" <?= $fi === 0 ? 'disabled' : '' ?>><?= icon("up", 16) ?></button></form>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="faq-gerak" /><input type="hidden" name="fi" value="<?= $fi ?>" /><input type="hidden" name="dir" value="1" /><button class="ghost iconbtn" aria-label="Geser ke bawah" <?= $fi === count($faqs) - 1 ? 'disabled' : '' ?>><?= icon("down", 16) ?></button></form>
+<a class="btn ghost" href="?p=faq-ubah&fi=<?= $fi ?>#formulir-f"><?= icon("edit", 16) ?> Ubah</a>
+<?php if (is_owner($me)): ?>
+<form method="post" data-confirm="Hapus pertanyaan ini?"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="faq-hapus" /><input type="hidden" name="fi" value="<?= $fi ?>" /><button class="danger iconbtn" aria-label="Hapus FAQ"><?= icon("trash", 16) ?></button></form>
+<?php endif; ?>
+</div>
+</div>
+<?php endforeach; ?>
+<a class="btn" href="?p=faq-tambah#formulir-f"><?= icon("plus", 16) ?> Tambah pertanyaan</a>
+</div>
+<?php
+$fedit = null;
+if (($p === 'faq-ubah' || $p === 'faq-tambah')) {
+  $f0 = faq_load(); $fei = (int)($_GET['fi'] ?? -1);
+  if ($p === 'faq-ubah' && isset($f0[$fei])) $fedit = $f0[$fei] + ['_i' => $fei];
+}
+if ($p === 'faq-tambah' || $fedit):
+?>
+<div class="card" id="formulir-f">
+<h2><?= icon("check") ?> <?= $fedit ? "Ubah pertanyaan" : "Tambah pertanyaan" ?></h2>
+<form method="post">
+<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="faq-save" />
+<input type="hidden" name="fi" value="<?= $fedit['_i'] ?? -1 ?>" />
+<label>Pertanyaan (Indonesia)<span class="count" id="c-fq"></span><input name="q" maxlength="120" required data-count="c-fq" value="<?= h($fedit['q'] ?? '') ?>" /></label>
+<label>Jawaban (Indonesia)<span class="count" id="c-fa"></span><textarea name="a" rows="3" maxlength="400" required data-count="c-fa"><?= h($fedit['a'] ?? '') ?></textarea></label>
+<label>Pertanyaan (Inggris, opsional)<input name="qe" maxlength="120" value="<?= h($fedit['qe'] ?? '') ?>" /></label>
+<label>Jawaban (Inggris, opsional)<textarea name="ae" rows="3" maxlength="400"><?= h($fedit['ae'] ?? '') ?></textarea></label>
+<p class="sub">Tautan ditulis <span class="mono">[teks](https://...)</span> — contoh: [Dapatkan rute](https://www.google.com/maps/dir/?api=1&amp;destination=-6.3443722,107.1490519)</p>
+<div class="stickybar"><button><?= icon("save", 18) ?> Simpan FAQ</button></div>
+<p class="center"><a class="linkbtn" href="?#faqman"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php endif; ?>

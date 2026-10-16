@@ -28,12 +28,14 @@
 ## Reservasi
 Reservasi via WhatsApp ke +62-851-3928-1257. Format: nama, jumlah tamu, tanggal, jam, catatan.
 
+<!-- FAQ:START -->
 ## FAQ
-- **Di mana lokasinya?** Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan.
-- **Jam buka?** Setiap hari 09.00–21.00 WIB.
-- **Cara reservasi?** Via WhatsApp 0851-3928-1257.
-- **Apakah pastel/kroket/risol selalu ada?** Digoreng dadakan; tanya ketersediaan harian via WhatsApp.
-- **Kisaran harga?** Rp20.000–Rp85.000.
+- **Di mana lokasi Ruethies Patisserie?** Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530. [Dapatkan rute](https://www.google.com/maps/dir/?api=1&destination=-6.3443722,107.1490519)
+- **Jam berapa buka?** Setiap hari pukul 09.00–21.00 WIB.
+- **Bagaimana cara reservasi?** Melalui WhatsApp [0851-3928-1257](https://wa.me/6285139281257) — sebutkan nama, jumlah tamu, tanggal, jam, dan catatan.
+- **Apakah pastel, kroket, dan risol selalu tersedia?** Digoreng dadakan (waktu tunggu sekitar 10 menit). Silakan tanya ketersediaan harian via WhatsApp.
+- **Berapa kisaran harga?** Rp20.000–Rp85.000.
+<!-- FAQ:END -->
 
 ## Halaman
 - Beranda & signature: https://ruethiespatisserie.com/

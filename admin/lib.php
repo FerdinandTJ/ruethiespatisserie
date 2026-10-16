@@ -285,3 +285,85 @@ function photo_upload(array $file, string $name): array {
   imagedestroy($dst);
   return ["images/menu/$try.jpg", null];
 }
+
+/* ---------- FAQ: sumber faq.json, tulis ulang blok statis index.html + llms.txt ---------- */
+const RUETHIES_FAQ = RUETHIES_PUBLIC . '/faq.json';
+function faq_load(): array {
+  $d = jread(RUETHIES_FAQ, []);
+  return is_array($d) ? array_values(array_filter($d, fn($x) => is_array($x))) : [];
+}
+function faq_validate(array $in): ?array {
+  $q = trim(strip_tags($in['q'] ?? '')); if ($q === '' || mb_strlen($q) > 120) return null;
+  $a = trim($in['a'] ?? ''); if ($a === '' || mb_strlen($a) > 400) return null;
+  $qe = trim(strip_tags($in['qe'] ?? '')); if (mb_strlen($qe) > 120) return null;
+  $ae = trim($in['ae'] ?? ''); if (mb_strlen($ae) > 400) return null;
+  return ['q' => $q, 'a' => $a, 'qe' => $qe !== '' ? $qe : $q, 'ae' => $ae !== '' ? $ae : $a];
+}
+// Markup aman: teks polos + [teks](https://...) menjadi <a> aman. Selain itu dibuang.
+function faq_markup(string $t): string {
+  $t = htmlspecialchars($t, ENT_QUOTES, 'UTF-8');
+  return (string)preg_replace_callback(
+    '/\[([^\[\]]{1,80})\]\((https?:\/\/[^\s()<>\"]{1,300})\)/',
+    fn($m) => '<a href="' . $m[2] . '" target="_blank" rel="noopener">' . $m[1] . '</a>',
+    $t);
+}
+function faq_plain(string $t): string {
+  return (string)preg_replace('/\[([^\[\]]{1,80})\]\((https?:\/\/[^\s()<>\"]{1,300})\)/', '$1', $t);
+}
+function faq_render_html(array $items): string {
+  $out = [];
+  foreach ($items as $f) $out[] = '    <details><summary>' . h($f['q']) . '</summary><p>' . faq_markup($f['a']) . '</p></details>';
+  return implode("\n", $out);
+}
+function faq_render_schema(array $items): string {
+  $q = [];
+  foreach ($items as $f) $q[] = ['@type' => 'Question', 'name' => $f['q'],
+    'acceptedAnswer' => ['@type' => 'Answer', 'text' => faq_plain($f['a'])]];
+  return json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $q],
+    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+function faq_render_llms(array $items): string {
+  $out = [];
+  foreach ($items as $f) $out[] = '- **' . $f['q'] . '** ' . $f['a'];
+  return implode("\n", $out);
+}
+// Tulis faq.json + regenerasi index.html + llms.txt. Mengembalikan [true,""] atau [false, $pesan].
+function faq_apply(array $items): array {
+  if (!$items) return [false, 'Minimal 1 FAQ.'];
+  foreach ($items as $f) if (!isset($f['q'], $f['a'])) return [false, 'Data rusak.'];
+  $dir = ruethies_data_dir() . '/backups';
+  if (!is_dir($dir)) @mkdir($dir, 0700, true);
+  if (is_file(RUETHIES_FAQ)) @copy(RUETHIES_FAQ, $dir . '/faq-' . date('Ymd-His') . '.json');
+  $idx = RUETHIES_PUBLIC . '/index.html';
+  $html = @file_get_contents($idx);
+  if ($html === false) return [false, 'index.html tidak terbaca.'];
+  foreach ([['<!-- FAQ:SCHEMA:START -->', '<!-- FAQ:SCHEMA:END -->'], ['<!-- FAQ:HTML:START -->', '<!-- FAQ:HTML:END -->']] as $mm) {
+    if (strpos($html, $mm[0]) === false || strpos($html, $mm[1]) === false)
+      return [false, 'Penanda regenerasi hilang — homepage TIDAK diubah. Hubungi pengembang.'];
+  }
+  $llmsf = RUETHIES_PUBLIC . '/llms.txt';
+  $llms = @file_get_contents($llmsf);
+  if ($llms === false || strpos($llms, '<!-- FAQ:START -->') === false || strpos($llms, '<!-- FAQ:END -->') === false)
+    return [false, 'Penanda llms.txt hilang — TIDAK ada yang diubah. Hubungi pengembang.'];
+  if (!jwrite(RUETHIES_FAQ, array_values($items))) return [false, 'Gagal menyimpan faq.json.'];
+  $swap = function ($src, $a, $b, $new) {
+    $pa = strpos($src, $a) + strlen($a); $pb = strpos($src, $b);
+    return substr($src, 0, $pa) . "\n" . $new . "\n" . substr($src, $pb);
+  };
+  $html = $swap($html, '<!-- FAQ:SCHEMA:START -->', '<!-- FAQ:SCHEMA:END -->',
+    '<script type="application/ld+json">' . "\n" . faq_render_schema($items) . "\n" . '</script>');
+  $html = $swap($html, '<!-- FAQ:HTML:START -->', '<!-- FAQ:HTML:END -->', faq_render_html($items));
+  $llms = $swap($llms, '<!-- FAQ:START -->', '<!-- FAQ:END -->',
+    "## FAQ\n" . faq_render_llms($items));
+  // Verifikasi sebelum tulis: schema valid + jumlah cocok + details cocok.
+  if (!str_contains($html, '"@type":"FAQPage"')) return [false, 'Verifikasi gagal — TIDAK ada yang diubah.'];
+  if (substr_count($html, '<details><summary>') < count($items)) return [false, 'Verifikasi gagal — TIDAK ada yang diubah.'];
+  $fh = @fopen($idx, 'c+');
+  if (!$fh) return [false, 'index.html tidak bisa ditulis.'];
+  flock($fh, LOCK_EX); ftruncate($fh, 0);
+  $ok = fwrite($fh, $html);
+  fflush($fh); flock($fh, LOCK_UN); fclose($fh);
+  if ($ok === false) return [false, 'Gagal menulis index.html.'];
+  if (@file_put_contents($llmsf, $llms, LOCK_EX) === false) return [false, 'index.html updated, TAPI llms.txt gagal — hubungi pengembang.'];
+  return [true, ''];
+}
