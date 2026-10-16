@@ -1,6 +1,9 @@
 # Ruethies Patisserie — Hostinger (Apache/LiteSpeed)
 <IfModule mod_rewrite.c>
 RewriteEngine On
+# Kanonis: https://ruethiespatisserie.com/ (tanpa www) — satu redirect 301, tanpa rantai
+RewriteCond %{HTTP_HOST} ^www\.ruethiespatisserie\.com$ [NC]
+RewriteRule ^ https://ruethiespatisserie.com%{REQUEST_URI} [L,R=301]
 # Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

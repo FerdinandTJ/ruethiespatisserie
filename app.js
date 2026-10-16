@@ -2,8 +2,7 @@ const WA_NUMBER = "6285139281257";
 const WA_DISPLAY = "0851-3928-1257";
 const IMG = (id) => {
   if(!id) return "";
-  if(id.startsWith("http") || id.startsWith("images/") || id.startsWith("/") || id.startsWith("./")) return id;
-  return `https://images.unsplash.com/${id}?q=80&w=700&auto=format&fit=crop`;
+  return id;
 };
 
 // Fallback bawaan (dipakai jika menu.json gagal dimuat, misal buka via file://).
@@ -12,13 +11,13 @@ const IMG = (id) => {
 // jika menu.json gagal dimuat (misal buka via file:// atau jaringan gagal).
 // Sumber utama SATU-SATUNYA adalah menu.json — edit di sana saja.
 let MENU = [
-  { cat:"cakery", badge:"Best Seller", signature:true, tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:IMG("photo-1578985545062-69928b1d9587"),
+  { cat:"cakery", badge:"Best Seller", signature:true, tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:"images/menu/opera-cake-noir.jpg",
     id:{n:"Opera Cake Noir",d:"Lapisan almond, ganache dark chocolate, glaze mengilap."},
     en:{n:"Noir Opera Cake",d:"Almond layers, dark ganache, mirror glaze."} },
-  { cat:"coffee", badge:"Signature", signature:true, tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:IMG("photo-1541167760496-1628856ab772"),
+  { cat:"coffee", badge:"Signature", signature:true, tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:"images/menu/cafe-creme-brulee-latte.jpg",
     id:{n:"Café Crème Brûlée Latte",d:"Espresso, susu creamy, gula brûlée di atas."},
     en:{n:"Crème Brûlée Latte",d:"Espresso with creamy milk, torched sugar top."} },
-  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Favorit",en:"Savoury • Crowd Favourite"}, img:IMG("photo-1606755962773-d324e0a13086"),
+  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Favorit",en:"Savoury • Crowd Favourite"}, img:"images/menu/risol-mayo-smoked-beef.jpg",
     id:{n:"Risol Mayo Smoked Beef",d:"Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."},
     en:{n:"Smoked Beef Risol Mayo",d:"Smoked beef, mayo & egg in crisp thin skin."} },
 ];
@@ -83,6 +82,14 @@ function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
 // Escape teks data sebelum masuk HTML (anti-XSS abadi untuk era Sheets/admin)
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+// WebP bila tersedia, fallback JPEG. Semua foto lokal dinormalkan 640x480 (hero 880x1100, lightbox 1200x900).
+const webp = src => (typeof src === "string" && src.endsWith(".jpg")) ? src.slice(0, -4) + ".webp" : src;
+const pic = (src, alt, w, h, eager) =>
+  `<picture><source type="image/webp" srcset="${esc(webp(src))}" /><img ${eager ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'} src="${esc(src)}" width="${w}" height="${h}" alt="${esc(alt)}" /></picture>`;
+
+// Tugas non-kritis (galeri bawah, efek tilt) dikerjakan saat browser idle agar tidak menahan render awal.
+const onIdle = fn => { if("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 2500 }); else setTimeout(fn, 1); };
+
 function applyLang(){
   document.documentElement.lang = lang;
   document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
@@ -98,7 +105,7 @@ function applyLang(){
 function cardHTML(m, i){
   const v = m[lang] || m.id;
   const no = String(i+1).padStart(2,"0");
-  return `<article class="card rv"><div class="ph"><img loading="lazy" decoding="async" src="${esc(m.img)}" alt="${esc(v.n)}" /></div>
+  return `<article class="card rv"><div class="ph">${pic(m.img, v.n, 640, 480)}</div>
     <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}<h3>${esc(v.n)}</h3><p>${esc(v.d)}</p></div></article>`;
 }
 
@@ -112,7 +119,7 @@ function rowHTML(m, i){
     <div class="mbody"><h3>${esc(v.n)}</h3><p>${esc(v.d)}</p>
       <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<button class="askbtn" data-ask="${idx}">${t("menu.ask")} →</button></div></div>
     <span class="mdots" aria-hidden="true"></span>
-    <span class="mpeek"><img loading="lazy" decoding="async" src="${esc(m.img)}" alt="" /></span>
+    <span class="mpeek">${pic(m.img, "", 640, 480)}</span>
   </article>`;
 }
 
@@ -132,7 +139,8 @@ function renderMenus(){
   const grid = document.getElementById("menugrid");
   grid.innerHTML = items.length ? items.map(rowHTML).join("") : `<p class="muted empty-note">${t("menu.empty")}</p>`;
   grid.removeAttribute("aria-busy");
-  grid.classList.remove("swap"); void grid.offsetWidth; grid.classList.add("swap");
+  grid.classList.remove("swap");
+  requestAnimationFrame(()=>grid.classList.add("swap"));
   document.querySelectorAll(".tab").forEach(tb=>{
     const on = tb.dataset.cat===activeCat;
     tb.setAttribute("aria-selected", on);
@@ -316,14 +324,14 @@ function onScroll(){
 
 // Galeri atmosphere — sumber utama atmosphere.json (edit di sana saja)
 let ATMOS = [
-  { img:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=700&auto=format&fit=crop",
-    imgFull:"https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop",
+  { img:"images/suasana-1.jpg",
+    imgFull:"images/suasana-1-xl.jpg",
     id:{cap:"Interior hangat — kayu dan cahaya sore"}, en:{cap:"Warm interior — wood & evening light"} },
-  { img:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=700&auto=format&fit=crop",
-    imgFull:"https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&auto=format&fit=crop",
+  { img:"images/suasana-2.jpg",
+    imgFull:"images/suasana-2-xl.jpg",
     id:{cap:"Dibuat manual dengan teliti"}, en:{cap:"Handcrafted with care"} },
-  { img:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=700&auto=format&fit=crop",
-    imgFull:"https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop",
+  { img:"images/suasana-3.jpg",
+    imgFull:"images/suasana-3-xl.jpg",
     id:{cap:"Detail lapisan yang renyah"}, en:{cap:"Crisp layered details"} },
 ];
 function atmosCap(a){ return (a[lang] && a[lang].cap) || a.id.cap; }
@@ -332,7 +340,7 @@ function renderAtmos(){
   if(!row) return;
   row.innerHTML = ATMOS.map((a,i)=>{
     const cap = atmosCap(a);
-    return `<figure class="rv"><button class="arch-btn" data-lb="${i}" aria-haspopup="dialog" aria-label="${esc(cap)}"><span class="arch"><img loading="lazy" decoding="async" src="${esc(a.img)}" alt="${esc(cap)}" /></span></button><figcaption>${esc(cap)}</figcaption></figure>`;
+    return `<figure class="rv"><button class="arch-btn" data-lb="${i}" aria-haspopup="dialog" aria-label="${esc(cap)}"><span class="arch">${pic(a.img, cap, 640, 480)}</span></button><figcaption>${esc(cap)}</figcaption></figure>`;
   }).join("");
   observeReveals();
 }
@@ -343,10 +351,13 @@ function normAtmos(items){
   }));
   return clean.length ? clean : null;
 }
-fetch("atmosphere.json", { cache: "reload" })
-  .then(r => { if(!r.ok) throw 0; return r.json(); })
-  .then(j => { const c = normAtmos(j); if(c){ ATMOS = c; renderAtmos(); } })
-  .catch(()=>{ /* fallback bawaan tetap dipakai */ });
+// Galeri di bawah lipatan: datanya diambil saat browser idle agar tidak berebut bandwidth dengan hero/menu.
+onIdle(()=>{
+  fetch("atmosphere.json", { cache: "reload" })
+    .then(r => { if(!r.ok) throw 0; return r.json(); })
+    .then(j => { const c = normAtmos(j); if(c){ ATMOS = c; renderAtmos(); } })
+    .catch(()=>{ /* fallback bawaan tetap dipakai */ });
+});
 
 // Lightbox (dari data master ATMOS yang sama)
 let lbIdx = 0;

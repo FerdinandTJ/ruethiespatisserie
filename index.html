@@ -32,12 +32,14 @@
 <meta name="apple-mobile-web-app-title" content="Ruethies" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="preconnect" href="https://images.unsplash.com" />
 <link rel="dns-prefetch" href="https://www.google.com" />
-<link rel="preload" as="image" href="https://images.unsplash.com/photo-1530610476181-d83430b64dcd?q=80&w=900&auto=format&fit=crop" fetchpriority="high" />
+<link rel="preload" as="image" type="image/webp" href="images/hero.webp" fetchpriority="high" />
+<link rel="preload" href="menu.json" as="fetch" crossorigin="anonymous" />
 <link rel="apple-touch-icon" href="logo-wine.png" />
 <link rel="icon" type="image/png" href="logo-wine.png" />
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" as="style" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
 <link rel="icon" type="image/png" href="logo-wine.png" />
 <link rel="stylesheet" href="styles.css" />
 <script type="application/ld+json">
@@ -118,8 +120,8 @@
     </div>
     <div class="hero-visual">
       <div class="arch-frame" aria-hidden="true"></div>
-      <div class="arch main"><img fetchpriority="high" src="https://images.unsplash.com/photo-1530610476181-d83430b64dcd?q=80&w=900&auto=format&fit=crop" alt="Croissant hangat dan kopi di Ruethies Patisserie Cikarang" /></div>
-      <div class="arch mini m1"><img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=500&auto=format&fit=crop" alt="Latte art" /></div>
+      <div class="arch main"><picture><source type="image/webp" srcset="images/hero.webp" /><img fetchpriority="high" decoding="async" src="images/hero.jpg" width="880" height="1100" alt="Croissant hangat dan kopi di Ruethies Patisserie Cikarang" /></picture></div>
+      <div class="arch mini m1"><picture><source type="image/webp" srcset="images/menu/cafe-creme-brulee-latte.webp" /><img loading="lazy" decoding="async" src="images/menu/cafe-creme-brulee-latte.jpg" width="640" height="480" alt="Café Crème Brûlée Latte" /></picture></div>
       <div class="badge b1">✦ <span data-i18n="hero.b1">Fresh Setiap Hari</span></div>
       <div class="badge b2">✦ <span data-i18n="hero.b2">Croissant Andalan</span></div>
       <div class="seal" aria-hidden="true">
@@ -299,7 +301,7 @@
   <div class="lb-inner" role="dialog" aria-modal="true" aria-label="Galeri suasana">
     <button class="x" id="lb-close">✕</button>
     <button class="lb-nav prev" id="lb-prev" aria-label="Sebelumnya">‹</button>
-    <figure><div class="arch lb-arch"><img id="lb-img" src="" alt="" /></div><figcaption id="lb-cap"></figcaption><div class="lb-count" id="lb-count" aria-hidden="true">01 / 03</div></figure>
+    <figure><div class="arch lb-arch"><img id="lb-img" src="" width="1200" height="900" alt="" /></div><figcaption id="lb-cap"></figcaption><div class="lb-count" id="lb-count" aria-hidden="true">01 / 03</div></figure>
     <button class="lb-nav next" id="lb-next" aria-label="Berikutnya">›</button>
   </div>
 </div>

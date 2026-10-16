@@ -7,7 +7,7 @@
       "id": "Manis • Lembut",
       "en": "Sweet • Delicate"
     },
-    "img": "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/opera-cake-noir.jpg",
     "id": {
       "n": "Opera Cake Noir",
       "d": "Lapisan almond, ganache dark chocolate, glaze mengilap."
@@ -25,7 +25,7 @@
       "id": "Manis • Segar",
       "en": "Sweet • Fresh"
     },
-    "img": "https://images.unsplash.com/photo-1565958011703-44f9829ba187?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/strawberry-fraisier.jpg",
     "id": {
       "n": "Strawberry Fraisier",
       "d": "Strawberry segar, krim mousseline vanilla, sponge lembut."
@@ -43,7 +43,7 @@
       "id": "Manis • Lumer",
       "en": "Sweet • Molten"
     },
-    "img": "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/burnt-basque-cheesecake.jpg",
     "id": {
       "n": "Burnt Basque Cheesecake",
       "d": "Atas karamel, tengah lembut. Manisnya pas."
@@ -61,7 +61,7 @@
       "id": "Renyah • Berlapis",
       "en": "Flaky • Buttery"
     },
-    "img": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/croissant-au-beurre.jpg",
     "id": {
       "n": "Croissant au Beurre",
       "d": "64 lapis butter premium, renyah di luar, lembut di dalam."
@@ -79,7 +79,7 @@
       "id": "Lembut • Cokelat",
       "en": "Soft • Chocolate"
     },
-    "img": "https://images.unsplash.com/photo-1551024506-0bccd828d307?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/eclair-chocolat-vanille.jpg",
     "id": {
       "n": "Éclair Chocolat Vanille",
       "d": "Choux lembut, krim vanilla, siraman cokelat pekat."
@@ -97,7 +97,7 @@
       "id": "Segar • Citrus",
       "en": "Fresh • Citrus"
     },
-    "img": "https://images.unsplash.com/photo-1488477181946-6428a0291777?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/tarte-citron-meringue.jpg",
     "id": {
       "n": "Tarte Citron Meringue",
       "d": "Lemon curd segar, meringue bakar, crust renyah."
@@ -115,7 +115,7 @@
       "id": "Renyah • Creamy",
       "en": "Crisp • Creamy"
     },
-    "img": "https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/mille-feuille-vanille.jpg",
     "id": {
       "n": "Mille-Feuille Vanille",
       "d": "Puff pastry berlapis, krim vanilla Madagascar."
@@ -133,7 +133,7 @@
       "id": "Hangat • Creamy",
       "en": "Warm • Creamy"
     },
-    "img": "https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/cafe-creme-brulee-latte.jpg",
     "id": {
       "n": "Café Crème Brûlée Latte",
       "d": "Espresso, susu creamy, gula brûlée di atas."
@@ -151,7 +151,7 @@
       "id": "Bold • Pekat",
       "en": "Bold • Intense"
     },
-    "img": "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/espresso-noisette.jpg",
     "id": {
       "n": "Espresso Noisette",
       "d": "Double shot pekat dengan sentuhan hazelnut."
@@ -169,7 +169,7 @@
       "id": "Segar • Ringan",
       "en": "Fresh • Light"
     },
-    "img": "https://images.unsplash.com/photo-1515823064-d35759e58259?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/iced-lumiere-matcha.jpg",
     "id": {
       "n": "Iced Lumière Matcha",
       "d": "Matcha premium, susu oat, es bening."
@@ -187,7 +187,7 @@
       "id": "Creamy • Lembut",
       "en": "Creamy • Smooth"
     },
-    "img": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/cafe-latte-artisan.jpg",
     "id": {
       "n": "Café Latte Artisan",
       "d": "Espresso pilihan, susu steam lembut, latte art."
@@ -205,7 +205,7 @@
       "id": "Hangat • Foamy",
       "en": "Warm • Foamy"
     },
-    "img": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/cappuccino-douceur.jpg",
     "id": {
       "n": "Cappuccino Douceur",
       "d": "Foam tebal lembut, taburan cocoa, hangat."
@@ -223,7 +223,7 @@
       "id": "Dingin • Bold",
       "en": "Iced • Bold"
     },
-    "img": "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/cold-brew-noir.jpg",
     "id": {
       "n": "Cold Brew Noir",
       "d": "Diseduh dingin 18 jam, bold, rendah asam."
@@ -241,7 +241,7 @@
       "id": "Manis • Espresso",
       "en": "Sweet • Espresso"
     },
-    "img": "https://images.unsplash.com/photo-1563805042-7684c019e1cb?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/affogato-lumiere.jpg",
     "id": {
       "n": "Affogato Lumière",
       "d": "Gelato vanilla disiram double espresso panas."
@@ -259,7 +259,7 @@
       "id": "Gurih • Renyah",
       "en": "Savoury • Crisp"
     },
-    "img": "https://images.unsplash.com/photo-1601050690597-df0568f70950?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/pastel-ayam-ragout.jpg",
     "id": {
       "n": "Pastel Ayam Ragout",
       "d": "Kulit renyah berlapis, isi ragout ayam yang creamy."
@@ -277,7 +277,7 @@
       "id": "Gurih • Keemasan",
       "en": "Savoury • Golden"
     },
-    "img": "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/kroket-kentang-sapi.jpg",
     "id": {
       "n": "Kroket Kentang Sapi",
       "d": "Kentang halus isi daging sapi, goreng keemasan."
@@ -295,7 +295,7 @@
       "id": "Gurih • Favorit",
       "en": "Savoury • Crowd Favourite"
     },
-    "img": "https://images.unsplash.com/photo-1606755962773-d324e0a13086?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/risol-mayo-smoked-beef.jpg",
     "id": {
       "n": "Risol Mayo Smoked Beef",
       "d": "Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."
@@ -313,7 +313,7 @@
       "id": "Gurih • Cheesy",
       "en": "Savoury • Cheesy"
     },
-    "img": "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/croque-monsieur.jpg",
     "id": {
       "n": "Croque Monsieur",
       "d": "Roti panggang, ham, lelehan gruyère, saus béchamel."
@@ -331,7 +331,7 @@
       "id": "Gurih • Buttery",
       "en": "Savoury • Buttery"
     },
-    "img": "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/quiche-lorraine.jpg",
     "id": {
       "n": "Quiche Lorraine",
       "d": "Pastry renyah isi telur, smoked beef, dan keju."
@@ -349,7 +349,7 @@
       "id": "Hangat • Keju",
       "en": "Warm • Cheesy"
     },
-    "img": "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/pain-au-fromage.jpg",
     "id": {
       "n": "Pain au Fromage",
       "d": "Roti hangat isi keju lumer, kulit keemasan."
@@ -367,7 +367,7 @@
       "id": "Segar • Ringan",
       "en": "Fresh • Light"
     },
-    "img": "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=700&auto=format&fit=crop",
+    "img": "images/menu/salade-lumiere.jpg",
     "id": {
       "n": "Salade Lumière",
       "d": "Sayuran segar, vinaigrette lemon, taburan herbs."

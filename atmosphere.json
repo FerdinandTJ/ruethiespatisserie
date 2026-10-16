@@ -1,7 +1,7 @@
 [
   {
-    "img": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=700&auto=format&fit=crop",
-    "imgFull": "https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop",
+    "img": "images/suasana-1.jpg",
+    "imgFull": "images/suasana-1-xl.jpg",
     "id": {
       "cap": "Interior hangat — kayu dan cahaya sore"
     },
@@ -10,8 +10,8 @@
     }
   },
   {
-    "img": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=700&auto=format&fit=crop",
-    "imgFull": "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=1200&auto=format&fit=crop",
+    "img": "images/suasana-2.jpg",
+    "imgFull": "images/suasana-2-xl.jpg",
     "id": {
       "cap": "Dibuat manual dengan teliti"
     },
@@ -20,8 +20,8 @@
     }
   },
   {
-    "img": "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=700&auto=format&fit=crop",
-    "imgFull": "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop",
+    "img": "images/suasana-3.jpg",
+    "imgFull": "images/suasana-3-xl.jpg",
     "id": {
       "cap": "Detail lapisan yang renyah"
     },
