@@ -138,6 +138,46 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       $err = 'Gagal menyimpan.';
     }
   }
+  elseif ($aksi === 'galeri-save') {
+    $items = atmos_load(); $i = (int)($_POST['gi'] ?? -1);
+    $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
+    $img = $old['img'] ?? ''; $full = $old['imgFull'] ?? '';
+    if (!empty($_FILES['gfoto']['name'] ?? '')) {
+      [$p1, $p2, $perr] = galeri_upload($_FILES['gfoto'], $_POST['cap'] ?? 'suasana');
+      if ($perr) $err = $perr; else { $img = $p1; $full = $p2; }
+    }
+    if ($err === '') {
+      $cap = trim(strip_tags($_POST['cap'] ?? '')); $cape = trim(strip_tags($_POST['cape'] ?? ''));
+      if ($cap === '' || mb_strlen($cap) > 80 || mb_strlen($cape) > 80) $err = 'Caption wajib diisi (maks 80).';
+      elseif ($img === '') $err = 'Foto wajib diunggah untuk item baru.';
+      else {
+        $row = ['img' => $img, 'imgFull' => $full !== '' ? $full : $img,
+          'id' => ['cap' => $cap], 'en' => ['cap' => $cape !== '' ? $cape : $cap]];
+        if ($old) $items[$i] = $row; else $items[] = $row;
+        if (atmos_save($items)) { ruethies_log($me['name'], $old ? 'galeri-ubah' : 'galeri-tambah', $cap); header('Location: ?ok=simpan#galeri'); exit; }
+        $err = 'Gagal menyimpan.';
+      }
+    }
+  }
+  elseif ($aksi === 'galeri-gerak') {
+    $items = atmos_load(); $i = (int)($_POST['gi'] ?? -1); $d = (int)($_POST['dir'] ?? 0);
+    $j = $i + ($d > 0 ? 1 : -1);
+    if (isset($items[$i], $items[$j])) {
+      [$items[$i], $items[$j]] = [$items[$j], $items[$i]];
+      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-urut', (string)$i); header('Location: ?ok=simpan#galeri'); exit; }
+      $err = 'Gagal menyimpan.';
+    }
+  }
+  elseif ($aksi === 'galeri-hapus') {
+    if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
+    $items = atmos_load(); $i = (int)($_POST['gi'] ?? -1);
+    if (isset($items[$i])) {
+      $nm = $items[$i]['id']['cap'] ?? '';
+      array_splice($items, $i, 1);
+      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-hapus', $nm); header('Location: ?ok=hapus#galeri'); exit; }
+      $err = 'Gagal menghapus.';
+    }
+  }
   elseif ($aksi === 'user-hapus') {
     if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
     $nm = (string)($_POST['nu'] ?? '');
@@ -330,6 +370,44 @@ if ($p === 'tambah' || $edit):
 <?php endforeach; if (!$ada): ?><p class="sub">Belum ada item.</p><?php endif; ?>
 </div>
 <?php endforeach; ?>
+<div class="card" id="galeri">
+<h1 style="font-size:1.1rem">Galeri Suasana</h1>
+<p class="sub">Foto tampil berurutan di web. Perubahan maksimal ±5 menit.</p>
+<?php $gal = atmos_load(); foreach ($gal as $gi => $g): ?>
+<div class="row">
+<?php if (!empty($g['img'])): ?><img src="../<?= h($g['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
+<span class="grow"><b><?= h($g['id']['cap'] ?? '-') ?></b><br /><small><?= h($g['en']['cap'] ?? '') ?></small></span>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="-1" /><button class="ghost" <?= $gi === 0 ? 'disabled' : '' ?>>↑</button></form>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-gerak" /><input type="hidden" name="gi" value="<?= $gi ?>" /><input type="hidden" name="dir" value="1" /><button class="ghost" <?= $gi === count($gal) - 1 ? 'disabled' : '' ?>>↓</button></form>
+<a class="btn ghost" href="?p=galeri-ubah&gi=<?= $gi ?>">Ubah</a>
+<?php if (is_owner($me)): ?>
+<form method="post" onsubmit="return confirm('Hapus foto ini?')"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-hapus" /><input type="hidden" name="gi" value="<?= $gi ?>" /><button class="danger">Hapus</button></form>
+<?php endif; ?>
+</div>
+<?php endforeach; if (!$gal): ?><p class="sub">Belum ada foto.</p><?php endif; ?>
+<a class="btn" href="?p=galeri-tambah">+ Tambah foto</a>
+</div>
+<?php
+$gedit = null;
+if (($p === 'galeri-ubah' || $p === 'galeri-tambah')) {
+  $g0 = atmos_load(); $gei = (int)($_GET['gi'] ?? -1);
+  if ($p === 'galeri-ubah' && isset($g0[$gei])) $gedit = $g0[$gei] + ['_i' => $gei];
+}
+if ($p === 'galeri-tambah' || $gedit):
+?>
+<div class="card">
+<h1 style="font-size:1.1rem"><?= $gedit ? 'Ubah foto' : 'Tambah foto' ?></h1>
+<form method="post" enctype="multipart/form-data">
+<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-save" />
+<input type="hidden" name="gi" value="<?= $gedit['_i'] ?? -1 ?>" />
+<label>Caption (Indonesia, maks 80)<input name="cap" maxlength="80" required value="<?= h($gedit['id']['cap'] ?? '') ?>" /></label>
+<label>Caption (Inggris, opsional)<input name="cape" maxlength="80" value="<?= h($gedit['en']['cap'] ?? '') ?>" /></label>
+<label>Foto (JPG/PNG/WebP, maks 8 MB)<?= $gedit && !empty($gedit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?><input type="file" name="gfoto" accept="image/jpeg,image/png,image/webp" /></label>
+<?php if ($gedit && !empty($gedit['img'])): ?><p><img src="../<?= h($gedit['img']) ?>" alt="" style="width:120px;height:90px;object-fit:cover;border-radius:10px" /></p><?php endif; ?>
+<button>Simpan</button> <a class="btn ghost" href="?#galeri">Batal</a>
+</form>
+</div>
+<?php endif; ?>
 <?php endif; ?>
 <?php endif; ?>
 </div>

@@ -170,12 +170,66 @@ function menu_validate(array $in): ?array {
   ];
 }
 
-/* ---------- upload foto: re-encode (buang EXIF) + normalkan 640x480 ---------- */
+/* ---------- galeri suasana (atmosphere.json) ---------- */
+const RUETHIES_ATMOS = RUETHIES_PUBLIC . '/atmosphere.json';
+function atmos_load(): array {
+  $d = jread(RUETHIES_ATMOS, []);
+  return is_array($d) ? array_values(array_filter($d, fn($a) => is_array($a))) : [];
+}
+function atmos_save(array $items): bool {
+  $dir = ruethies_data_dir() . '/backups';
+  if (!is_dir($dir)) @mkdir($dir, 0700, true);
+  if (is_file(RUETHIES_ATMOS)) @copy(RUETHIES_ATMOS, $dir . '/atmos-' . date('Ymd-His') . '.json');
+  $all = glob($dir . '/atmos-*.json') ?: [];
+  usort($all, fn($a, $b) => strcmp($b, $a));
+  foreach (array_slice($all, 5) as $f) @unlink($f);
+  $fh = @fopen(RUETHIES_ATMOS, 'c+');
+  if (!$fh) return false;
+  flock($fh, LOCK_EX); ftruncate($fh, 0);
+  $ok = fwrite($fh, json_encode(array_values($items), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
+  fflush($fh); flock($fh, LOCK_UN); fclose($fh);
+  return $ok !== false;
+}
+// Upload galeri: satu sumber → thumb 640x480 + versi lightbox 1200x900.
+function galeri_upload(array $file, string $caption): array {
+  if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return [null, null, null];
+  if (($file['error'] ?? 1) !== UPLOAD_ERR_OK) return [null, null, 'Upload gagal, coba lagi.'];
+  if (($file['size'] ?? 0) > 8 * 1024 * 1024) return [null, null, 'Foto maksimal 8 MB.'];
+  $finfo = new finfo(FILEINFO_MIME_TYPE);
+  $mime = $finfo->file($file['tmp_name']);
+  if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) return [null, null, 'File harus JPG, PNG, atau WebP.'];
+  $raw = @file_get_contents($file['tmp_name']);
+  $src = @imagecreatefromstring($raw ?: '');
+  if (!$src) return [null, null, 'File gambar tidak valid.'];
+  if (!is_dir(RUETHIES_PUBLIC . '/images')) @mkdir(RUETHIES_PUBLIC . '/images', 0755, true);
+  $base = 'suasana-' . photo_slug($caption); $try = $base; $i = 2;
+  while (is_file(RUETHIES_PUBLIC . "/images/$try.jpg")) { $try = "$base-$i"; $i++; }
+  $mk = function ($tw, $th) use ($src) {
+    $w = imagesx($src); $hh = imagesy($src); $tr = $tw / $th; $sr = $w / $hh;
+    if ($sr > $tr) { $nw = (int)($hh * $tr); $x = (int)(($w - $nw) / 2); $c = imagecrop($src, ['x' => $x, 'y' => 0, 'width' => $nw, 'height' => $hh]); }
+    else { $nh = (int)($w / $tr); $y = (int)(($hh - $nh) / 2); $c = imagecrop($src, ['x' => 0, 'y' => $y, 'width' => $w, 'height' => $nh]); }
+    if (!$c) return null;
+    $dst = imagecreatetruecolor($tw, $th);
+    imagecopyresampled($dst, $c, 0, 0, 0, 0, $tw, $th, imagesx($c), imagesy($c));
+    imagedestroy($c);
+    return $dst;
+  };
+  $t1 = $mk(640, 480); $t2 = $mk(1200, 900);
+  if (!$t1 || !$t2) { imagedestroy($src); return [null, null, 'Gagal memproses foto.']; }
+  imagedestroy($src);
+  $j1 = RUETHIES_PUBLIC . "/images/$try.jpg"; $j2 = RUETHIES_PUBLIC . "/images/$try-xl.jpg";
+  $ok = @imagejpeg($t1, $j1, 68) && @imagejpeg($t2, $j2, 70);
+  if (function_exists('imagewebp')) { @imagewebp($t1, RUETHIES_PUBLIC . "/images/$try.webp", 66); @imagewebp($t2, RUETHIES_PUBLIC . "/images/$try-xl.webp", 68); }
+  imagedestroy($t1); imagedestroy($t2);
+  if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
+  return ["images/$try.jpg", "images/$try-xl.jpg", null];
+}
 function photo_slug(string $name): string {
   $t = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', mb_strtolower($name));
   $t = preg_replace('/[^a-z0-9]+/', '-', $t ?? '');
   return trim(preg_replace('/-+/', '-', $t ?? ''), '-') ?: 'menu';
 }
+/* ---------- upload foto menu: re-encode (buang EXIF) + normalkan 640x480 ---------- */
 function photo_upload(array $file, string $name): array {
   if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return [null, null];
   if (($file['error'] ?? 1) !== UPLOAD_ERR_OK) return [null, 'Upload gagal, coba lagi.'];
