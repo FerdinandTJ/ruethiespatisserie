@@ -1,6 +1,8 @@
 User-agent: *
 Allow: /
 Allow: /llms.txt
+Disallow: /admin/
+Disallow: /admin/setup.php
 
 # Bot AI & training dipersilakan (sinyal GEO) — jangan tambah Disallow untuk daftar ini.
 User-agent: GPTBot

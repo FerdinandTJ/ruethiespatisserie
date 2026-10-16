@@ -131,11 +131,12 @@ function matchQ(m){
 }
 
 function renderMenus(){
-  const flagged = MENU.filter(m=>m.signature);
-  const sig = flagged.length >= 3 ? flagged.slice(0,3) : [MENU[0], MENU[3], MENU[8]].filter(Boolean);
+  const vis = MENU.filter(m=>m.available !== false);
+  const flagged = vis.filter(m=>m.signature);
+  const sig = flagged.length >= 3 ? flagged.slice(0,3) : [vis[0], vis[3], vis[8]].filter(Boolean);
   document.getElementById("signature").innerHTML = sig.map((m,i)=>cardHTML(m,i)).join("");
   document.getElementById("signature").removeAttribute("aria-busy");
-  const items = MENU.filter(m=>m.cat===activeCat).filter(matchQ);
+  const items = vis.filter(m=>m.cat===activeCat).filter(matchQ);
   const grid = document.getElementById("menugrid");
   grid.innerHTML = items.length ? items.map(rowHTML).join("") : `<p class="muted empty-note">${t("menu.empty")}</p>`;
   grid.removeAttribute("aria-busy");
@@ -145,7 +146,7 @@ function renderMenus(){
     const on = tb.dataset.cat===activeCat;
     tb.setAttribute("aria-selected", on);
     const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="coffee" ? "menu.t2" : "menu.t3";
-    const n = MENU.filter(m=>m.cat===tb.dataset.cat).length;
+    const n = vis.filter(m=>m.cat===tb.dataset.cat).length;
     tb.innerHTML = `${t(key)} <span class="tcount">${n}</span>`;
   });
   movePill();

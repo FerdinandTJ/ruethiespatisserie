@@ -15,7 +15,8 @@
     "en": {
       "n": "Noir Opera Cake",
       "d": "Almond layers, dark ganache, mirror glaze."
-    }
+    },
+    "available": true
   },
   {
     "cat": "cakery",
@@ -33,7 +34,8 @@
     "en": {
       "n": "Strawberry Fraisier",
       "d": "Fresh strawberries, vanilla mousseline, soft sponge."
-    }
+    },
+    "available": true
   },
   {
     "cat": "cakery",
@@ -51,7 +53,8 @@
     "en": {
       "n": "Burnt Basque Cheesecake",
       "d": "Caramelised top, molten centre. A must-try."
-    }
+    },
+    "available": true
   },
   {
     "cat": "cakery",
@@ -69,7 +72,8 @@
     "en": {
       "n": "Croissant au Beurre",
       "d": "64 layers of premium butter, crisp outside, tender inside."
-    }
+    },
+    "available": true
   },
   {
     "cat": "cakery",
@@ -87,7 +91,8 @@
     "en": {
       "n": "Chocolate Vanilla Éclair",
       "d": "Soft choux, vanilla cream, dark chocolate glaze."
-    }
+    },
+    "available": true
   },
   {
     "cat": "cakery",
@@ -105,7 +110,8 @@
     "en": {
       "n": "Lemon Meringue Tart",
       "d": "Zesty lemon curd, torched meringue, crisp crust."
-    }
+    },
+    "available": true
   },
   {
     "cat": "cakery",
@@ -123,7 +129,8 @@
     "en": {
       "n": "Vanilla Mille-Feuille",
       "d": "Thousand-layer puff, Madagascar vanilla cream."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -141,7 +148,8 @@
     "en": {
       "n": "Crème Brûlée Latte",
       "d": "Espresso with creamy milk, torched sugar top."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -159,7 +167,8 @@
     "en": {
       "n": "Noisette Espresso",
       "d": "Bold double shot with a hazelnut touch."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -177,7 +186,8 @@
     "en": {
       "n": "Iced Lumière Matcha",
       "d": "Premium matcha, oat milk over clear ice."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -195,7 +205,8 @@
     "en": {
       "n": "Artisan Café Latte",
       "d": "Choice espresso, silky steamed milk, hand-poured art."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -213,7 +224,8 @@
     "en": {
       "n": "Cappuccino Douceur",
       "d": "Thick velvety foam, cocoa dust, warm and soothing."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -231,7 +243,8 @@
     "en": {
       "n": "Noir Cold Brew",
       "d": "18-hour slow steep, bold, low acidity."
-    }
+    },
+    "available": true
   },
   {
     "cat": "coffee",
@@ -249,7 +262,8 @@
     "en": {
       "n": "Lumière Affogato",
       "d": "Vanilla gelato drowned in hot double espresso."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -267,7 +281,8 @@
     "en": {
       "n": "Chicken Ragout Pastel",
       "d": "Flaky crust, creamy chicken ragout filling."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -285,7 +300,8 @@
     "en": {
       "n": "Beef Potato Kroket",
       "d": "Silky potato, beef, golden-fried."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -303,7 +319,8 @@
     "en": {
       "n": "Smoked Beef Risol Mayo",
       "d": "Smoked beef, mayo & egg in crisp thin skin."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -321,7 +338,8 @@
     "en": {
       "n": "Croque Monsieur",
       "d": "Toasted bread, ham, melted gruyère, béchamel."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -339,7 +357,8 @@
     "en": {
       "n": "Quiche Lorraine",
       "d": "Buttery pastry, egg, smoked beef, savoury cheese."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -357,7 +376,8 @@
     "en": {
       "n": "Pain au Fromage",
       "d": "Warm bread with molten cheese, golden crust."
-    }
+    },
+    "available": true
   },
   {
     "cat": "savoury",
@@ -375,6 +395,7 @@
     "en": {
       "n": "Salade Lumière",
       "d": "Crisp greens, lemon vinaigrette, fresh herbs."
-    }
+    },
+    "available": true
   }
 ]
