@@ -1,32 +1,32 @@
 [
-  {
-    "img": "images/suasana-1.jpg",
-    "imgFull": "images/suasana-1-xl.jpg",
-    "id": {
-      "cap": "Interior hangat — kayu dan cahaya sore"
+    {
+        "img": "images/suasana-1.jpg",
+        "imgFull": "images/suasana-1-xl.jpg",
+        "id": {
+            "cap": "Interior hangat — kayu dan cahaya sore"
+        },
+        "en": {
+            "cap": "Warm interior — wood & evening light"
+        }
     },
-    "en": {
-      "cap": "Warm interior — wood & evening light"
-    }
-  },
-  {
-    "img": "images/suasana-2.jpg",
-    "imgFull": "images/suasana-2-xl.jpg",
-    "id": {
-      "cap": "Dibuat manual dengan teliti"
+    {
+        "img": "images/suasana-2.jpg",
+        "imgFull": "images/suasana-2-xl.jpg",
+        "id": {
+            "cap": "Dibuat manual dengan teliti"
+        },
+        "en": {
+            "cap": "Handcrafted with care"
+        }
     },
-    "en": {
-      "cap": "Handcrafted with care"
+    {
+        "img": "images/suasana-3.jpg",
+        "imgFull": "images/suasana-3-xl.jpg",
+        "id": {
+            "cap": "Detail lapisan yang renyah"
+        },
+        "en": {
+            "cap": "Crisp layered details"
+        }
     }
-  },
-  {
-    "img": "images/suasana-3.jpg",
-    "imgFull": "images/suasana-3-xl.jpg",
-    "id": {
-      "cap": "Detail lapisan yang renyah"
-    },
-    "en": {
-      "cap": "Crisp layered details"
-    }
-  }
 ]
