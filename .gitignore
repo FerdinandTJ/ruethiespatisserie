@@ -10,6 +10,7 @@ DEPLOY-HOSTINGER.md
 PANDUAN-SEARCH-CONSOLE.md
 PANDUAN-ADMIN.md
 PANDUAN-DEPLOY.md
+PANDUAN-GIT-PULL-HOSTINGER.md
 
 # Data runtime admin (akun, log, backup, rate-limit) — hanya di server, jangan masuk repo
 admin/data/*.json
