@@ -82,6 +82,42 @@ function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
 // Escape teks data sebelum masuk HTML (anti-XSS abadi untuk era Sheets/admin)
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
+let FAQ = null;
+const faqMarkup = text => esc(text).replace(
+  /\[([^\[\]]{1,80})\]\((https?:\/\/[^\s()<>"]{1,300})\)/g,
+  (_, label, url) => `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
+);
+
+function renderFAQ(){
+  const section = document.getElementById("faq");
+  if(!section || !FAQ) return;
+  const rows = Array.from(section.querySelectorAll("details"));
+  FAQ.forEach((item, i)=>{
+    let row = rows[i];
+    if(!row){
+      row = document.createElement("details");
+      row.innerHTML = "<summary></summary><p></p>";
+      section.appendChild(row);
+    }
+    row.querySelector("summary").textContent = lang === "en" ? (item.qe || item.q) : item.q;
+    row.querySelector("p").innerHTML = faqMarkup(lang === "en" ? (item.ae || item.a) : item.a);
+  });
+  rows.slice(FAQ.length).forEach(row=>row.remove());
+}
+
+fetch("faq.json", { cache: "reload" })
+  .then(r => { if(!r.ok) throw 0; return r.json(); })
+  .then(items => {
+    if(!Array.isArray(items) || !items.length || !items.every(item =>
+      item && typeof item.q === "string" && typeof item.a === "string" &&
+      (item.qe == null || typeof item.qe === "string") &&
+      (item.ae == null || typeof item.ae === "string")
+    )) return;
+    FAQ = items;
+    renderFAQ();
+  })
+  .catch(()=>{ /* FAQ statis tetap tampil jika data gagal dimuat. */ });
+
 // WebP bila tersedia, fallback JPEG. Semua foto lokal dinormalkan 640x480 (hero 880x1100, lightbox 1200x900).
 const webp = src => (typeof src === "string" && src.endsWith(".jpg")) ? src.slice(0, -4) + ".webp" : src;
 const pic = (src, alt, w, h, eager) =>
@@ -100,6 +136,7 @@ function applyLang(){
   if(!document.getElementById("lightbox").hidden && ATMOS[lbIdx]) lbCap.textContent = atmosCap(ATMOS[lbIdx]);
   renderMenus();
   renderAtmos();
+  renderFAQ();
 }
 
 function cardHTML(m, i){
