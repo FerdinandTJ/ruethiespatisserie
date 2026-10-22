@@ -18,3 +18,9 @@ admin/data/*.jsonl
 admin/data/backups/
 admin/ruethies-data/
 ruethies-data/
+
+# Checkout subdomain di dalam document root produksi
+/staging/
+
+# Panduan operasional lokal
+PANDUAN-STAGING.md
