@@ -135,6 +135,57 @@ function ruethies_logout(): void {
 }
 
 /* ---------- menu ---------- */
+// Semua mutasi konten admin memakai lock ini sampai request selesai. Dengan begitu,
+// pemeriksaan referensi + unlink tidak bersaing dengan penyimpanan menu/galeri lain.
+function content_lock(): void {
+  $fh = @fopen(ruethies_data_dir() . '/content.lock', 'c');
+  if (!$fh || !flock($fh, LOCK_EX)) {
+    if ($fh) fclose($fh);
+    http_response_code(503);
+    die('Konten sedang tidak bisa dikunci. Coba lagi; perubahan belum disimpan.');
+  }
+  register_shutdown_function(static function () use ($fh) {
+    flock($fh, LOCK_UN); fclose($fh);
+  });
+}
+
+// Panggil hanya SETELAH menu berhasil disimpan, di dalam content_lock().
+// Hanya pasangan hasil upload menu; bukan URL, path bebas, atau foto galeri.
+function menu_photo_delete_unused(string $image): string {
+  if ($image === '') return 'none';
+  if (!preg_match('~\Aimages/menu/([a-z0-9]+(?:-[a-z0-9]+)*)\.(?:jpg|webp)\z~D', $image, $m)) return 'kept';
+  $names = [$m[1] . '.jpg', $m[1] . '.webp'];
+  $public = realpath(RUETHIES_PUBLIC);
+  $dir = $public . '/images/menu';
+  if (!$public || is_link($public . '/images') || is_link($dir) || realpath($dir) !== $dir) return 'failed';
+
+  // Gagal membaca data = jangan hapus. Cek juga HTML/fallback JS dan konten lain:
+  // gambar yang masih dipakai halaman publik harus tetap tersedia.
+  foreach (['menu.json', 'atmosphere.json', 'faq.json', 'index.html', 'app.js', 'styles.css', 'llms.txt'] as $file) {
+    $raw = @file_get_contents($public . '/' . $file);
+    if ($raw === false) return 'failed';
+    if (str_ends_with($file, '.json')) {
+      $data = json_decode($raw, true);
+      if (!is_array($data) || json_last_error() !== JSON_ERROR_NONE) return 'failed';
+      $raw = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+      if ($raw === false) return 'failed';
+    }
+    $raw = rawurldecode($raw);
+    foreach ($names as $name) if (str_contains($raw, $name)) return 'kept';
+  }
+
+  // Validasi kedua file sebelum menghapus satu pun; jangan ikuti symlink.
+  foreach ($names as $name) {
+    $path = $dir . '/' . $name;
+    if (is_link($path) || (file_exists($path) && (!is_file($path) || realpath($path) !== $path))) return 'failed';
+  }
+  foreach ($names as $name) {
+    $path = $dir . '/' . $name;
+    if (file_exists($path) && !@unlink($path)) return 'failed';
+  }
+  return 'deleted';
+}
+
 function menu_load(): array {
   $d = jread(RUETHIES_MENU, []);
   return is_array($d) ? array_values(array_filter($d, fn($m) => is_array($m))) : [];

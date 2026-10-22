@@ -12,6 +12,10 @@ $err = ''; $ok = $_GET['ok'] ?? '';
 /* ---------- aksi POST ---------- */
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   $aksi = $_POST['aksi'] ?? '';
+  if ($me && ruethies_csrf_ok() && in_array($aksi, [
+    'save', 'toggle', 'hapus', 'galeri-save', 'galeri-gerak', 'galeri-hapus',
+    'faq-save', 'faq-gerak', 'faq-hapus',
+  ], true)) content_lock();
   // POST kosong padahal ada isi terkirim = ukuran melewati batas server (post_max_size).
   // Terjadi SEBELUM kode kita jalan — beri pesan yang bisa ditindaklanjuti.
   if ($aksi === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
@@ -105,8 +109,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
       $nm = $items[$i]['id']['n'] ?? '';
+      $image = (string)($items[$i]['img'] ?? '');
       array_splice($items, $i, 1);
-      if (menu_save($items)) { ruethies_log($me['name'], 'hapus', $nm); header('Location: ?ok=hapus'); exit; }
+      if (menu_save($items)) {
+        $photo = menu_photo_delete_unused($image);
+        ruethies_log($me['name'], 'hapus', $nm . ' | foto: ' . $photo);
+        header('Location: ?ok=hapus&photo=' . $photo); exit;
+      }
       $err = 'Gagal menghapus.';
     }
   }
@@ -303,6 +312,9 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <?php if ($ok === 'simpan'): ?><p class="okmsg">Tersimpan dan langsung tampil di web.</p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
 <?php if ($ok === 'hapus'): ?><p class="okmsg">Item dihapus permanen.</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg">Foto menu JPG/WebP sudah dibersihkan (atau sebelumnya sudah tidak ada).</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'kept'): ?><p class="okmsg">Foto dipertahankan karena masih digunakan atau berada di luar folder upload menu yang diizinkan.</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'failed'): ?><p class="warn">Menu sudah dihapus, tetapi pembersihan foto belum tuntas. Periksa referensi dan izin file melalui File Manager; jangan hapus foto yang masih digunakan.</p><?php endif; ?>
 <?php if ($ok === 'pw'): ?><p class="okmsg">Kata sandi diganti.</p><?php endif; ?>
 <?php if ($ok === '2fa'): ?><p class="okmsg">Kode OTP aktif. Setiap login pemilik wajib memasukkan kode.</p><?php endif; ?>
 <?php if ($ok === '2fa-mati'): ?><p class="okmsg">Kode OTP dimatikan. Tidak disarankan.</p><?php endif; ?>
@@ -442,7 +454,7 @@ if ($p === 'tambah' || $edit):
 <form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m["available"]) || $m["available"] === false ? icon("eye", 16) . " Tampilkan" : icon("eyeoff", 16) . " Sembunyikan" ?></button></form>
 <a class="btn ghost" href="?p=ubah&i=<?= $i ?>#formulir"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
-<form method="post" data-confirm="Hapus permanen? Data tidak bisa dikembalikan."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
+<form method="post" data-confirm="Hapus menu permanen? Foto JPG/WebP yang tidak digunakan lagi juga dihapus. Backup JSON tidak menyimpan foto."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
 <?php endif; ?>
 </div>
 </div>
