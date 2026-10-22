@@ -1,401 +1,420 @@
 [
-  {
-    "cat": "cakery",
-    "badge": "Best Seller",
-    "signature": true,
-    "tag": {
-      "id": "Manis • Lembut",
-      "en": "Sweet • Delicate"
+    {
+        "cat": "cakery",
+        "badge": "Best Seller",
+        "signature": true,
+        "tag": {
+            "id": "Manis • Lembut",
+            "en": "Sweet • Delicate"
+        },
+        "img": "images/menu/opera-cake-noir.jpg",
+        "id": {
+            "n": "Opera Cake Noir",
+            "d": "Lapisan almond, ganache dark chocolate, glaze mengilap."
+        },
+        "en": {
+            "n": "Noir Opera Cake",
+            "d": "Almond layers, dark ganache, mirror glaze."
+        },
+        "available": true
     },
-    "img": "images/menu/opera-cake-noir.jpg",
-    "id": {
-      "n": "Opera Cake Noir",
-      "d": "Lapisan almond, ganache dark chocolate, glaze mengilap."
+    {
+        "cat": "cakery",
+        "badge": "Signature",
+        "signature": false,
+        "tag": {
+            "id": "Manis • Segar",
+            "en": "Sweet • Fresh"
+        },
+        "img": "images/menu/strawberry-fraisier.jpg",
+        "id": {
+            "n": "Strawberry Fraisier",
+            "d": "Strawberry segar, krim mousseline vanilla, sponge lembut."
+        },
+        "en": {
+            "n": "Strawberry Fraisier",
+            "d": "Fresh strawberries, vanilla mousseline, soft sponge."
+        },
+        "available": true
     },
-    "en": {
-      "n": "Noir Opera Cake",
-      "d": "Almond layers, dark ganache, mirror glaze."
+    {
+        "cat": "cakery",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Manis • Lumer",
+            "en": "Sweet • Molten"
+        },
+        "img": "images/menu/burnt-basque-cheesecake.jpg",
+        "id": {
+            "n": "Burnt Basque Cheesecake",
+            "d": "Atas karamel, tengah lembut. Manisnya pas."
+        },
+        "en": {
+            "n": "Burnt Basque Cheesecake",
+            "d": "Caramelised top, molten centre. A must-try."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "cakery",
-    "badge": "Signature",
-    "signature": false,
-    "tag": {
-      "id": "Manis • Segar",
-      "en": "Sweet • Fresh"
+    {
+        "cat": "cakery",
+        "badge": "Ikonik",
+        "signature": false,
+        "tag": {
+            "id": "Renyah • Berlapis",
+            "en": "Flaky • Buttery"
+        },
+        "img": "images/menu/croissant-au-beurre.jpg",
+        "id": {
+            "n": "Croissant au Beurre",
+            "d": "64 lapis butter premium, renyah di luar, lembut di dalam."
+        },
+        "en": {
+            "n": "Croissant au Beurre",
+            "d": "64 layers of premium butter, crisp outside, tender inside."
+        },
+        "available": true
     },
-    "img": "images/menu/strawberry-fraisier.jpg",
-    "id": {
-      "n": "Strawberry Fraisier",
-      "d": "Strawberry segar, krim mousseline vanilla, sponge lembut."
+    {
+        "cat": "cakery",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Lembut • Cokelat",
+            "en": "Soft • Chocolate"
+        },
+        "img": "images/menu/eclair-chocolat-vanille.jpg",
+        "id": {
+            "n": "Éclair Chocolat Vanille",
+            "d": "Choux lembut, krim vanilla, siraman cokelat pekat."
+        },
+        "en": {
+            "n": "Chocolate Vanilla Éclair",
+            "d": "Soft choux, vanilla cream, dark chocolate glaze."
+        },
+        "available": true
     },
-    "en": {
-      "n": "Strawberry Fraisier",
-      "d": "Fresh strawberries, vanilla mousseline, soft sponge."
+    {
+        "cat": "cakery",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Segar • Citrus",
+            "en": "Fresh • Citrus"
+        },
+        "img": "images/menu/tarte-citron-meringue.jpg",
+        "id": {
+            "n": "Tarte Citron Meringue",
+            "d": "Lemon curd segar, meringue bakar, crust renyah."
+        },
+        "en": {
+            "n": "Lemon Meringue Tart",
+            "d": "Zesty lemon curd, torched meringue, crisp crust."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "cakery",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Manis • Lumer",
-      "en": "Sweet • Molten"
+    {
+        "cat": "cakery",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Renyah • Creamy",
+            "en": "Crisp • Creamy"
+        },
+        "img": "images/menu/mille-feuille-vanille.jpg",
+        "id": {
+            "n": "Mille-Feuille Vanille",
+            "d": "Puff pastry berlapis, krim vanilla Madagascar."
+        },
+        "en": {
+            "n": "Vanilla Mille-Feuille",
+            "d": "Thousand-layer puff, Madagascar vanilla cream."
+        },
+        "available": true
     },
-    "img": "images/menu/burnt-basque-cheesecake.jpg",
-    "id": {
-      "n": "Burnt Basque Cheesecake",
-      "d": "Atas karamel, tengah lembut. Manisnya pas."
+    {
+        "cat": "coffee",
+        "badge": "Signature",
+        "signature": true,
+        "tag": {
+            "id": "Hangat • Creamy",
+            "en": "Warm • Creamy"
+        },
+        "img": "images/menu/cafe-creme-brulee-latte.jpg",
+        "id": {
+            "n": "Café Crème Brûlée Latte",
+            "d": "Espresso, susu creamy, gula brûlée di atas."
+        },
+        "en": {
+            "n": "Crème Brûlée Latte",
+            "d": "Espresso with creamy milk, torched sugar top."
+        },
+        "available": true
     },
-    "en": {
-      "n": "Burnt Basque Cheesecake",
-      "d": "Caramelised top, molten centre. A must-try."
+    {
+        "cat": "coffee",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Bold • Pekat",
+            "en": "Bold • Intense"
+        },
+        "img": "images/menu/espresso-noisette.jpg",
+        "id": {
+            "n": "Espresso Noisette",
+            "d": "Double shot pekat dengan sentuhan hazelnut."
+        },
+        "en": {
+            "n": "Noisette Espresso",
+            "d": "Bold double shot with a hazelnut touch."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "cakery",
-    "badge": "Ikonik",
-    "signature": false,
-    "tag": {
-      "id": "Renyah • Berlapis",
-      "en": "Flaky • Buttery"
+    {
+        "cat": "coffee",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Segar • Ringan",
+            "en": "Fresh • Light"
+        },
+        "img": "images/menu/iced-lumiere-matcha.jpg",
+        "id": {
+            "n": "Iced Lumière Matcha",
+            "d": "Matcha premium, susu oat, es bening."
+        },
+        "en": {
+            "n": "Iced Lumière Matcha",
+            "d": "Premium matcha, oat milk over clear ice."
+        },
+        "available": true
     },
-    "img": "images/menu/croissant-au-beurre.jpg",
-    "id": {
-      "n": "Croissant au Beurre",
-      "d": "64 lapis butter premium, renyah di luar, lembut di dalam."
+    {
+        "cat": "coffee",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Creamy • Lembut",
+            "en": "Creamy • Smooth"
+        },
+        "img": "images/menu/cafe-latte-artisan.jpg",
+        "id": {
+            "n": "Café Latte Artisan",
+            "d": "Espresso pilihan, susu steam lembut, latte art."
+        },
+        "en": {
+            "n": "Artisan Café Latte",
+            "d": "Choice espresso, silky steamed milk, hand-poured art."
+        },
+        "available": true
     },
-    "en": {
-      "n": "Croissant au Beurre",
-      "d": "64 layers of premium butter, crisp outside, tender inside."
+    {
+        "cat": "coffee",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Hangat • Foamy",
+            "en": "Warm • Foamy"
+        },
+        "img": "images/menu/cappuccino-douceur.jpg",
+        "id": {
+            "n": "Cappuccino Douceur",
+            "d": "Foam tebal lembut, taburan cocoa, hangat."
+        },
+        "en": {
+            "n": "Cappuccino Douceur",
+            "d": "Thick velvety foam, cocoa dust, warm and soothing."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "cakery",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Lembut • Cokelat",
-      "en": "Soft • Chocolate"
+    {
+        "cat": "coffee",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Dingin • Bold",
+            "en": "Iced • Bold"
+        },
+        "img": "images/menu/cold-brew-noir.jpg",
+        "id": {
+            "n": "Cold Brew Noir",
+            "d": "Diseduh dingin 18 jam, bold, rendah asam."
+        },
+        "en": {
+            "n": "Noir Cold Brew",
+            "d": "18-hour slow steep, bold, low acidity."
+        },
+        "available": true
     },
-    "img": "images/menu/eclair-chocolat-vanille.jpg",
-    "id": {
-      "n": "Éclair Chocolat Vanille",
-      "d": "Choux lembut, krim vanilla, siraman cokelat pekat."
+    {
+        "cat": "coffee",
+        "badge": "Best Seller",
+        "signature": false,
+        "available": true,
+        "tag": {
+            "id": "Manis • Espresso",
+            "en": ""
+        },
+        "img": "images/menu/affogato-lumiere.jpg",
+        "id": {
+            "n": "Affogato Lumière",
+            "d": "Gelato vanilla disiram double espresso panas."
+        },
+        "en": {
+            "n": "Lumière Affogato",
+            "d": "Vanilla gelato drowned in hot double espresso."
+        }
     },
-    "en": {
-      "n": "Chocolate Vanilla Éclair",
-      "d": "Soft choux, vanilla cream, dark chocolate glaze."
+    {
+        "cat": "savoury",
+        "badge": "Favorit",
+        "signature": false,
+        "tag": {
+            "id": "Gurih • Renyah",
+            "en": "Savoury • Crisp"
+        },
+        "img": "images/menu/pastel-ayam-ragout.jpg",
+        "id": {
+            "n": "Pastel Ayam Ragout",
+            "d": "Kulit renyah berlapis, isi ragout ayam yang creamy."
+        },
+        "en": {
+            "n": "Chicken Ragout Pastel",
+            "d": "Flaky crust, creamy chicken ragout filling."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "cakery",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Segar • Citrus",
-      "en": "Fresh • Citrus"
+    {
+        "cat": "savoury",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Gurih • Keemasan",
+            "en": "Savoury • Golden"
+        },
+        "img": "images/menu/kroket-kentang-sapi.jpg",
+        "id": {
+            "n": "Kroket Kentang Sapi",
+            "d": "Kentang halus isi daging sapi, goreng keemasan."
+        },
+        "en": {
+            "n": "Beef Potato Kroket",
+            "d": "Silky potato, beef, golden-fried."
+        },
+        "available": true
     },
-    "img": "images/menu/tarte-citron-meringue.jpg",
-    "id": {
-      "n": "Tarte Citron Meringue",
-      "d": "Lemon curd segar, meringue bakar, crust renyah."
+    {
+        "cat": "savoury",
+        "badge": "Best Seller",
+        "signature": true,
+        "tag": {
+            "id": "Gurih • Favorit",
+            "en": "Savoury • Crowd Favourite"
+        },
+        "img": "images/menu/risol-mayo-smoked-beef.jpg",
+        "id": {
+            "n": "Risol Mayo Smoked Beef",
+            "d": "Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."
+        },
+        "en": {
+            "n": "Smoked Beef Risol Mayo",
+            "d": "Smoked beef, mayo & egg in crisp thin skin."
+        },
+        "available": true
     },
-    "en": {
-      "n": "Lemon Meringue Tart",
-      "d": "Zesty lemon curd, torched meringue, crisp crust."
+    {
+        "cat": "savoury",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Gurih • Cheesy",
+            "en": "Savoury • Cheesy"
+        },
+        "img": "images/menu/croque-monsieur.jpg",
+        "id": {
+            "n": "Croque Monsieur",
+            "d": "Roti panggang, ham, lelehan gruyère, saus béchamel."
+        },
+        "en": {
+            "n": "Croque Monsieur",
+            "d": "Toasted bread, ham, melted gruyère, béchamel."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "cakery",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Renyah • Creamy",
-      "en": "Crisp • Creamy"
+    {
+        "cat": "savoury",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Gurih • Buttery",
+            "en": "Savoury • Buttery"
+        },
+        "img": "images/menu/quiche-lorraine.jpg",
+        "id": {
+            "n": "Quiche Lorraine",
+            "d": "Pastry renyah isi telur, smoked beef, dan keju."
+        },
+        "en": {
+            "n": "Quiche Lorraine",
+            "d": "Buttery pastry, egg, smoked beef, savoury cheese."
+        },
+        "available": true
     },
-    "img": "images/menu/mille-feuille-vanille.jpg",
-    "id": {
-      "n": "Mille-Feuille Vanille",
-      "d": "Puff pastry berlapis, krim vanilla Madagascar."
+    {
+        "cat": "savoury",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Hangat • Keju",
+            "en": "Warm • Cheesy"
+        },
+        "img": "images/menu/pain-au-fromage.jpg",
+        "id": {
+            "n": "Pain au Fromage",
+            "d": "Roti hangat isi keju lumer, kulit keemasan."
+        },
+        "en": {
+            "n": "Pain au Fromage",
+            "d": "Warm bread with molten cheese, golden crust."
+        },
+        "available": true
     },
-    "en": {
-      "n": "Vanilla Mille-Feuille",
-      "d": "Thousand-layer puff, Madagascar vanilla cream."
+    {
+        "cat": "savoury",
+        "badge": "",
+        "signature": false,
+        "tag": {
+            "id": "Segar • Ringan",
+            "en": "Fresh • Light"
+        },
+        "img": "images/menu/salade-lumiere.jpg",
+        "id": {
+            "n": "Salade Lumière",
+            "d": "Sayuran segar, vinaigrette lemon, taburan herbs."
+        },
+        "en": {
+            "n": "Salade Lumière",
+            "d": "Crisp greens, lemon vinaigrette, fresh herbs."
+        },
+        "available": true
     },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "Signature",
-    "signature": true,
-    "tag": {
-      "id": "Hangat • Creamy",
-      "en": "Warm • Creamy"
-    },
-    "img": "images/menu/cafe-creme-brulee-latte.jpg",
-    "id": {
-      "n": "Café Crème Brûlée Latte",
-      "d": "Espresso, susu creamy, gula brûlée di atas."
-    },
-    "en": {
-      "n": "Crème Brûlée Latte",
-      "d": "Espresso with creamy milk, torched sugar top."
-    },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Bold • Pekat",
-      "en": "Bold • Intense"
-    },
-    "img": "images/menu/espresso-noisette.jpg",
-    "id": {
-      "n": "Espresso Noisette",
-      "d": "Double shot pekat dengan sentuhan hazelnut."
-    },
-    "en": {
-      "n": "Noisette Espresso",
-      "d": "Bold double shot with a hazelnut touch."
-    },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Segar • Ringan",
-      "en": "Fresh • Light"
-    },
-    "img": "images/menu/iced-lumiere-matcha.jpg",
-    "id": {
-      "n": "Iced Lumière Matcha",
-      "d": "Matcha premium, susu oat, es bening."
-    },
-    "en": {
-      "n": "Iced Lumière Matcha",
-      "d": "Premium matcha, oat milk over clear ice."
-    },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Creamy • Lembut",
-      "en": "Creamy • Smooth"
-    },
-    "img": "images/menu/cafe-latte-artisan.jpg",
-    "id": {
-      "n": "Café Latte Artisan",
-      "d": "Espresso pilihan, susu steam lembut, latte art."
-    },
-    "en": {
-      "n": "Artisan Café Latte",
-      "d": "Choice espresso, silky steamed milk, hand-poured art."
-    },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Hangat • Foamy",
-      "en": "Warm • Foamy"
-    },
-    "img": "images/menu/cappuccino-douceur.jpg",
-    "id": {
-      "n": "Cappuccino Douceur",
-      "d": "Foam tebal lembut, taburan cocoa, hangat."
-    },
-    "en": {
-      "n": "Cappuccino Douceur",
-      "d": "Thick velvety foam, cocoa dust, warm and soothing."
-    },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Dingin • Bold",
-      "en": "Iced • Bold"
-    },
-    "img": "images/menu/cold-brew-noir.jpg",
-    "id": {
-      "n": "Cold Brew Noir",
-      "d": "Diseduh dingin 18 jam, bold, rendah asam."
-    },
-    "en": {
-      "n": "Noir Cold Brew",
-      "d": "18-hour slow steep, bold, low acidity."
-    },
-    "available": true
-  },
-  {
-    "cat": "coffee",
-    "badge": "Favorit",
-    "signature": false,
-    "tag": {
-      "id": "Manis • Espresso",
-      "en": "Sweet • Espresso"
-    },
-    "img": "images/menu/affogato-lumiere.jpg",
-    "id": {
-      "n": "Affogato Lumière",
-      "d": "Gelato vanilla disiram double espresso panas."
-    },
-    "en": {
-      "n": "Lumière Affogato",
-      "d": "Vanilla gelato drowned in hot double espresso."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "Favorit",
-    "signature": false,
-    "tag": {
-      "id": "Gurih • Renyah",
-      "en": "Savoury • Crisp"
-    },
-    "img": "images/menu/pastel-ayam-ragout.jpg",
-    "id": {
-      "n": "Pastel Ayam Ragout",
-      "d": "Kulit renyah berlapis, isi ragout ayam yang creamy."
-    },
-    "en": {
-      "n": "Chicken Ragout Pastel",
-      "d": "Flaky crust, creamy chicken ragout filling."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Gurih • Keemasan",
-      "en": "Savoury • Golden"
-    },
-    "img": "images/menu/kroket-kentang-sapi.jpg",
-    "id": {
-      "n": "Kroket Kentang Sapi",
-      "d": "Kentang halus isi daging sapi, goreng keemasan."
-    },
-    "en": {
-      "n": "Beef Potato Kroket",
-      "d": "Silky potato, beef, golden-fried."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "Best Seller",
-    "signature": true,
-    "tag": {
-      "id": "Gurih • Favorit",
-      "en": "Savoury • Crowd Favourite"
-    },
-    "img": "images/menu/risol-mayo-smoked-beef.jpg",
-    "id": {
-      "n": "Risol Mayo Smoked Beef",
-      "d": "Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."
-    },
-    "en": {
-      "n": "Smoked Beef Risol Mayo",
-      "d": "Smoked beef, mayo & egg in crisp thin skin."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Gurih • Cheesy",
-      "en": "Savoury • Cheesy"
-    },
-    "img": "images/menu/croque-monsieur.jpg",
-    "id": {
-      "n": "Croque Monsieur",
-      "d": "Roti panggang, ham, lelehan gruyère, saus béchamel."
-    },
-    "en": {
-      "n": "Croque Monsieur",
-      "d": "Toasted bread, ham, melted gruyère, béchamel."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Gurih • Buttery",
-      "en": "Savoury • Buttery"
-    },
-    "img": "images/menu/quiche-lorraine.jpg",
-    "id": {
-      "n": "Quiche Lorraine",
-      "d": "Pastry renyah isi telur, smoked beef, dan keju."
-    },
-    "en": {
-      "n": "Quiche Lorraine",
-      "d": "Buttery pastry, egg, smoked beef, savoury cheese."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Hangat • Keju",
-      "en": "Warm • Cheesy"
-    },
-    "img": "images/menu/pain-au-fromage.jpg",
-    "id": {
-      "n": "Pain au Fromage",
-      "d": "Roti hangat isi keju lumer, kulit keemasan."
-    },
-    "en": {
-      "n": "Pain au Fromage",
-      "d": "Warm bread with molten cheese, golden crust."
-    },
-    "available": true
-  },
-  {
-    "cat": "savoury",
-    "badge": "",
-    "signature": false,
-    "tag": {
-      "id": "Segar • Ringan",
-      "en": "Fresh • Light"
-    },
-    "img": "images/menu/salade-lumiere.jpg",
-    "id": {
-      "n": "Salade Lumière",
-      "d": "Sayuran segar, vinaigrette lemon, taburan herbs."
-    },
-    "en": {
-      "n": "Salade Lumière",
-      "d": "Crisp greens, lemon vinaigrette, fresh herbs."
-    },
-    "available": true
-  }
+    {
+        "cat": "coffee",
+        "badge": "",
+        "signature": false,
+        "available": false,
+        "tag": {
+            "id": "Susu",
+            "en": ""
+        },
+        "img": "images/menu/kopi-susu.jpg",
+        "id": {
+            "n": "Kopi Susu",
+            "d": "Kopi test"
+        },
+        "en": {
+            "n": "Latte",
+            "d": "Latte test"
+        }
+    }
 ]

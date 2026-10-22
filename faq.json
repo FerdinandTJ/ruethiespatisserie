@@ -1,32 +1,32 @@
 [
-  {
-    "q": "Di mana lokasi Ruethies Patisserie?",
-    "a": "Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530. [Dapatkan rute](https://www.google.com/maps/dir/?api=1&destination=-6.3443722,107.1490519)",
-    "qe": "Where is Ruethies Patisserie located?",
-    "ae": "Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Bekasi Regency, West Java 17530. [Get directions](https://www.google.com/maps/dir/?api=1&destination=-6.3443722,107.1490519)"
-  },
-  {
-    "q": "Jam berapa buka?",
-    "a": "Setiap hari pukul 09.00–21.00 WIB.",
-    "qe": "What are the opening hours?",
-    "ae": "Open daily 09.00–21.00 WIB."
-  },
-  {
-    "q": "Bagaimana cara reservasi?",
-    "a": "Melalui WhatsApp [0851-3928-1257](https://wa.me/6285139281257) — sebutkan nama, jumlah tamu, tanggal, jam, dan catatan.",
-    "qe": "How do I reserve a table?",
-    "ae": "Via WhatsApp [0851-3928-1257](https://wa.me/6285139281257) — mention name, party size, date, time, and notes."
-  },
-  {
-    "q": "Apakah pastel, kroket, dan risol selalu tersedia?",
-    "a": "Digoreng dadakan (waktu tunggu sekitar 10 menit). Silakan tanya ketersediaan harian via WhatsApp.",
-    "qe": "Are pastel, kroket, and risol always available?",
-    "ae": "Fried to order (about 10 minutes wait). Please ask daily availability via WhatsApp."
-  },
-  {
-    "q": "Berapa kisaran harga?",
-    "a": "Rp20.000–Rp85.000.",
-    "qe": "What is the price range?",
-    "ae": "Rp20,000–Rp85,000."
-  }
+    {
+        "q": "Di mana lokasi Ruethies Patisserie?",
+        "a": "Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530. [Dapatkan rute](https:\/\/www.google.com\/maps\/dir\/?api=1&destination=-6.3443722,107.1490519)",
+        "qe": "Where is Ruethies Patisserie located?",
+        "ae": "Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Bekasi Regency, West Java 17530. [Get directions](https:\/\/www.google.com\/maps\/dir\/?api=1&destination=-6.3443722,107.1490519)"
+    },
+    {
+        "q": "Bagaimana cara reservasi?",
+        "a": "Melalui WhatsApp [0851-3928-1257](https:\/\/wa.me\/6285139281257) — sebutkan nama, jumlah tamu, tanggal, jam, dan catatan.",
+        "qe": "How do I reserve a table?",
+        "ae": "Via WhatsApp [0851-3928-1257](https:\/\/wa.me\/6285139281257) — mention name, party size, date, time, and notes."
+    },
+    {
+        "q": "Apakah pastel, kroket, dan risol selalu tersedia?",
+        "a": "Digoreng dadakan (waktu tunggu sekitar 10 menit). Silakan tanya ketersediaan harian via WhatsApp.",
+        "qe": "Are pastel, kroket, and risol always available?",
+        "ae": "Fried to order (about 10 minutes wait). Please ask daily availability via WhatsApp."
+    },
+    {
+        "q": "Jam berapa buka?",
+        "a": "Setiap hari pukul 09.00–21.00 WIB.",
+        "qe": "What are the opening hours?",
+        "ae": "Open daily 09.00–21.00 WIB."
+    },
+    {
+        "q": "Berapa kisaran harga?",
+        "a": "Rp20.000–Rp85.000.",
+        "qe": "What is the price range?",
+        "ae": "Rp20,000–Rp85,000."
+    }
 ]
