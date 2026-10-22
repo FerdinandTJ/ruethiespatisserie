@@ -1,12 +1,24 @@
 # Ruethies Patisserie — Hostinger (Apache/LiteSpeed)
 <IfModule mod_rewrite.c>
 RewriteEngine On
+# Staging hanya diakses lewat subdomain, bukan URL /staging pada domain produksi.
+RewriteCond %{HTTP_HOST} !^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
+RewriteCond %{THE_REQUEST} \s/+staging(?:[/\s?]) [NC]
+RewriteRule ^ - [F,L]
 # Kanonis: https://ruethiespatisserie.com/ (tanpa www) — satu redirect 301, tanpa rantai
 RewriteCond %{HTTP_HOST} ^www\.ruethiespatisserie\.com$ [NC]
 RewriteRule ^ https://ruethiespatisserie.com%{REQUEST_URI} [L,R=301]
 # Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Jangan indeks subdomain staging (password akses tetap dipasang lewat hPanel).
+<IfModule mod_setenvif.c>
+SetEnvIfNoCase Host "^staging\.ruethiespatisserie\.com(:[0-9]+)?$" RUETHIES_NOINDEX=1
+</IfModule>
+<IfModule mod_headers.c>
+Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=RUETHIES_NOINDEX
 </IfModule>
 
 # Compress
