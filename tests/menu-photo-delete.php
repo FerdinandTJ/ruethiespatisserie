@@ -33,6 +33,11 @@ function cleanup(string $path): void {
 }
 
 try {
+  $catalog = menu_with_ids([['id'=>['n'=>'First']],['id'=>['n'=>'Second']]]);
+  check(strlen($catalog[0]['uid'])===32 && $catalog[0]['uid']!==$catalog[1]['uid'], 'catalog migration assigns distinct permanent IDs');
+  $uid = $catalog[0]['uid']; $catalog[0]['id']['n']='Renamed'; $catalog=array_reverse($catalog);
+  check(menu_with_ids($catalog)[1]['uid']===$uid, 'IDs survive rename, reorder and repeated migration');
+  check(menu_save($catalog) && menu_load()[1]['uid']===$uid, 'saving catalog preserves IDs');
   fixture();
   check(menu_save([]), 'menu saved before cleanup');
   check(menu_photo_delete_unused('images/menu/example.jpg') === 'deleted' && !exists_pair(), 'unused JPEG and WebP deleted');

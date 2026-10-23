@@ -52,7 +52,7 @@ if (!$unavailable && !$statusRequested && !$review) {
     $sid = $values['slot_id'] ?? ($_GET['slot'] ?? 0);
     foreach ($slots as $s) if ((string)$s['id'] === (string)(is_scalar($sid) ? $sid : 0)) $slot = $s;
     if (!$slot && count($slots) === 1) $slot = $slots[0];
-    if ($slot) $products = po_query($db, 'SELECT * FROM po_products WHERE slot_id=? AND active=1 ORDER BY id', [$slot['id']])->fetchAll();
+    if ($slot) $products = po_public_products($db, (int)$slot['id']);
   } catch (Throwable $e) { $unavailable = true; $error = 'Daftar PO belum dapat dimuat.'; }
 }
 function po_value(array $values, string $key): string { return is_string($values[$key] ?? null) ? $values[$key] : ''; }
@@ -60,7 +60,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="po.css?v=1"><script src="po.js?v=1" defer></script></head>
+<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="po.css?v=2"><script src="po.js?v=1" defer></script></head>
 <body>
 <div class="demo-banner">DEMO STAGING · Gunakan data contoh · Tidak ada pembayaran atau pesanan nyata</div>
 <header class="po-header"><a href="./" aria-label="Beranda Ruethies"><img src="logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="./">Kembali ke website ↗</a></header>
@@ -107,7 +107,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <section class="panel" id="pilihan"><p class="eyebrow">02 · PILIH SAJIAN</p><h2><?= h($slot['title']) ?></h2><p class="muted">Jumlah 0 berarti tidak dipilih. Ketersediaan akhir dikonfirmasi oleh admin.</p>
 <?php if (!$products): ?><div class="empty">Produk untuk jadwal ini sedang disiapkan.</div><?php endif; ?>
 <?php foreach ($products as $p): $left = max(0, (int)$p['quota'] - (int)$p['reserved']); $qty = is_array($values['qty'] ?? null) ? ($values['qty'][$p['id']] ?? 0) : 0; ?>
-<div class="product"><div><h3><?= h($p['name']) ?></h3><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small></div>
+<div class="product"><div class="product-info"><?php if ($p['image']): ?><img class="product-photo" src="<?= h($p['image']) ?>" alt="" width="88" height="66" loading="lazy"><?php endif; ?><div><h3><?= h($p['name']) ?></h3><p class="muted"><?= h($p['description']) ?></p><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small></div></div>
 <label>Jumlah<input type="number" name="qty[<?= (int)$p['id'] ?>]" min="0" max="<?= min(20,$left) ?>" step="1" value="<?= h(is_scalar($qty) ? (string)$qty : '0') ?>" data-price="<?= (int)$p['price'] ?>" <?= !$left ? 'disabled' : '' ?> aria-label="Jumlah <?= h($p['name']) ?>"></label></div>
 <?php endforeach; ?>
 <p class="total"><span>Perkiraan total</span><strong id="po-total" aria-live="polite">Rp0</strong></p></section>

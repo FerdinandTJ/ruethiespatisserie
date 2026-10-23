@@ -97,7 +97,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       $row = menu_validate(array_merge($_POST, ['img' => $img]));
       if (!$row) $err = 'Periksa isian: nama wajib, kategori valid.';
       else {
-        if ($old) { $row['img'] = $img; $items[$i] = $row; }
+        if ($old) { $row['img'] = $img; $row['uid'] = $old['uid'] ?? ''; $items[$i] = $row; }
         else $items[] = $row;
         if (menu_save($items)) { ruethies_log($me['name'], $old ? 'ubah' : 'tambah', $row['id']['n']); header('Location: ?ok=simpan'); exit; }
         $err = 'Gagal menyimpan.';

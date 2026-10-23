@@ -13,11 +13,14 @@ CREATE TABLE IF NOT EXISTS po_products (
   slot_id BIGINT UNSIGNED NOT NULL,
   name VARCHAR(100) NOT NULL,
   price INT UNSIGNED NOT NULL,
+  menu_uid CHAR(32) NULL,
+  image VARCHAR(500) NOT NULL DEFAULT '',
   quota INT UNSIGNED NOT NULL,
   reserved INT UNSIGNED NOT NULL DEFAULT 0,
   active TINYINT NOT NULL DEFAULT 1,
   FOREIGN KEY (slot_id) REFERENCES po_slots(id),
-  INDEX (slot_id, active)
+  INDEX (slot_id, active),
+  UNIQUE KEY po_slot_menu (slot_id, menu_uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS po_orders (

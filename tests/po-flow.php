@@ -17,6 +17,7 @@ $testDsn = $dsn . ';dbname=' . $database;
 $db = new PDO($testDsn,$user,$pass,$options);
 $secret = bin2hex(random_bytes(32));
 $root = sys_get_temp_dir() . '/' . $database;
+define('RUETHIES_PUBLIC',$root.'/catalog');
 $process = null;
 function verify(bool $ok, string $label): void { if (!$ok) throw new RuntimeException($label); print "PASS: $label\n"; }
 function rejects(callable $fn, string $label): void { try { $fn(); } catch (DomainException $e) { verify(true,$label); return; } throw new RuntimeException('Expected rejection: '.$label); }
@@ -25,7 +26,11 @@ function make_slot(PDO $db, string $name = 'Demo'): int {
   po_toggle_slot($db,$id,1); return $id;
 }
 function make_product(PDO $db,int $sid,int $quota=10): int {
-  return po_save_product($db,['slot_id'=>$sid,'name'=>'Croissant Demo','price'=>25000,'quota'=>$quota,'active'=>1]);
+  $catalog = json_decode(file_get_contents(RUETHIES_PUBLIC.'/menu.json'),true);
+  $uid = bin2hex(random_bytes(16));
+  $catalog[] = ['uid'=>$uid,'cat'=>'cakery','id'=>['n'=>'Croissant Demo','d'=>'Deskripsi katalog'],'img'=>'images/menu/example.jpg','available'=>true];
+  file_put_contents(RUETHIES_PUBLIC.'/menu.json',json_encode($catalog));
+  return po_save_product($db,['slot_id'=>$sid,'menu_uid'=>$uid,'name'=>'Untrusted name','price'=>25000,'quota'=>$quota,'active'=>1]);
 }
 function input_for(int $sid,int $pid,int $qty=1,string $phone='081234567890'): array {
   return ['slot_id'=>$sid,'qty'=>[$pid=>(string)$qty],'name'=>'Pelanggan Contoh','phone'=>$phone,'note'=>'Tanpa pembayaran','consent'=>'yes'];
@@ -42,8 +47,22 @@ function remove_fixture(string $path): void {
   rmdir($path);
 }
 try {
+  mkdir(RUETHIES_PUBLIC,0700,true);file_put_contents(RUETHIES_PUBLIC.'/menu.json','[]');
   foreach (preg_split('/;\s*(?:\n|$)/',file_get_contents(dirname(__DIR__).'/admin/po-schema.sql')) as $sql) if (trim($sql)!=='') $db->exec($sql);
+  $db->exec('ALTER TABLE po_products DROP INDEX po_slot_menu, DROP COLUMN menu_uid, DROP COLUMN image');
+  $legacySlot=make_slot($db,'Legacy migration');
+  po_query($db,'INSERT INTO po_products(slot_id,name,price,quota) VALUES(?,?,?,?)',[$legacySlot,'Manual lama',12345,7]);
+  $legacyId=(int)$db->lastInsertId();
+  po_migrate_catalog($db);po_migrate_catalog($db);
+  $legacy=po_query($db,'SELECT * FROM po_products WHERE id=?',[$legacyId])->fetch();
+  verify($legacy['menu_uid']===null && (int)$legacy['price']===12345,'repeatable migration preserves legacy product and price');
+  verify(po_public_products($db,$legacySlot)===[],'unlinked legacy product cannot receive new submissions');
   $sid = make_slot($db); $pid = make_product($db,$sid,3);
+  $linked=po_query($db,'SELECT * FROM po_products WHERE id=?',[$pid])->fetch();
+  rejects(fn()=>po_save_product($db,['slot_id'=>$sid,'menu_uid'=>$linked['menu_uid'],'price'=>27000,'quota'=>5,'active'=>1]),'duplicate catalog menu in one schedule rejected');
+  $otherPriceSlot=make_slot($db,'Different price');
+  po_save_product($db,['slot_id'=>$otherPriceSlot,'menu_uid'=>$linked['menu_uid'],'price'=>27000,'quota'=>5,'active'=>1]);
+  verify((int)po_public_products($db,$otherPriceSlot)[0]['price']===27000 && (int)$linked['price']===25000,'each schedule stores its own price');
   $input = input_for($sid,$pid,2); $input['price'] = 1;
   $quote = po_quote($db,$input);
   verify($quote['total']===50000,'server ignores client price');
@@ -112,10 +131,21 @@ try {
   rejects(fn()=>po_transition($db,(int)$multiOrder['id'],'pending','confirmed','Owner'),'multi-product confirmation fails when one quota is exhausted');
   verify((int)po_query($db,'SELECT reserved FROM po_products WHERE id=?',[$p1])->fetchColumn()===0,'partial quota update rolled back');
 
+  $catalog=json_decode(file_get_contents(RUETHIES_PUBLIC.'/menu.json'),true);
+  foreach($catalog as &$item)if($item['uid']===$linked['menu_uid']){$item['id']['n']='Renamed catalog';$item['available']=false;}unset($item);
+  file_put_contents(RUETHIES_PUBLIC.'/menu.json',json_encode($catalog));
+  rejects(fn()=>po_quote($db,input_for($sid,$pid,1)),'hidden catalog menu blocks new checkout');
+  verify(po_order($db,$token)['lines'][0]['name']==='Croissant Demo','catalog rename does not alter existing order snapshot');
+  $catalog=array_values(array_filter($catalog,fn($m)=>$m['uid']!==$linked['menu_uid']));
+  file_put_contents(RUETHIES_PUBLIC.'/menu.json',json_encode($catalog));
+  rejects(fn()=>po_quote($db,input_for($sid,$pid,1)),'deleted catalog menu blocks new checkout');
+  verify(po_order($db,$token)['lines'][0]['name']==='Croissant Demo','deleted catalog preserves order history');
+
   // HTTP integration: fixture dengan layout Hostinger, akun contoh, dan database terpisah.
   $public=$root.'/public_html/staging'; $private=$root.'/ruethies-data-staging';
   mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
   foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
+  copy(RUETHIES_PUBLIC.'/menu.json',$public.'/menu.json');
   $cfg=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret];
   file_put_contents($private.'/po-config.php','<?php return '.var_export($cfg,true).';');
   file_put_contents($private.'/users.json',json_encode([
@@ -166,6 +196,8 @@ try {
   verify(str_contains($html,'hanya untuk pemilik') && (int)po_slot($db,$sid2)['is_open']===1,'staff cannot change schedule');
   [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);verify($code===302,'owner login works');
   [$code,$html]=http_request('/admin/po.php');$adminCsrf=csrf_from($html);
+  [$code,$catalogHtml]=http_request('/admin/po.php?slot='.$sid2);
+  verify(str_contains($catalogHtml,'name="menu_uid"') && str_contains($catalogHtml,'Tambah dari katalog'),'admin renders catalog selector instead of manual name field');
   $webOrder=po_query($db,'SELECT id FROM po_orders WHERE request_hash=?',[hash('sha256',$webNonce)])->fetchColumn();
   [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'transition','order_id'=>$webOrder,'expected'=>'pending','target'=>'confirmed']);
   verify(str_contains($html,'Sesi formulir tidak valid'),'admin CSRF rejected');
@@ -173,6 +205,21 @@ try {
     [$code]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'transition','order_id'=>$webOrder,'expected'=>$from,'target'=>$to]);
     verify($code===303 && po_query($db,'SELECT status FROM po_orders WHERE id=?',[$webOrder])->fetchColumn()===$to,'HTTP order transition '.$to);
   }
+  $savedCatalog=json_decode(file_get_contents($public.'/menu.json'),true);
+  $sourceUid=po_query($db,'SELECT menu_uid FROM po_products WHERE id=?',[$pid2])->fetchColumn();
+  $menuIndex=array_search($sourceUid,array_column($savedCatalog,'uid'),true);
+  [$code]=http_request('/admin/index.php',['csrf'=>$adminCsrf,'aksi'=>'save','i'=>$menuIndex,'cat'=>'cakery','n'=>'Edited from Menu','d'=>'New description','available'=>'1']);
+  $editedCatalog=json_decode(file_get_contents($public.'/menu.json'),true);
+  verify($code===302 && $editedCatalog[$menuIndex]['uid']===$sourceUid,'admin menu edit preserves permanent ID');
+  [$code,$html]=http_request('/po.php?slot='.$sid2);
+  verify(str_contains($html,'Edited from Menu') && str_contains($html,'New description'),'PO follows catalog name and description after editing');
+  // Foto katalog yang dihapus tetap disimpan ketika masih direferensikan PO.
+  mkdir($public.'/images/menu',0700,true);
+  file_put_contents($public.'/images/menu/example.jpg','jpeg');file_put_contents($public.'/images/menu/example.webp','webp');
+  file_put_contents($public.'/menu.json','[]');
+  $photoCode='define("RUETHIES_ADMIN",true);require '.var_export($public.'/admin/config.php',true).';require '.var_export($public.'/admin/lib.php',true).';echo menu_photo_delete_unused("images/menu/example.jpg");';
+  $p=[];$photoProc=proc_open([PHP_BINARY,'-r',$photoCode],[1=>['pipe','w'],2=>['pipe','w']],$p);$photoOut=stream_get_contents($p[1]);$photoErr=stream_get_contents($p[2]);fclose($p[1]);fclose($p[2]);proc_close($photoProc);
+  verify($photoOut==='kept' && $photoErr==='' && is_file($public.'/images/menu/example.jpg'),'PO image reference protects deleted catalog photo');
   // Tidak dijalankan dari staging => endpoint demo ditolak sebelum akses database.
   $guard='define("RUETHIES_ADMIN",true);define("RUETHIES_STAGING",false);require '.var_export(dirname(__DIR__).'/admin/po-lib.php',true).';register_shutdown_function(function(){echo http_response_code();});po_require_staging();';
   $p=[];$guardProc=proc_open([PHP_BINARY,'-r',$guard],[1=>['pipe','w'],2=>['pipe','w']],$p);$guardOut=stream_get_contents($p[1]);fclose($p[1]);fclose($p[2]);proc_close($guardProc);

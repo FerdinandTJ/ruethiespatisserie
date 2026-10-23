@@ -138,6 +138,8 @@ function ruethies_logout(): void {
 // Semua mutasi konten admin memakai lock ini sampai request selesai. Dengan begitu,
 // pemeriksaan referensi + unlink tidak bersaing dengan penyimpanan menu/galeri lain.
 function content_lock(): void {
+  static $locked = false;
+  if ($locked) return;
   $fh = @fopen(ruethies_data_dir() . '/content.lock', 'c');
   if (!$fh || !flock($fh, LOCK_EX)) {
     if ($fh) fclose($fh);
@@ -147,6 +149,7 @@ function content_lock(): void {
   register_shutdown_function(static function () use ($fh) {
     flock($fh, LOCK_UN); fclose($fh);
   });
+  $locked = true;
 }
 
 // Panggil hanya SETELAH menu berhasil disimpan, di dalam content_lock().
@@ -155,6 +158,15 @@ function menu_photo_delete_unused(string $image): string {
   if ($image === '') return 'none';
   if (!preg_match('~\Aimages/menu/([a-z0-9]+(?:-[a-z0-9]+)*)\.(?:jpg|webp)\z~D', $image, $m)) return 'kept';
   $names = [$m[1] . '.jpg', $m[1] . '.webp'];
+  if (defined('RUETHIES_STAGING') && RUETHIES_STAGING && is_file(ruethies_data_dir() . '/po-config.php')) {
+    try {
+      require_once __DIR__ . '/po-lib.php';
+      // PO menyimpan referensi foto katalog. Jika DB/migrasi belum siap, jangan hapus.
+      foreach (po_query(po_db(), 'SELECT image FROM po_products WHERE image<>?', [''])->fetchAll() as $product) {
+        foreach ($names as $name) if (str_contains($product['image'], $name)) return 'kept';
+      }
+    } catch (Throwable $e) { return 'failed'; }
+  }
   $public = realpath(RUETHIES_PUBLIC);
   $dir = $public . '/images/menu';
   if (!$public || is_link($public . '/images') || is_link($dir) || realpath($dir) !== $dir) return 'failed';
@@ -191,17 +203,24 @@ function menu_load(): array {
   return is_array($d) ? array_values(array_filter($d, fn($m) => is_array($m))) : [];
 }
 function menu_save(array $items): bool {
+  $items = menu_with_ids($items);
   // Backup 5 versi terakhir sebelum tulis.
   $dir = ruethies_data_dir() . '/backups';
   if (!is_dir($dir)) @mkdir($dir, 0700, true);
   if (is_file(RUETHIES_MENU)) @copy(RUETHIES_MENU, $dir . '/menu-' . date('Ymd-His') . '.json');
   foreach (glob($dir . '/menu-*.json') ?: [] as $i => $f) if ($i >= 4) @unlink($f);
-  $fh = @fopen(RUETHIES_MENU, 'c+');
-  if (!$fh) return false;
-  flock($fh, LOCK_EX); ftruncate($fh, 0);
-  $ok = fwrite($fh, json_encode(array_values($items), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
-  fflush($fh); flock($fh, LOCK_UN); fclose($fh);
-  return $ok !== false;
+  return jwrite(RUETHIES_MENU, array_values($items));
+}
+// UID berbeda dari field `id` yang berisi terjemahan Indonesia.
+function menu_with_ids(array $items): array {
+  $seen = [];
+  foreach ($items as &$item) {
+    $uid = $item['uid'] ?? '';
+    if (!is_string($uid) || !preg_match('/\A[a-f0-9]{32}\z/', $uid) || isset($seen[$uid])) $uid = bin2hex(random_bytes(16));
+    $item['uid'] = $uid; $seen[$uid] = true;
+  }
+  unset($item);
+  return $items;
 }
 function menu_validate(array $in): ?array {
   $cat = $in['cat'] ?? '';

@@ -48,6 +48,43 @@ function po_db(): PDO {
 function po_query(PDO $db, string $sql, array $args = []): PDOStatement {
   $s = $db->prepare($sql); $s->execute($args); return $s;
 }
+function po_migrate_catalog(PDO $db): void {
+  $columns = array_column($db->query('SHOW COLUMNS FROM po_products')->fetchAll(), 'Field');
+  if (!in_array('menu_uid',$columns,true)) $db->exec('ALTER TABLE po_products ADD menu_uid CHAR(32) NULL');
+  if (!in_array('image',$columns,true)) $db->exec("ALTER TABLE po_products ADD image VARCHAR(500) NOT NULL DEFAULT ''");
+  $indexes = array_column($db->query('SHOW INDEX FROM po_products')->fetchAll(), 'Key_name');
+  if (!in_array('po_slot_menu',$indexes,true)) $db->exec('ALTER TABLE po_products ADD UNIQUE KEY po_slot_menu (slot_id,menu_uid)');
+}
+function po_catalog(): array {
+  $raw = @file_get_contents(RUETHIES_PUBLIC . '/menu.json');
+  $items = $raw === false ? null : json_decode($raw,true);
+  if (!is_array($items) || !array_is_list($items)) throw new RuntimeException('Katalog menu tidak terbaca.');
+  $out = [];
+  foreach ($items as $item) {
+    if (!is_array($item) || !preg_match('/\A[a-f0-9]{32}\z/', $item['uid'] ?? '') || isset($out[$item['uid']])) throw new RuntimeException('Jalankan migrasi UID menu dahulu.');
+    $out[$item['uid']] = $item;
+  }
+  return $out;
+}
+function po_catalog_visible(array $item): bool {
+  return ($item['available'] ?? true) !== false && !empty($item['id']['n']);
+}
+function po_catalog_image(array $item): string {
+  $image = $item['img'] ?? '';
+  return is_string($image) && preg_match('~\Aimages/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)\z~', $image) ? $image : '';
+}
+function po_public_products(PDO $db, int $sid): array {
+  $catalog = po_catalog(); $out = [];
+  foreach (po_query($db,'SELECT * FROM po_products WHERE slot_id=? AND active=1 ORDER BY id',[$sid])->fetchAll() as $p) {
+    $source = $catalog[$p['menu_uid'] ?? ''] ?? null;
+    if (!$source || !po_catalog_visible($source)) continue;
+    $p['name'] = $source['id']['n'];
+    $p['description'] = $source['id']['d'] ?? '';
+    $p['image'] = po_catalog_image($source);
+    $out[] = $p;
+  }
+  return $out;
+}
 function po_money(int $amount): string { return 'Rp' . number_format($amount, 0, ',', '.'); }
 function po_date(int $time): string { return date('d/m/Y H:i', $time) . ' WIB'; }
 function po_text($value, string $label, int $min, int $max): string {
@@ -117,22 +154,34 @@ function po_toggle_slot(PDO $db, int $id, int $open): void {
   } catch (Throwable $e) { $db->rollBack(); throw $e; }
 }
 function po_save_product(PDO $db, array $input): int {
+  if (function_exists('content_lock')) content_lock();
   $id = po_int($input['id'] ?? 0, 0, PHP_INT_MAX);
   $sid = po_int($input['slot_id'] ?? 0, 1, PHP_INT_MAX);
-  $name = po_text($input['name'] ?? '', 'Nama produk', 2, 100);
   $price = po_int($input['price'] ?? '', 1000, 10000000);
   $quota = po_int($input['quota'] ?? '', 1, 10000);
   $active = isset($input['active']) ? 1 : 0;
   $db->beginTransaction();
   try {
     po_slot($db, $sid, true);
+    $row = $id ? po_query($db,'SELECT * FROM po_products WHERE id=? AND slot_id=? FOR UPDATE',[$id,$sid])->fetch() : null;
+    if ($id && !$row) throw new DomainException('Produk tidak ditemukan.');
+    $uid = po_text($input['menu_uid'] ?? ($row['menu_uid'] ?? ''), 'Pilihan menu', 0, 32);
+    if ($row && $row['menu_uid'] && $uid !== $row['menu_uid']) throw new DomainException('Identitas produk tidak bisa diganti. Tambahkan produk PO baru.');
+    $source = po_catalog()[$uid] ?? null;
+    if (!$source || !po_catalog_visible($source)) {
+      if (!$row || $active || $uid !== ($row['menu_uid'] ?? '')) throw new DomainException('Pilih menu katalog yang masih ditampilkan di website.');
+      $name = $row['name']; $image = $row['image'];
+    } else {
+      $name = po_text($source['id']['n'], 'Nama produk', 2, 100); $image = po_catalog_image($source);
+    }
+    if ($row && !$row['menu_uid'] && $uid !== '' && po_query($db,'SELECT id FROM po_lines WHERE product_id=? LIMIT 1',[$id])->fetch()) throw new DomainException('Produk manual ini sudah punya pesanan. Nonaktifkan dan tambahkan produk katalog baru.');
+    if ($uid !== '' && po_query($db,'SELECT id FROM po_products WHERE slot_id=? AND menu_uid=? AND id<>?',[$sid,$uid,$id])->fetch()) throw new DomainException('Menu ini sudah ada pada jadwal PO ini. Edit harga atau kuotanya di produk yang sudah ada.');
     if ($id) {
-      $row = po_query($db, 'SELECT * FROM po_products WHERE id=? AND slot_id=? FOR UPDATE', [$id,$sid])->fetch();
       if (!$row || $quota < (int)$row['reserved']) throw new DomainException('Kuota tidak boleh di bawah jumlah yang sudah dikonfirmasi.');
-      po_query($db, 'UPDATE po_products SET name=?,price=?,quota=?,active=? WHERE id=?', [$name,$price,$quota,$active,$id]);
+      po_query($db, 'UPDATE po_products SET name=?,price=?,quota=?,active=?,menu_uid=?,image=? WHERE id=?', [$name,$price,$quota,$active,$uid ?: null,$image,$id]);
     } else {
       if ((int)po_query($db,'SELECT COUNT(*) FROM po_products WHERE slot_id=?',[$sid])->fetchColumn() >= 100) throw new DomainException('Maksimal 100 produk per jadwal.');
-      po_query($db, 'INSERT INTO po_products(slot_id,name,price,quota,active) VALUES(?,?,?,?,?)', [$sid,$name,$price,$quota,$active]);
+      po_query($db, 'INSERT INTO po_products(slot_id,name,price,quota,active,menu_uid,image) VALUES(?,?,?,?,?,?,?)', [$sid,$name,$price,$quota,$active,$uid ?: null,$image]);
       $id = (int)$db->lastInsertId();
     }
     $db->commit(); return $id;
@@ -145,7 +194,7 @@ function po_quote(PDO $db, array $input): array {
   if (!po_slot_open($slot)) throw new DomainException('Jadwal PO belum dibuka atau sudah ditutup.');
   $qty = $input['qty'] ?? [];
   if (!is_array($qty) || count($qty) > 100) throw new DomainException('Pilihan produk tidak valid.');
-  $products = po_query($db, 'SELECT * FROM po_products WHERE slot_id=? AND active=1 ORDER BY id', [$slot['id']])->fetchAll();
+  $products = po_public_products($db, (int)$slot['id']);
   $selected = [];
   foreach ($qty as $id => $n) {
     $n = po_int($n === '' ? 0 : $n, 0, 20);
@@ -182,6 +231,7 @@ function po_rate(PDO $db, string $key, int $limit): void {
   if ($count > $limit) throw new DomainException('Terlalu banyak percobaan. Silakan coba lagi dalam 15 menit.');
 }
 function po_submit(PDO $db, array $input, string $nonce, string $quoteHash, string $secret): string {
+  if (function_exists('content_lock')) content_lock();
   if (!preg_match('/\A[a-f0-9]{64}\z/', $nonce) || strlen($secret) < 64) throw new DomainException('Sesi pengajuan tidak valid.');
   $requestHash = hash('sha256', $nonce);
   $token = hash_hmac('sha256', 'status:' . $nonce, $secret);
