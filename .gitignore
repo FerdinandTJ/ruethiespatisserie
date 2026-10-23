@@ -24,3 +24,6 @@ ruethies-data/
 
 # Panduan operasional lokal
 PANDUAN-STAGING.md
+PANDUAN-PO-STAGING.md
+po-config.php
+/.htpasswd

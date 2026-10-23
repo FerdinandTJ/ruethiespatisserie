@@ -284,6 +284,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
 <a href="?#galeri"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
 <a href="?#faqman"><?= icon('check') ?> FAQ <span class="cnt"><?= count(faq_load()) ?></span></a>
+<?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag') ?> Pre-order demo</a><?php endif; ?>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
 <a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>
@@ -305,6 +306,7 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu', 16) ?> Menu</a>
 <a href="?#galeri"><?= icon('img', 16) ?> Galeri</a>
 <a href="?#faqman"><?= icon('check', 16) ?> FAQ</a>
+<?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag', 16) ?> PO demo</a><?php endif; ?>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
 <?php endif; ?>
