@@ -39,7 +39,7 @@ try {
     }
   }
   po_expire($db);
-  print "Buka /admin/po.php untuk pengaturan dan /po.php untuk pelanggan.\n";
+  print "Buka /admin/po.php untuk pengaturan dan /pre-order/ untuk pelanggan.\n";
 } catch (Throwable $e) {
   fwrite(STDERR,"Instalasi gagal. Periksa konfigurasi, izin database, dan menu.json.\n");
   if ($e instanceof PDOException) fwrite(STDERR,'SQLSTATE: '.$e->getCode().' | MySQL: '.($e->errorInfo[1] ?? '-')."\n");

@@ -11,6 +11,8 @@ RewriteRule ^ https://ruethiespatisserie.com%{REQUEST_URI} [L,R=301]
 # Force HTTPS
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# URL pelanggan PO; query string dan body POST diteruskan tanpa redirect.
+RewriteRule ^pre-order(?:/status)?/?$ po.php [L]
 </IfModule>
 
 # Jangan indeks subdomain staging (password akses tetap dipasang lewat hPanel).

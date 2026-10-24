@@ -35,6 +35,7 @@ fetch("menu.json", { cache: "reload" })
 
 const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.reserve":"Reservasi","nav.skip":"Langsung ke menu",
+    "nav.preorder":"Pre-order","hero.preorder":"Pre-order untuk Ambil di Toko",
     "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Croissant berlapis, kue lembut, serta pastel, kroket, dan risol favorit — lengkap dengan espresso pilihan. Elegan dan hangat. #MadeWithDelicacy.",
@@ -54,6 +55,7 @@ const I18N = {
     "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Silakan buka WhatsApp untuk mengirim.","wa.back":"Ubah detail",
     "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
   en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.reserve":"Reserve","nav.skip":"Skip to menu",
+    "nav.preorder":"Pre-order","hero.preorder":"Pre-order for Store Pickup",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
     "hero.french":"croissants · cakery · pastel — depuis Cikarang",
     "hero.sub":"Flaky croissants, delicate cakery and beloved savouries — pastel, kroket, risol — paired with fine espresso. Elegant, warm, #MadeWithDelicacy.",
@@ -282,7 +284,7 @@ burger.onclick=()=>{
   burger.classList.toggle("open", open);
   burger.setAttribute("aria-expanded", open);
 };
-mmenu.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{
+mmenu.querySelectorAll("a, [data-open-wa]").forEach(a=>a.addEventListener("click",()=>{
   mmenu.hidden = true; burger.classList.remove("open"); burger.setAttribute("aria-expanded","false");
 }));
 

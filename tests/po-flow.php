@@ -158,7 +158,7 @@ try {
   verify(proc_close($install)===0 && $installError==='' && str_contains($installOutput,'Seed dilewati'),'installer can be rerun without reseeding');
   verify((int)$db->query('SELECT COUNT(*) FROM po_orders')->fetchColumn()===$before,'installer preserves existing orders');
   $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
-  $process=proc_open([PHP_BINARY,'-S',$address,'-t',$public],[0=>['pipe','r'],1=>['file',$root.'/http.log','a'],2=>['file',$root.'/http.log','a']],$httpPipes);
+  $process=proc_open([PHP_BINARY,'-S',$address,'-t',$public,__DIR__.'/po-router.php'],[0=>['pipe','r'],1=>['file',$root.'/http.log','a'],2=>['file',$root.'/http.log','a']],$httpPipes);
   $base='http://'.$address;
   $curl=curl_init();$responseHeaders=[];curl_setopt_array($curl,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_COOKIEFILE=>'',CURLOPT_USERAGENT=>'RuethiesTest',CURLOPT_TIMEOUT=>10,CURLOPT_HEADERFUNCTION=>static function($ch,$header)use(&$responseHeaders){$responseHeaders[]=trim($header);return strlen($header);}]);
   function http_request(string $path,?array $data=null): array {
@@ -170,24 +170,35 @@ try {
     return [(int)curl_getinfo($curl,CURLINFO_RESPONSE_CODE),(string)$body,(string)curl_getinfo($curl,CURLINFO_REDIRECT_URL)];
   }
   function csrf_from(string $body): string { if(!preg_match('/name="csrf" value="([a-f0-9]+)"/',$body,$m))throw new RuntimeException('CSRF missing');return $m[1]; }
-  for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=http_request('/po.php?slot='.$sid2);if($code===200)break;}
+  for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=http_request('/pre-order/?slot='.$sid2);if($code===200)break;}
   verify($code===200 && str_contains($html,'DEMO STAGING'),'public page renders');
+  verify(str_contains($html,'action="/pre-order/"') && str_contains($html,'src="/images/menu/example.jpg"') && str_contains($html,'href="/po.css?v=2"'),'forms and assets use root-absolute URLs');
   $csrf=csrf_from($html);
-  [$code,$html]=http_request('/po.php',['action'=>'review','csrf'=>'invalid']);
+  [$code,$html,$redirect]=http_request('/po.php?slot='.$sid2);
+  verify($code===302 && $redirect===$base.'/pre-order/?slot='.$sid2,'legacy catalog URL retains slot in clean redirect');
+  [$code,$html,$redirect]=http_request('/pre-order?slot='.$sid2);
+  verify($code===302 && $redirect===$base.'/pre-order/?slot='.$sid2,'missing trailing slash is canonicalized');
+  [$code,$html]=http_request('/pre-order/status/');
+  verify($code===404,'status without a token cannot show the order form');
+  [$code,$html]=http_request('/pre-order/',['action'=>'review','csrf'=>'invalid']);
   verify(str_contains($html,'Sesi formulir berakhir'),'public CSRF rejected');
   $webInput=input_for($sid2,$pid2,1,'081234567895');$webInput['name']='<script>alert(1)</script>';
-  [$code,$html]=http_request('/po.php',$webInput+['action'=>'review','csrf'=>$csrf]);
+  [$code,$html]=http_request('/pre-order/',$webInput+['action'=>'review','csrf'=>$csrf]);
   verify($code===200 && str_contains($html,'Periksa pengajuan Anda') && !str_contains($html,'<script>alert(1)</script>') && str_contains($html,'&lt;script&gt;'),'review renders and escapes customer input');
   preg_match('/name="nonce" value="([a-f0-9]+)"/',$html,$m);$webNonce=$m[1]??'';
-  [$code,$html,$redirect]=http_request('/po.php',['action'=>'submit','csrf'=>$csrf,'nonce'=>$webNonce]);
-  verify($code===303 && str_contains($redirect,'po.php?t='),'checkout redirects to private status');
+  [$code,$html,$redirect]=http_request('/po.php?edit='.$webNonce);
+  verify($code===302 && $redirect===$base.'/pre-order/?edit='.$webNonce,'legacy edit URL retains session draft key');
+  [$code,$html,$redirect]=http_request('/pre-order/',['action'=>'submit','csrf'=>$csrf,'nonce'=>$webNonce]);
+  verify($code===303 && str_contains($redirect,'/pre-order/status/?t='),'checkout redirects to clean private status');
   $firstRedirect=$redirect;
   [$code,$html,$redirect]=http_request('/po.php',['action'=>'submit','csrf'=>$csrf,'nonce'=>$webNonce]);
-  verify($code===303 && $redirect===$firstRedirect,'HTTP retry is idempotent');
-  [$code,$html]=http_request('/'.substr($redirect,strrpos($redirect,'/')+1));
+  verify($code===303 && $redirect===$firstRedirect,'legacy POST is processed without losing its body or duplicating an order');
+  [$code,$html,$redirect]=http_request('/po.php?'.parse_url($firstRedirect,PHP_URL_QUERY));
+  verify($code===302 && $redirect===$firstRedirect,'legacy private token survives redirect unchanged');
+  [$code,$html]=http_request(parse_url($firstRedirect,PHP_URL_PATH).'?'.parse_url($firstRedirect,PHP_URL_QUERY));
   verify($code===200 && str_contains($html,'Menunggu konfirmasi') && !str_contains($html,'081234567895'),'status visible without exposing contact');
   verify((bool)array_filter($responseHeaders,fn($h)=>str_contains(strtolower($h),'cache-control: private, no-store')),'private order responses are not cacheable');
-  [$code,$html]=http_request('/po.php?t=not-a-token');verify($code===404,'unknown status token returns 404');
+  [$code,$html]=http_request('/pre-order/status/?t=not-a-token');verify($code===404,'unknown status token returns 404');
   [$code,$html,$redirect]=http_request('/admin/po.php');verify($code===302 && str_contains($redirect,'login'),'admin requires login');
   [$code]=http_request('/admin/po-install.php');verify($code===404,'installer unavailable over HTTP');
   [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);verify($code===302,'staff login works');
@@ -211,7 +222,7 @@ try {
   [$code]=http_request('/admin/index.php',['csrf'=>$adminCsrf,'aksi'=>'save','i'=>$menuIndex,'cat'=>'cakery','n'=>'Edited from Menu','d'=>'New description','available'=>'1']);
   $editedCatalog=json_decode(file_get_contents($public.'/menu.json'),true);
   verify($code===302 && $editedCatalog[$menuIndex]['uid']===$sourceUid,'admin menu edit preserves permanent ID');
-  [$code,$html]=http_request('/po.php?slot='.$sid2);
+  [$code,$html]=http_request('/pre-order/?slot='.$sid2);
   verify(str_contains($html,'Edited from Menu') && str_contains($html,'New description'),'PO follows catalog name and description after editing');
   // Foto katalog yang dihapus tetap disimpan ketika masih direferensikan PO.
   mkdir($public.'/images/menu',0700,true);

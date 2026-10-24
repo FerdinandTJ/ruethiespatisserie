@@ -4,6 +4,16 @@ require __DIR__ . '/admin/config.php';
 require __DIR__ . '/admin/lib.php';
 require __DIR__ . '/admin/po-lib.php';
 po_require_staging();
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+$statusRequested = in_array($requestPath, ['/pre-order/status','/pre-order/status/'], true) || array_key_exists('t', $_GET);
+$canonicalPath = $statusRequested ? '/pre-order/status/' : '/pre-order/';
+// Tautan lama tetap berlaku. Jangan redirect POST: formulir/tab lama harus
+// tetap diproses dengan body dan sesi aslinya, lalu mengikuti alur PRG normal.
+if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET','HEAD'], true) && $requestPath !== $canonicalPath) {
+  $query = http_build_query($_GET, '', '&', PHP_QUERY_RFC3986);
+  header('Location: ' . $canonicalPath . ($query !== '' ? '?' . $query : ''), true, 302);
+  exit;
+}
 session_name('RUETHIESPODEMO');
 session_cache_limiter('');
 session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off','httponly'=>true,'samesite'=>'Lax']);
@@ -13,7 +23,6 @@ $csrf = $_SESSION['po_csrf'];
 $error = ''; $unavailable = false; $slots = []; $products = []; $slot = null; $review = null; $order = null;
 $nonce = ''; $values = []; $db = null;
 $token = is_string($_GET['t'] ?? null) ? $_GET['t'] : '';
-$statusRequested = array_key_exists('t', $_GET);
 // Draft hanya berada dalam sesi, bukan di Git atau URL.
 foreach ($_SESSION['po_drafts'] ?? [] as $key => $draft) if ($draft['created'] < time()-3600) unset($_SESSION['po_drafts'][$key]);
 if (is_string($_GET['edit'] ?? null) && isset($_SESSION['po_drafts'][$_GET['edit']])) $values = $_SESSION['po_drafts'][$_GET['edit']]['input'];
@@ -37,7 +46,7 @@ try {
       if (!$draft) throw new DomainException('Ringkasan kedaluwarsa. Isi formulir kembali.');
       $values = $draft['input'];
       $access = po_submit($db, $values, $nonce, $draft['hash'], po_config()['secret']);
-      header('Location: po.php?t=' . $access, true, 303); exit;
+      header('Location: /pre-order/status/?t=' . $access, true, 303); exit;
     } else throw new DomainException('Tindakan tidak valid.');
   }
   if ($statusRequested) {
@@ -60,10 +69,10 @@ function po_value(array $values, string $key): string { return is_string($values
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="po.css?v=2"><script src="po.js?v=1" defer></script></head>
+<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=2"><script src="/po.js?v=1" defer></script></head>
 <body>
 <div class="demo-banner">DEMO STAGING · Gunakan data contoh · Tidak ada pembayaran atau pesanan nyata</div>
-<header class="po-header"><a href="./" aria-label="Beranda Ruethies"><img src="logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="./">Kembali ke website ↗</a></header>
+<header class="po-header"><a href="/" aria-label="Beranda Ruethies"><img src="/logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="/">Kembali ke website ↗</a></header>
 <main class="po-wrap">
 <p class="eyebrow">DIPERSIAPKAN DENGAN KELEMBUTAN</p>
 <h1><?= $order ? 'Pengajuan Anda' : 'Rencanakan momen manis Anda.' ?></h1>
@@ -82,7 +91,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <ul class="order-lines"><?php foreach ($order['lines'] as $line): ?><li><span><?= (int)$line['qty'] ?> × <?= h($line['name']) ?></span><strong><?= h(po_money((int)$line['price'] * (int)$line['qty'])) ?></strong></li><?php endforeach; ?></ul>
 <p class="total"><span>Total pengajuan</span><strong><?= h(po_money((int)$order['total'])) ?></strong></p>
 <p class="muted">Belum ada pembayaran yang diproses atau dicatat. Simpan tautan pribadi ini untuk melihat status. Jangan membagikannya kepada orang lain.</p>
-<div class="actions"><a class="button" href="po.php?t=<?= h($token) ?>">Perbarui status</a><a class="button secondary" href="po.php">Lihat jadwal lain</a></div>
+<div class="actions"><a class="button" href="/pre-order/status/?t=<?= h($token) ?>">Perbarui status</a><a class="button secondary" href="/pre-order/">Lihat jadwal lain</a></div>
 </section>
 
 <?php elseif ($review): ?>
@@ -93,21 +102,21 @@ function po_value(array $values, string $key): string { return is_string($values
 <p><strong><?= h(po_value($values,'name')) ?></strong><br>WhatsApp: <?= h(po_value($values,'phone')) ?></p>
 <?php if (po_value($values,'note') !== ''): ?><p class="customer-note">Catatan: <?= h(po_value($values,'note')) ?></p><?php endif; ?>
 <div class="alert">Belum ada pembayaran. Pengajuan baru diterima setelah admin mengonfirmasi ketersediaan.</div>
-<form method="post"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="submit"><input type="hidden" name="nonce" value="<?= h($nonce) ?>">
-<button type="submit">Kirim pengajuan PO</button> <a class="text-link" href="po.php?edit=<?= h($nonce) ?>">Ubah pilihan</a></form>
+<form method="post" action="/pre-order/"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="submit"><input type="hidden" name="nonce" value="<?= h($nonce) ?>">
+<button type="submit">Kirim pengajuan PO</button> <a class="text-link" href="/pre-order/?edit=<?= h($nonce) ?>">Ubah pilihan</a></form>
 </section>
 
 <?php elseif (!$unavailable && !$statusRequested): ?>
 <section class="panel"><p class="eyebrow">01 · PILIH JADWAL</p><h2>PO yang sedang dibuka</h2>
 <?php if (!$slots): ?><div class="empty">Belum ada jadwal PO yang dibuka. Silakan kembali setelah admin membuka periode baru.</div><?php endif; ?>
-<div class="slot-grid"><?php foreach ($slots as $s): ?><a class="slot <?= $slot && $slot['id'] == $s['id'] ? 'selected' : '' ?>" href="po.php?slot=<?= (int)$s['id'] ?>#pilihan" <?= $slot && $slot['id'] == $s['id'] ? 'aria-current="true"' : '' ?>>
+<div class="slot-grid"><?php foreach ($slots as $s): ?><a class="slot <?= $slot && $slot['id'] == $s['id'] ? 'selected' : '' ?>" href="/pre-order/?slot=<?= (int)$s['id'] ?>#pilihan" <?= $slot && $slot['id'] == $s['id'] ? 'aria-current="true"' : '' ?>>
 <strong><?= h($s['title']) ?></strong><span>Ambil <?= h(po_date((int)$s['pickup_from'])) ?></span><small>PO ditutup <?= h(po_date((int)$s['closes_at'])) ?></small></a><?php endforeach; ?></div></section>
 <?php if ($slot): ?>
-<form method="post" id="po-form"><input type="hidden" name="action" value="review"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="slot_id" value="<?= (int)$slot['id'] ?>">
+<form method="post" action="/pre-order/" id="po-form"><input type="hidden" name="action" value="review"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="slot_id" value="<?= (int)$slot['id'] ?>">
 <section class="panel" id="pilihan"><p class="eyebrow">02 · PILIH SAJIAN</p><h2><?= h($slot['title']) ?></h2><p class="muted">Jumlah 0 berarti tidak dipilih. Ketersediaan akhir dikonfirmasi oleh admin.</p>
 <?php if (!$products): ?><div class="empty">Produk untuk jadwal ini sedang disiapkan.</div><?php endif; ?>
 <?php foreach ($products as $p): $left = max(0, (int)$p['quota'] - (int)$p['reserved']); $qty = is_array($values['qty'] ?? null) ? ($values['qty'][$p['id']] ?? 0) : 0; ?>
-<div class="product"><div class="product-info"><?php if ($p['image']): ?><img class="product-photo" src="<?= h($p['image']) ?>" alt="" width="88" height="66" loading="lazy"><?php endif; ?><div><h3><?= h($p['name']) ?></h3><p class="muted"><?= h($p['description']) ?></p><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small></div></div>
+<div class="product"><div class="product-info"><?php if ($p['image']): ?><img class="product-photo" src="/<?= h($p['image']) ?>" alt="" width="88" height="66" loading="lazy"><?php endif; ?><div><h3><?= h($p['name']) ?></h3><p class="muted"><?= h($p['description']) ?></p><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small></div></div>
 <label>Jumlah<input type="number" name="qty[<?= (int)$p['id'] ?>]" min="0" max="<?= min(20,$left) ?>" step="1" value="<?= h(is_scalar($qty) ? (string)$qty : '0') ?>" data-price="<?= (int)$p['price'] ?>" <?= !$left ? 'disabled' : '' ?> aria-label="Jumlah <?= h($p['name']) ?>"></label></div>
 <?php endforeach; ?>
 <p class="total"><span>Perkiraan total</span><strong id="po-total" aria-live="polite">Rp0</strong></p></section>

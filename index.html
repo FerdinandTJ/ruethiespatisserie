@@ -42,7 +42,7 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" /></noscript>
 <link rel="icon" type="image/png" href="logo-wine.png" />
 <!-- ?v= = versi aset. NAIKKAN tiap deploy yang mengubah styles.css/app.js agar pengunjung otomatis dapat file baru -->
-<link rel="stylesheet" href="styles.css?v=1" />
+<link rel="stylesheet" href="styles.css?v=2" />
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"CafeOrCoffeeShop","@id":"https://ruethiespatisserie.com/#cafe","name":"Ruethies Patisserie","url":"https://ruethiespatisserie.com/","inLanguage":"id","image":"https://ruethiespatisserie.com/logo.jpeg","logo":"https://ruethiespatisserie.com/logo-wine.png","slogan":"#MadeWithDelicacy","telephone":"+62-851-3928-1257","priceRange":"Rp20.000 - Rp85.000","currenciesAccepted":"IDR","acceptsReservations":"True","menu":"https://ruethiespatisserie.com/#menu","areaServed":["Lippo Cikarang","Cikarang Selatan","Kabupaten Bekasi","Jawa Barat"],"servesCuisine":["French Pastry","Coffee","Cakery","Croissant","Pastel","Kroket","Risol"],"sameAs":["https://instagram.com/ruethiespatisserie","https://www.google.com/maps/place/Ruethies+Patisserie/@-6.3443722,107.1490519,18z"],"openingHours":"Mo-Su 09:00-21:00","openingHoursSpecification":{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"09:00","closes":"21:00"},"address":{"@type":"PostalAddress","streetAddress":"Ruko The Neo Patio East NO. 51, Lippo","addressLocality":"Cikarang Selatan, Kabupaten Bekasi","addressRegion":"Jawa Barat","postalCode":"17530","addressCountry":"ID"},"geo":{"@type":"GeoCoordinates","latitude":-6.3443722,"longitude":107.1490519},"hasMap":"https://www.google.com/maps/place/Ruethies+Patisserie/@-6.3443722,107.1490519,18z"}
 </script>
@@ -76,6 +76,7 @@
       <a href="#atmosphere" data-i18n="nav.atmos">Suasana</a>
       <a href="#visit" data-i18n="nav.visit">Lokasi</a>
       <a href="#faq" data-i18n="nav.info">Info</a>
+      <a href="/pre-order/" data-i18n="nav.preorder">Pre-order</a>
     </nav>
     <div class="nav-cta">
       <div class="lang" role="group" aria-label="Language">
@@ -92,6 +93,8 @@
     <a href="#atmosphere" data-i18n="nav.atmos">Suasana</a>
     <a href="#visit" data-i18n="nav.visit">Lokasi</a>
     <a href="#faq" data-i18n="nav.info">Info</a>
+    <a href="/pre-order/" data-i18n="nav.preorder">Pre-order</a>
+    <button type="button" class="mobile-reserve" data-open-wa data-i18n="nav.reserve">Reservasi</button>
   </nav>
 </header>
 
@@ -107,8 +110,8 @@
       <p class="french" data-i18n="hero.french">croissants · cakery · pastel — depuis Cikarang</p>
       <p class="sub" data-i18n="hero.sub">Croissant berlapis, kue lembut, serta pastel, kroket, dan risol favorit — lengkap dengan espresso pilihan. Elegan dan hangat. #MadeWithDelicacy.</p>
       <div class="hero-btns">
-        <a href="#menu" class="btn primary" data-i18n="hero.cta1">Lihat Menu</a>
-        <button class="btn secondary" data-open-wa data-i18n="hero.cta2">Reservasi via WhatsApp</button>
+        <a href="#menu" class="btn secondary" data-i18n="hero.cta1">Lihat Menu</a>
+        <a href="/pre-order/" class="btn primary" data-i18n="hero.preorder">Pre-order untuk Ambil di Toko</a>
       </div>
       <div class="meta">
         <div><span data-i18n="hero.p1">Ruko Neo Patio East No. 51</span></div><i></i>
@@ -257,7 +260,7 @@
 <!-- STICKY MOBILE BAR -->
 <div class="stickybar" id="stickybar">
   <a href="#menu" class="sb-link" data-i18n="hero.cta1">Lihat Menu</a>
-  <button class="btn primary sm" data-open-wa data-i18n="nav.reserve">Reservasi</button>
+  <a href="/pre-order/" class="btn primary sm" data-i18n="nav.preorder">Pre-order</a>
 </div>
 
 <footer>
@@ -306,6 +309,6 @@
   </div>
 </div>
 
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
