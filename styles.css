@@ -16,6 +16,7 @@ img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.92) c
 .grain{position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:60;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E")}
 /* NAV */
 .nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(16px);background:rgba(250,246,240,.78);border-bottom:1px solid var(--wine-12)}
+.nav.scrolled{box-shadow:0 12px 32px -18px rgba(61,0,0,.25)}
 .nav-inner{display:flex;align-items:center;justify-content:space-between;height:68px}
 .brand{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:1.6rem;color:var(--wine);text-decoration:none}
 .brand span{font-family:"Plus Jakarta Sans";font-size:.6rem;letter-spacing:.32em;color:var(--muted);margin-left:8px;vertical-align:middle}
@@ -194,6 +195,7 @@ img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.92) c
 .quote em{color:var(--wine)} .quote small{color:var(--faint);letter-spacing:.24em;text-transform:uppercase;font-size:.72rem;font-weight:600}
 /* ATMOS */
 .arch-row{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;margin-top:36px}
+.arch-row:empty{min-height:470px}
 .arch-row .arch{height:420px}
 .arch-row figcaption{text-align:center;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:1.15rem;color:var(--wine-ink);margin-top:16px}
 /* VISIT */
@@ -203,6 +205,12 @@ img{display:block;width:100%;height:100%;object-fit:cover;filter:saturate(.92) c
 .info .row{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}
 .mapwrap{position:relative;border-radius:24px;overflow:hidden;border:1px solid var(--wine-12);box-shadow:var(--sh);min-height:340px;background:var(--beige-deep)}
 .mapwrap iframe{width:100%;height:100%;min-height:340px;border:0}
+.map-placeholder{min-height:340px;height:100%;padding:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;background:radial-gradient(circle at 50% 30%,var(--paper),var(--beige-deep))}
+.map-placeholder[hidden],.mapwrap iframe[hidden],#load-map[hidden]{display:none}
+.map-placeholder h3{font-family:"Cormorant Garamond",serif;color:var(--wine);font-size:1.8rem}
+.map-placeholder p{font-size:.9rem;color:var(--muted)}
+.map-placeholder a{color:var(--wine)}
+.map-marker{border:1px solid var(--wine);border-radius:50%;padding:16px;color:var(--wine);font-weight:700}
 .pin{position:absolute;left:16px;bottom:16px;background:rgba(255,253,249,.92);backdrop-filter:blur(10px);border:1px solid var(--wine-12);border-radius:16px;padding:12px 18px;box-shadow:var(--sh)}
 .pin strong{display:block;font-family:"Cormorant Garamond",serif;font-size:1.15rem;color:var(--wine)}
 .pin span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
@@ -303,6 +311,8 @@ footer a{color:var(--beige)}
   .arch-row .arch{height:auto;aspect-ratio:3/4;max-height:380px}
   .arch-row figcaption{font-size:1.02rem}
   .mapwrap{min-height:280px}.mapwrap iframe{min-height:280px}
+  .map-placeholder{min-height:280px;padding:24px}
+  .arch-row:empty{min-height:420px}
   .pin{max-width:calc(100% - 32px);padding:10px 14px}
   .pin strong{font-size:1.05rem}
   .visit{gap:18px}

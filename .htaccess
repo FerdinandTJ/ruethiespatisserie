@@ -32,6 +32,7 @@ ExpiresActive On
 ExpiresByType text/html "access plus 10 minutes"
 ExpiresByType text/css "access plus 30 days"
 ExpiresByType application/javascript "access plus 30 days"
+ExpiresByType text/javascript "access plus 30 days"
 ExpiresByType image/jpeg "access plus 30 days"
 ExpiresByType image/png "access plus 30 days"
 ExpiresByType image/svg+xml "access plus 30 days"
@@ -41,7 +42,7 @@ ExpiresByType application/json "access plus 0 seconds"
 
 <IfModule mod_headers.c>
 Header set X-Content-Type-Options "nosniff"
-Header set Referrer-Policy "strict-origin-when-downgrade"
+Header set Referrer-Policy "strict-origin-when-cross-origin"
 Header set Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
 Header set X-Frame-Options "SAMEORIGIN"
 # HSTS 6 bulan (aktifkan setelah HTTPS stabil; tanpa preload)
@@ -49,6 +50,13 @@ Header set Strict-Transport-Security "max-age=15552000"
 # CSP: hanya sumber yang dipakai web ini
 Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self'; frame-src https://www.google.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; upgrade-insecure-requests"
 </IfModule>
+
+# Aset CSS/JS memakai versi URL; JSON admin tetap wajib revalidasi.
+<FilesMatch "\.(css|js)$">
+<IfModule mod_headers.c>
+Header set Cache-Control "public, max-age=2592000"
+</IfModule>
+</FilesMatch>
 
 # Matikan directory listing
 <IfModule mod_autoindex.c>

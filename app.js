@@ -1,3 +1,7 @@
+// Aktivasi font dari script eksternal: kompatibel dengan CSP script-src 'self'.
+const fontStyles = document.getElementById("site-fonts");
+if(fontStyles) fontStyles.media = "all";
+
 const WA_NUMBER = "6285139281257";
 const WA_DISPLAY = "0851-3928-1257";
 const IMG = (id) => {
@@ -48,6 +52,7 @@ const I18N = {
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
     "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
+    "visit.map":"Tampilkan Peta Interaktif","visit.mapTitle":"Peta Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Informasi","faq.title":"Pertanyaan Umum",
     "foot.visit":"Kunjungi","foot.contact":"Kontak",
     "wa.title":"Reservasi Meja","wa.sub":"Isi detail berikut, akan kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
@@ -67,6 +72,7 @@ const I18N = {
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
     "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.res":"Reserve a Table","visit.call":"Call",
+    "visit.map":"Show Interactive Map","visit.mapTitle":"Map of Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Information","faq.title":"Frequently Asked Questions",
     "foot.visit":"Visit","foot.contact":"Contact",
     "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp",
@@ -105,7 +111,11 @@ function renderFAQ(){
   rows.slice(FAQ.length).forEach(row=>row.remove());
 }
 
-fetch("faq.json", { cache: "reload" })
+let faqLoading = false;
+function loadFAQ(){
+  if(faqLoading || FAQ) return;
+  faqLoading = true;
+  fetch("faq.json", { cache: "reload" })
   .then(r => { if(!r.ok) throw 0; return r.json(); })
   .then(items => {
     if(!Array.isArray(items) || !items.length || !items.every(item =>
@@ -116,15 +126,24 @@ fetch("faq.json", { cache: "reload" })
     FAQ = items;
     renderFAQ();
   })
-  .catch(()=>{ /* FAQ statis tetap tampil jika data gagal dimuat. */ });
+  .catch(()=>{ /* FAQ statis tetap tampil jika data gagal dimuat. */ })
+  .finally(()=>{ faqLoading = false; });
+}
 
 // WebP bila tersedia, fallback JPEG. Semua foto lokal dinormalkan 640x480 (hero 880x1100, lightbox 1200x900).
 const webp = src => (typeof src === "string" && src.endsWith(".jpg")) ? src.slice(0, -4) + ".webp" : src;
 const pic = (src, alt, w, h, eager) =>
   `<picture><source type="image/webp" srcset="${esc(webp(src))}" /><img ${eager ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'} src="${esc(src)}" width="${w}" height="${h}" alt="${esc(alt)}" /></picture>`;
 
-// Tugas non-kritis (galeri bawah, efek tilt) dikerjakan saat browser idle agar tidak menahan render awal.
-const onIdle = fn => { if("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 2500 }); else setTimeout(fn, 1); };
+// Data bawah halaman dimuat menjelang terlihat, bukan bersamaan dengan hero.
+function onceNear(id, load){
+  const element = document.getElementById(id);
+  if(!element) return;
+  const observer = new IntersectionObserver(entries=>{
+    if(entries.some(entry=>entry.isIntersecting)){ observer.disconnect(); load(); }
+  }, {rootMargin:"600px 0px"});
+  observer.observe(element);
+}
 
 function applyLang(){
   document.documentElement.lang = lang;
@@ -137,6 +156,9 @@ function applyLang(){
   renderMenus();
   renderAtmos();
   renderFAQ();
+  if(lang === "en") loadFAQ(); // EN tersimpan/tombol bahasa tidak perlu menunggu scroll.
+  const map = document.getElementById("visit-map");
+  if(map) map.title = t("visit.mapTitle");
 }
 
 function cardHTML(m, i){
@@ -256,14 +278,19 @@ function attachCardTilt(){
 const io = new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),{threshold:.12});
 function observeReveals(){ document.querySelectorAll(".rv:not(.in)").forEach(el=>io.observe(el)); }
 
+let pillFrame = 0;
 function movePill(){
-  const btn = document.querySelector(`.tab[data-cat="${activeCat}"]`);
-  const pill = document.getElementById("pill");
-  const tabs = document.querySelector(".tabs");
-  if(!btn || !pill) return;
-  requestAnimationFrame(()=>{
-    pill.style.left = (btn.offsetLeft - (tabs ? tabs.scrollLeft : 0))+"px";
-    pill.style.width = btn.offsetWidth+"px";
+  if(pillFrame) return;
+  pillFrame = requestAnimationFrame(()=>{
+    pillFrame = 0;
+    const btn = document.querySelector(`.tab[data-cat="${activeCat}"]`);
+    const pill = document.getElementById("pill");
+    const tabs = document.querySelector(".tabs");
+    if(!btn || !pill) return;
+    const left = btn.offsetLeft - (tabs ? tabs.scrollLeft : 0);
+    const width = btn.offsetWidth;
+    pill.style.left = left+"px";
+    pill.style.width = width+"px";
   });
 }
 
@@ -348,16 +375,24 @@ copyBtn.onclick=async ()=>{
 document.querySelector(".tabs")?.addEventListener("scroll", movePill, {passive:true});
 window.addEventListener("resize",movePill);
 if(document.fonts?.ready) document.fonts.ready.then(movePill);
+let scrollFrame = 0;
 function onScroll(){
-  document.getElementById("nav").style.boxShadow = scrollY>24?"0 12px 32px -18px rgba(61,0,0,.25)":"none";
-  const hero = document.querySelector(".hero");
-  const past = hero ? scrollY > hero.offsetTop + hero.offsetHeight - 120 : scrollY > 600;
-  stickybar.classList.toggle("show", past && !modalOpen);
-  stickybar.classList.toggle("hide", modalOpen);
-  if(can3D && heroVis && hero && scrollY < hero.offsetHeight){
-    plx = Math.min(12, scrollY * 0.05);
-    queueHero();
-  }
+  if(scrollFrame) return;
+  scrollFrame = requestAnimationFrame(()=>{
+    scrollFrame = 0;
+    const y = scrollY;
+    const hero = document.querySelector(".hero");
+    const height = hero ? hero.offsetHeight : 0;
+    const end = hero ? hero.offsetTop + height : 720;
+    const past = y > end - 120;
+    document.getElementById("nav").classList.toggle("scrolled", y > 24);
+    stickybar.classList.toggle("show", past && !modalOpen);
+    stickybar.classList.toggle("hide", modalOpen);
+    if(can3D && heroVis && hero && y < height){
+      plx = Math.min(12, y * 0.05);
+      queueHero();
+    }
+  });
 }
 
 // Galeri atmosphere — sumber utama atmosphere.json (edit di sana saja)
@@ -373,7 +408,9 @@ let ATMOS = [
     id:{cap:"Detail lapisan yang renyah"}, en:{cap:"Crisp layered details"} },
 ];
 function atmosCap(a){ return (a[lang] && a[lang].cap) || a.id.cap; }
+let atmosLoading = false, atmosReady = false;
 function renderAtmos(){
+  if(!atmosReady) return;
   const row = document.getElementById("archrow");
   if(!row) return;
   row.innerHTML = ATMOS.map((a,i)=>{
@@ -389,13 +426,15 @@ function normAtmos(items){
   }));
   return clean.length ? clean : null;
 }
-// Galeri di bawah lipatan: datanya diambil saat browser idle agar tidak berebut bandwidth dengan hero/menu.
-onIdle(()=>{
+function loadAtmos(){
+  if(atmosLoading || atmosReady) return;
+  atmosLoading = true;
   fetch("atmosphere.json", { cache: "reload" })
     .then(r => { if(!r.ok) throw 0; return r.json(); })
-    .then(j => { const c = normAtmos(j); if(c){ ATMOS = c; renderAtmos(); } })
-    .catch(()=>{ /* fallback bawaan tetap dipakai */ });
-});
+    .then(j => { const c = normAtmos(j); if(c) ATMOS = c; })
+    .catch(()=>{ /* fallback bawaan tetap dipakai */ })
+    .finally(()=>{ atmosReady = true; atmosLoading = false; renderAtmos(); });
+}
 
 // Lightbox (dari data master ATMOS yang sama)
 let lbIdx = 0;
@@ -430,5 +469,26 @@ lb.addEventListener("touchend",e=>{
   if(Math.abs(dx) > 40) showLB(lbIdx + (dx < 0 ? 1 : -1));
 },{passive:true});
 window.addEventListener("scroll",onScroll,{passive:true});
+window.addEventListener("resize",onScroll);
+if("ResizeObserver" in window){
+  const layoutObserver = new ResizeObserver(()=>{ movePill(); onScroll(); });
+  const hero = document.querySelector(".hero");
+  if(hero) layoutObserver.observe(hero);
+}
+const mapButton = document.getElementById("load-map");
+if(mapButton){
+  mapButton.hidden = false;
+  mapButton.addEventListener("click",()=>{
+    const frame = document.getElementById("visit-map");
+    if(!frame || frame.hasAttribute("src")) return;
+    frame.src = frame.dataset.src;
+    frame.hidden = false;
+    document.getElementById("map-placeholder").hidden = true;
+    frame.tabIndex = 0;
+    frame.focus();
+  });
+}
 applyLang();
 onScroll();
+onceNear("faq", loadFAQ);
+onceNear("atmosphere", loadAtmos);
