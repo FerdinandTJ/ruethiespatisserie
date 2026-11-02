@@ -48,6 +48,47 @@ function po_db(): PDO {
 function po_query(PDO $db, string $sql, array $args = []): PDOStatement {
   $s = $db->prepare($sql); $s->execute($args); return $s;
 }
+
+// Tahap 1 PO manual: konfigurasi saja. Checkout demo belum memakai rekening ini.
+function po_payment_defaults(): array {
+  return ['id'=>1,'bank_name'=>'','account_number'=>'','account_name'=>'',
+    'instructions'=>'','enabled'=>0,'version'=>0,'updated_by'=>'','updated_at'=>0];
+}
+function po_payment_settings(PDO $db): array {
+  return po_query($db, 'SELECT * FROM po_payment_settings WHERE id=1')->fetch() ?: po_payment_defaults();
+}
+function po_payment_validate(array $input): array {
+  $enabled = po_int($input['enabled'] ?? 0, 0, 1);
+  $bank = po_text($input['bank_name'] ?? '', 'Nama bank', $enabled ? 2 : 0, 80);
+  $holder = po_text($input['account_name'] ?? '', 'Nama pemilik rekening', $enabled ? 2 : 0, 120);
+  $number = po_text($input['account_number'] ?? '', 'Nomor rekening', 0, 70);
+  // Simpan sebagai teks agar nol di depan tidak hilang. Spasi/tanda hubung hanya pemisah.
+  $number = str_replace([' ', '-'], '', $number);
+  if (($enabled || $number !== '') && !preg_match('/\A[0-9]{6,34}\z/', $number)) {
+    throw new DomainException('Nomor rekening harus terdiri dari 6–34 digit.');
+  }
+  return ['bank_name'=>$bank,'account_number'=>$number,'account_name'=>$holder,
+    'instructions'=>po_text($input['instructions'] ?? '', 'Instruksi pembayaran', 0, 500),
+    'enabled'=>$enabled];
+}
+function po_payment_save(PDO $db, array $input, array $actor): void {
+  if (($actor['role'] ?? '') !== 'owner') throw new DomainException('Pengaturan rekening hanya untuk pemilik.');
+  $name = po_text($actor['name'] ?? '', 'Pemilik', 1, 80);
+  $values = po_payment_validate($input);
+  $version = po_int($input['version'] ?? '', 0, PHP_INT_MAX);
+  $db->beginTransaction();
+  try {
+    // Membuat singleton secara atomik; dua penyimpanan pertama tetap diserialisasi.
+    po_query($db, 'INSERT INTO po_payment_settings(id) VALUES(1) ON DUPLICATE KEY UPDATE id=1');
+    $current = po_query($db, 'SELECT * FROM po_payment_settings WHERE id=1 FOR UPDATE')->fetch();
+    if ((int)$current['version'] !== $version) {
+      throw new DomainException('Rekening sudah diubah di tab lain. Muat ulang dan periksa rekening terbaru sebelum menyimpan.');
+    }
+    po_query($db, 'UPDATE po_payment_settings SET bank_name=?,account_number=?,account_name=?,instructions=?,enabled=?,version=version+1,updated_by=?,updated_at=? WHERE id=1',
+      [$values['bank_name'],$values['account_number'],$values['account_name'],$values['instructions'],$values['enabled'],$name,time()]);
+    $db->commit();
+  } catch (Throwable $e) { $db->rollBack(); throw $e; }
+}
 function po_migrate_catalog(PDO $db): void {
   $columns = array_column($db->query('SHOW COLUMNS FROM po_products')->fetchAll(), 'Field');
   if (!in_array('menu_uid',$columns,true)) $db->exec('ALTER TABLE po_products ADD menu_uid CHAR(32) NULL');

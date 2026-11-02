@@ -49,6 +49,34 @@ function remove_fixture(string $path): void {
 try {
   mkdir(RUETHIES_PUBLIC,0700,true);file_put_contents(RUETHIES_PUBLIC.'/menu.json','[]');
   foreach (preg_split('/;\s*(?:\n|$)/',file_get_contents(dirname(__DIR__).'/admin/po-schema.sql')) as $sql) if (trim($sql)!=='') $db->exec($sql);
+  $owner = ['role'=>'owner','name'=>'owner'];
+  $payment = ['bank_name'=>'Bank Contoh','account_number'=>'0012-3456','account_name'=>'Pemilik Contoh','instructions'=>'Cantumkan nomor pesanan.','enabled'=>'1','version'=>'0'];
+  verify(po_payment_settings($db) === po_payment_defaults(), 'payment starts empty and disabled');
+  rejects(fn()=>po_payment_save($db,$payment,['role'=>'staff','name'=>'staff']), 'staff cannot save bank settings in service');
+  rejects(fn()=>po_payment_save($db,array_replace($payment,['bank_name'=>'']),$owner), 'active bank requires bank name');
+  rejects(fn()=>po_payment_save($db,array_replace($payment,['account_number'=>'123e45']),$owner), 'bank account rejects non-digits');
+  rejects(fn()=>po_payment_save($db,array_replace($payment,['account_name'=>[]]),$owner), 'bank settings reject array input');
+  po_payment_save($db,$payment,$owner);
+  $savedPayment = po_payment_settings($db);
+  verify($savedPayment['account_number']==='00123456' && (int)$savedPayment['version']===1 && $savedPayment['updated_by']==='owner', 'bank preserves leading zeros, normalizes separators and records editor/version');
+  rejects(fn()=>po_payment_save($db,$payment,$owner), 'stale bank edit cannot overwrite newer settings');
+  verify(po_payment_settings($db)===$savedPayment, 'rejected bank edit leaves saved settings unchanged');
+  // Dua koneksi mengubah versi yang sama: hanya satu yang boleh berhasil.
+  $bankWorkers=[];
+  foreach (['Bank A','Bank B'] as $bankName) {
+    $bankInput=array_replace($payment,['bank_name'=>$bankName,'version'=>'1']);
+    $code='define("RUETHIES_ADMIN",true);require '.var_export(dirname(__DIR__).'/admin/po-lib.php',true).';$db=new PDO('.var_export($testDsn,true).','.var_export($user,true).','.var_export($pass,true).','.var_export($options,true).');try{po_payment_save($db,'.var_export($bankInput,true).','.var_export($owner,true).');echo "saved";}catch(DomainException $e){echo "stale";}';
+    $pipes=[];$proc=proc_open([PHP_BINARY,'-r',$code],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$bankWorkers[]=[$proc,$pipes];
+  }
+  $bankResults=[];
+  foreach ($bankWorkers as [$proc,$pipes]) {
+    $bankResults[]=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);
+    verify(proc_close($proc)===0 && $err==='', 'concurrent bank worker completed');
+  }
+  sort($bankResults);
+  verify($bankResults===['saved','stale'] && (int)po_payment_settings($db)['version']===2, 'only one bank edit wins for the same version');
+  po_payment_save($db,array_replace($payment,['enabled'=>'0','version'=>'2']),$owner);
+  verify((int)po_payment_settings($db)['enabled']===0, 'owner can disable a configured bank');
   $db->exec('ALTER TABLE po_products DROP INDEX po_slot_menu, DROP COLUMN menu_uid, DROP COLUMN image');
   $legacySlot=make_slot($db,'Legacy migration');
   po_query($db,'INSERT INTO po_products(slot_id,name,price,quota) VALUES(?,?,?,?)',[$legacySlot,'Manual lama',12345,7]);
@@ -157,6 +185,7 @@ try {
   $installOutput=stream_get_contents($installPipes[1]);$installError=stream_get_contents($installPipes[2]);fclose($installPipes[1]);fclose($installPipes[2]);
   verify(proc_close($install)===0 && $installError==='' && str_contains($installOutput,'Seed dilewati'),'installer can be rerun without reseeding');
   verify((int)$db->query('SELECT COUNT(*) FROM po_orders')->fetchColumn()===$before,'installer preserves existing orders');
+  verify((int)po_payment_settings($db)['version']===3 && po_payment_settings($db)['account_number']==='00123456','installer rerun preserves bank settings');
   $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
   $process=proc_open([PHP_BINARY,'-S',$address,'-t',$public,__DIR__.'/po-router.php'],[0=>['pipe','r'],1=>['file',$root.'/http.log','a'],2=>['file',$root.'/http.log','a']],$httpPipes);
   $base='http://'.$address;
@@ -203,10 +232,23 @@ try {
   [$code]=http_request('/admin/po-install.php');verify($code===404,'installer unavailable over HTTP');
   [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);verify($code===302,'staff login works');
   [$code,$html]=http_request('/admin/po.php');$adminCsrf=csrf_from($html);
+  verify(!str_contains($html,'id="payment"') && !str_contains($html,'00123456'), 'staff cannot view bank configuration');
+  [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'save-payment']+$payment);
+  verify(str_contains($html,'hanya untuk pemilik') && (int)po_payment_settings($db)['version']===3, 'staff bank POST is rejected without mutation');
   [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'toggle-slot','slot_id'=>$sid2,'is_open'=>0]);
   verify(str_contains($html,'hanya untuk pemilik') && (int)po_slot($db,$sid2)['is_open']===1,'staff cannot change schedule');
   [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);verify($code===302,'owner login works');
   [$code,$html]=http_request('/admin/po.php');$adminCsrf=csrf_from($html);
+  verify(str_contains($html,'id="payment"') && str_contains($html,'value="00123456"'), 'owner sees saved bank configuration');
+  $bankPost=array_replace($payment,['version'=>'3','bank_name'=>'Bank <Contoh>','instructions'=>'<script>alert(1)</script>']);
+  [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'save-payment']+$bankPost);
+  verify(str_contains($html,'Sesi formulir tidak valid') && (int)po_payment_settings($db)['version']===3, 'bank settings require CSRF');
+  [$code,$html,$redirect]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'save-payment']+$bankPost);
+  verify($code===303 && str_ends_with($redirect,'/admin/po.php#payment') && (int)po_payment_settings($db)['version']===4, 'owner bank save redirects after persistence');
+  [$code,$html]=http_request('/admin/po.php');
+  verify(str_contains($html,'Bank &lt;Contoh&gt;') && str_contains($html,'&lt;script&gt;alert(1)&lt;/script&gt;') && !str_contains($html,'<script>alert(1)</script>'), 'bank settings escape saved HTML in form');
+  [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'save-payment']+$bankPost);
+  verify(str_contains($html,'Rekening sudah diubah') && (int)po_payment_settings($db)['version']===4, 'stale HTTP bank form cannot overwrite new version');
   [$code,$catalogHtml]=http_request('/admin/po.php?slot='.$sid2);
   verify(str_contains($catalogHtml,'name="menu_uid"') && str_contains($catalogHtml,'Tambah dari katalog'),'admin renders catalog selector instead of manual name field');
   $webOrder=po_query($db,'SELECT id FROM po_orders WHERE request_hash=?',[hash('sha256',$webNonce)])->fetchColumn();

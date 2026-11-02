@@ -16,6 +16,7 @@ $search = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']),0,80) : '';
 $page = max(1, min(10000, (int)filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT)));
 $total = 0; $counts = [];
 $catalog = []; $choices = [];
+$payment = po_payment_defaults();
 try {
   $db = po_db();
   $catalog = po_catalog();
@@ -27,8 +28,14 @@ try {
       po_transition($db, po_int($_POST['order_id'] ?? 0,1,PHP_INT_MAX), po_text($_POST['expected'] ?? '', 'Status',1,16), po_text($_POST['target'] ?? '', 'Status tujuan',1,16), $me['name']);
       $_SESSION['po_notice'] = 'Status pesanan diperbarui.';
     } else {
-      if (!is_owner($me)) throw new DomainException('Pengaturan jadwal dan produk hanya untuk pemilik.');
-      if ($action === 'save-slot') { $sid = po_save_slot($db, $_POST); $_SESSION['po_notice'] = 'Jadwal disimpan. Lengkapi produk, lalu buka PO.'; }
+      if (!is_owner($me)) throw new DomainException('Pengaturan jadwal, produk, dan rekening hanya untuk pemilik.');
+      if ($action === 'save-payment') {
+        po_payment_save($db, $_POST, $me);
+        ruethies_log($me['name'], 'po-rekening', 'Pengaturan rekening diperbarui.');
+        $_SESSION['po_notice'] = 'Rekening disimpan. Pengaturan ini disiapkan untuk tahap pembayaran manual; demo pelanggan belum menerima pembayaran.';
+        header('Location: po.php#payment', true, 303); exit;
+      }
+      elseif ($action === 'save-slot') { $sid = po_save_slot($db, $_POST); $_SESSION['po_notice'] = 'Jadwal disimpan. Lengkapi produk, lalu buka PO.'; }
       elseif ($action === 'toggle-slot') {
         $sid = po_int($_POST['slot_id'] ?? 0,1,PHP_INT_MAX);
         po_toggle_slot($db, $sid, po_int($_POST['is_open'] ?? 0,0,1));
@@ -44,6 +51,7 @@ try {
 catch (Throwable $e) { http_response_code(503); $error = 'Database PO belum siap atau sedang bermasalah. Periksa konfigurasi privat dan jalankan installer CLI sesuai panduan.'; error_log('PO admin: storage unavailable'); }
 if ($ready) {
   try {
+    if (is_owner($me)) $payment = po_payment_settings($db);
     $slots = po_query($db, 'SELECT * FROM po_slots ORDER BY pickup_from DESC LIMIT 100')->fetchAll();
     foreach ($slots as $s) if ((int)$s['id'] === $sid) $selected = $s;
     if ($selected) $products = po_query($db, 'SELECT * FROM po_products WHERE slot_id=? ORDER BY id', [$sid])->fetchAll();
@@ -71,6 +79,20 @@ function po_datetime_value(?array $row, string $key): string { return $row ? dat
 <?php if ($error): ?><p class="err" role="alert"><?= h($error) ?></p><?php endif; ?>
 <?php if ($notice): ?><p class="okmsg" role="status"><?= h($notice) ?></p><?php endif; ?>
 <?php if ($ready): ?>
+<?php if (is_owner($me)): ?>
+<section class="card" id="payment"><h2>Rekening pembayaran PO</h2>
+<p class="sub">Siapkan satu rekening transfer untuk PO manual. Tahap ini hanya menyimpan pengaturan; invoice dan unggah bukti pelanggan akan tersedia pada tahap berikutnya. Gunakan rekening contoh untuk demo staging.</p>
+<p class="<?= $payment['enabled'] ? 'okmsg' : 'warn' ?>"><?= $payment['enabled'] ? 'Rekening disiapkan untuk pembayaran manual.' : 'Rekening belum diaktifkan untuk pembayaran manual.' ?></p>
+<form method="post"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="save-payment"><input type="hidden" name="version" value="<?= (int)$payment['version'] ?>">
+<div class="fgrid"><label>Nama bank<input name="bank_name" maxlength="80" value="<?= h($payment['bank_name']) ?>" placeholder="Contoh: Bank Contoh"></label>
+<label>Nomor rekening<input name="account_number" type="text" inputmode="numeric" maxlength="70" value="<?= h($payment['account_number']) ?>" placeholder="Contoh: 001234567890"></label></div>
+<label>Nama pemilik rekening<input name="account_name" maxlength="120" value="<?= h($payment['account_name']) ?>"></label>
+<label>Instruksi pembayaran (opsional)<textarea name="instructions" rows="3" maxlength="500"><?= h($payment['instructions']) ?></textarea></label>
+<label><input type="checkbox" name="enabled" value="1" <?= $payment['enabled'] ? 'checked' : '' ?>>Rekening aktif untuk alur pembayaran manual</label>
+<p class="sub">Untuk mengaktifkan, lengkapi nama bank, nomor rekening, dan nama pemilik. Perubahan rekening nantinya hanya berlaku untuk pesanan baru.</p>
+<?php if ($payment['updated_at']): ?><p class="sub">Terakhir disimpan oleh <?= h($payment['updated_by']) ?> pada <?= h(po_date((int)$payment['updated_at'])) ?>.</p><?php endif; ?>
+<button>Simpan rekening</button></form></section>
+<?php endif; ?>
 <div class="po-counts"><?php foreach ($counts as $count): ?><span class="badge"><?= h(PO_STATUSES[$count['status']] ?? $count['status']) ?>: <?= (int)$count['n'] ?></span><?php endforeach; ?></div>
 <section class="card"><h2>Jadwal PO</h2><p class="sub">Admin menentukan kapan pengajuan dibuka, ditutup, dan waktu pengambilan. Pending belum mengurangi kuota.</p>
 <?php if (!$slots): ?><p class="empty">Belum ada jadwal. Buat jadwal pertama di bawah.</p><?php endif; ?>
