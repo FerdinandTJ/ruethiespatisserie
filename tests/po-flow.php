@@ -77,13 +77,15 @@ try {
   verify($bankResults===['saved','stale'] && (int)po_payment_settings($db)['version']===2, 'only one bank edit wins for the same version');
   po_payment_save($db,array_replace($payment,['enabled'=>'0','version'=>'2']),$owner);
   verify((int)po_payment_settings($db)['enabled']===0, 'owner can disable a configured bank');
-  $db->exec('ALTER TABLE po_products DROP INDEX po_slot_menu, DROP COLUMN menu_uid, DROP COLUMN image');
+  $db->exec('ALTER TABLE po_products DROP INDEX po_slot_menu, DROP COLUMN menu_uid, DROP COLUMN image, DROP COLUMN min_qty, DROP COLUMN max_qty');
   $legacySlot=make_slot($db,'Legacy migration');
   po_query($db,'INSERT INTO po_products(slot_id,name,price,quota) VALUES(?,?,?,?)',[$legacySlot,'Manual lama',12345,7]);
   $legacyId=(int)$db->lastInsertId();
   po_migrate_catalog($db);po_migrate_catalog($db);
+  po_migrate_limits($db);po_migrate_limits($db);
   $legacy=po_query($db,'SELECT * FROM po_products WHERE id=?',[$legacyId])->fetch();
   verify($legacy['menu_uid']===null && (int)$legacy['price']===12345,'repeatable migration preserves legacy product and price');
+  verify((int)$legacy['min_qty']===1 && (int)$legacy['max_qty']===20, 'limit migration preserves existing behavior with min 1/max 20');
   verify(po_public_products($db,$legacySlot)===[],'unlinked legacy product cannot receive new submissions');
   $sid = make_slot($db); $pid = make_product($db,$sid,3);
   $linked=po_query($db,'SELECT * FROM po_products WHERE id=?',[$pid])->fetch();
@@ -134,6 +136,26 @@ try {
   rejects(fn()=>po_rate($db,'test-rate',1),'rate limit enforced');
   rejects(fn()=>po_customer(['name'=>'Demo','phone'=>'oops','note'=>'','consent'=>'yes']),'invalid phone rejected');
   rejects(fn()=>po_customer(['name'=>'Demo','phone'=>'081234567890','note'=>'','consent'=>'']),'contact consent required');
+
+  $limitSlot=make_slot($db,'Admin purchase limits');$limitProduct=make_product($db,$limitSlot,300);
+  $limits=['id'=>$limitProduct,'slot_id'=>$limitSlot,'price'=>25000,'quota'=>300,'active'=>1,'min_qty'=>3,'max_qty'=>250];
+  po_save_product($db,$limits);
+  verify(po_quote($db,input_for($limitSlot,$limitProduct,250))['total']===6250000, 'admin can allow more than 20 per item and more than 100 total');
+  rejects(fn()=>po_quote($db,input_for($limitSlot,$limitProduct,2)), 'server rejects purchase below admin minimum');
+  rejects(fn()=>po_quote($db,input_for($limitSlot,$limitProduct,251)), 'server rejects purchase above admin maximum');
+  rejects(fn()=>po_quote($db,input_for($limitSlot,$limitProduct,2)+['min_qty'=>1,'max_qty'=>10000]), 'client cannot override stored purchase limits');
+  rejects(fn()=>po_save_product($db,array_replace($limits,['min_qty'=>0])), 'minimum purchase must be positive');
+  rejects(fn()=>po_save_product($db,array_replace($limits,['min_qty'=>251])), 'minimum cannot exceed maximum');
+  rejects(fn()=>po_save_product($db,array_replace($limits,['min_qty'=>301,'max_qty'=>500])), 'minimum cannot exceed total quota');
+  rejects(fn()=>po_save_product($db,array_replace($limits,['max_qty'=>10001])), 'maximum cannot exceed supported quota bound');
+  $limitOrder=submit_test($db,input_for($limitSlot,$limitProduct,3,'081234567897'));
+  $limitInput=input_for($limitSlot,$limitProduct,3,'081234567898');$limitQuote=po_quote_hash(po_quote($db,$limitInput));
+  po_save_product($db,array_replace($limits,['min_qty'=>5,'max_qty'=>10]));
+  rejects(fn()=>po_submit($db,$limitInput,bin2hex(random_bytes(32)),$limitQuote,$secret), 'submit rechecks changed purchase limits after review');
+  verify((int)$limitOrder['lines'][0]['qty']===3 && (int)po_query($db,'SELECT qty FROM po_lines WHERE order_id=?',[$limitOrder['id']])->fetchColumn()===3, 'limit changes preserve previously submitted quantities');
+  po_save_product($db,['id'=>$limitProduct,'slot_id'=>$limitSlot,'price'=>25000,'quota'=>300,'active'=>1]);
+  $limitsSaved=po_query($db,'SELECT min_qty,max_qty FROM po_products WHERE id=?',[$limitProduct])->fetch();
+  verify((int)$limitsSaved['min_qty']===5 && (int)$limitsSaved['max_qty']===10, 'legacy product edit preserves configured limits when fields omitted');
 
   // Dua koneksi sungguhan mengonfirmasi kuota terakhir secara bersamaan.
   $raceSlot = make_slot($db,'Concurrent slot'); $raceProduct = make_product($db,$raceSlot,1);
@@ -186,6 +208,7 @@ try {
   verify(proc_close($install)===0 && $installError==='' && str_contains($installOutput,'Seed dilewati'),'installer can be rerun without reseeding');
   verify((int)$db->query('SELECT COUNT(*) FROM po_orders')->fetchColumn()===$before,'installer preserves existing orders');
   verify((int)po_payment_settings($db)['version']===3 && po_payment_settings($db)['account_number']==='00123456','installer rerun preserves bank settings');
+  verify((int)po_query($db,'SELECT min_qty FROM po_products WHERE id=?',[$limitProduct])->fetchColumn()===5, 'installer rerun preserves configured purchase limits');
   $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
   $process=proc_open([PHP_BINARY,'-S',$address,'-t',$public,__DIR__.'/po-router.php'],[0=>['pipe','r'],1=>['file',$root.'/http.log','a'],2=>['file',$root.'/http.log','a']],$httpPipes);
   $base='http://'.$address;
@@ -201,7 +224,7 @@ try {
   function csrf_from(string $body): string { if(!preg_match('/name="csrf" value="([a-f0-9]+)"/',$body,$m))throw new RuntimeException('CSRF missing');return $m[1]; }
   for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=http_request('/pre-order/?slot='.$sid2);if($code===200)break;}
   verify($code===200 && str_contains($html,'DEMO STAGING'),'public page renders');
-  verify(str_contains($html,'action="/pre-order/"') && str_contains($html,'src="/images/menu/example.jpg"') && str_contains($html,'href="/po.css?v=2"'),'forms and assets use root-absolute URLs');
+  verify(str_contains($html,'action="/pre-order/"') && str_contains($html,'src="/images/menu/example.jpg"') && str_contains($html,'href="/po.css?v=20261102-po-limits"'),'forms and assets use root-absolute URLs');
   $csrf=csrf_from($html);
   [$code,$html,$redirect]=http_request('/po.php?slot='.$sid2);
   verify($code===302 && $redirect===$base.'/pre-order/?slot='.$sid2,'legacy catalog URL retains slot in clean redirect');
@@ -226,8 +249,13 @@ try {
   verify($code===302 && $redirect===$firstRedirect,'legacy private token survives redirect unchanged');
   [$code,$html]=http_request(parse_url($firstRedirect,PHP_URL_PATH).'?'.parse_url($firstRedirect,PHP_URL_QUERY));
   verify($code===200 && str_contains($html,'Menunggu konfirmasi') && !str_contains($html,'081234567895'),'status visible without exposing contact');
+  $linkDoc=new DOMDocument();libxml_use_internal_errors(true);$linkDoc->loadHTML($html);libxml_clear_errors();
+  $linkField=$linkDoc->getElementById('po-status-link');
+  $expectedLink='https://staging.ruethiespatisserie.com/pre-order/status/?'.parse_url($firstRedirect,PHP_URL_QUERY);
+  verify($linkField && $linkField->hasAttribute('readonly') && $linkField->getAttribute('value')===$expectedLink && str_contains($html,'id="po-copy-link"'), 'status shows full canonical magic link in a copyable field with a copy button');
   verify((bool)array_filter($responseHeaders,fn($h)=>str_contains(strtolower($h),'cache-control: private, no-store')),'private order responses are not cacheable');
   [$code,$html]=http_request('/pre-order/status/?t=not-a-token');verify($code===404,'unknown status token returns 404');
+  verify(!str_contains($html,'id="po-status-link"'), 'invalid token does not render a private link field');
   [$code,$html,$redirect]=http_request('/admin/po.php');verify($code===302 && str_contains($redirect,'login'),'admin requires login');
   [$code]=http_request('/admin/po-install.php');verify($code===404,'installer unavailable over HTTP');
   [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);verify($code===302,'staff login works');
@@ -251,6 +279,19 @@ try {
   verify(str_contains($html,'Rekening sudah diubah') && (int)po_payment_settings($db)['version']===4, 'stale HTTP bank form cannot overwrite new version');
   [$code,$catalogHtml]=http_request('/admin/po.php?slot='.$sid2);
   verify(str_contains($catalogHtml,'name="menu_uid"') && str_contains($catalogHtml,'Tambah dari katalog'),'admin renders catalog selector instead of manual name field');
+  verify(str_contains($catalogHtml,'name="min_qty"') && str_contains($catalogHtml,'name="max_qty"'), 'admin renders purchase limits for product create and edit');
+  $productPost=['action'=>'save-product','id'=>$pid2,'slot_id'=>$sid2,'price'=>25000,'quota'=>20,'active'=>1,'min_qty'=>3,'max_qty'=>12];
+  [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf]+$productPost);
+  verify($code===303 && (int)po_query($db,'SELECT min_qty FROM po_products WHERE id=?',[$pid2])->fetchColumn()===3, 'owner saves purchase limits through admin form');
+  [$code,$html]=http_request('/pre-order/?slot='.$sid2);
+  verify(str_contains($html,'data-min-qty="3"') && str_contains($html,'max="12"') && str_contains($html,'Minimal 3'), 'customer form displays stored minimum and stock-limited maximum');
+  [$code,$html]=http_request('/pre-order/',input_for($sid2,$pid2,2,'081234567899')+['action'=>'review','csrf'=>$csrf]);
+  verify(str_contains($html,'harus antara 3 dan 12'), 'HTTP review enforces product minimum without relying on JavaScript');
+  // Sisakan stok di bawah minimum: produk tetap terlihat tetapi tidak bisa dipilih.
+  po_query($db,'UPDATE po_products SET reserved=18 WHERE id=?',[$pid2]);
+  [$code,$html]=http_request('/pre-order/?slot='.$sid2);
+  verify(str_contains($html,'Sisa kuota kurang dari minimal pembelian.') && preg_match('/name="qty\['.$pid2.'\]"[^>]*disabled/',$html)===1, 'remaining stock below minimum disables ordering');
+  po_query($db,'UPDATE po_products SET reserved=0 WHERE id=?',[$pid2]);
   $webOrder=po_query($db,'SELECT id FROM po_orders WHERE request_hash=?',[hash('sha256',$webNonce)])->fetchColumn();
   [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'transition','order_id'=>$webOrder,'expected'=>'pending','target'=>'confirmed']);
   verify(str_contains($html,'Sesi formulir tidak valid'),'admin CSRF rejected');

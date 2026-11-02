@@ -14,6 +14,7 @@ try {
     if (trim($sql) !== '') $db->exec($sql);
   }
   po_migrate_catalog($db);
+  po_migrate_limits($db);
   $menu = jread(RUETHIES_MENU, null);
   if (!is_array($menu) || !array_is_list($menu) || array_filter($menu, fn($m)=>!is_array($m))) throw new RuntimeException('Katalog menu tidak valid.');
   $withIds = menu_with_ids($menu);

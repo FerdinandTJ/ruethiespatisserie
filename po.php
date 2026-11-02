@@ -69,7 +69,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=2"><script src="/po.js?v=1" defer></script></head>
+<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261102-po-limits"><script src="/po.js?v=20261102-po-limits" defer></script></head>
 <body>
 <div class="demo-banner">DEMO STAGING · Gunakan data contoh · Tidak ada pembayaran atau pesanan nyata</div>
 <header class="po-header"><a href="/" aria-label="Beranda Ruethies"><img src="/logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="/">Kembali ke website ↗</a></header>
@@ -90,7 +90,12 @@ function po_value(array $values, string $key): string { return is_string($values
 <h3><?= h($order['title']) ?></h3><p>Ambil di toko: <?= h(po_date((int)$order['pickup_from'])) ?> sampai <?= h(po_date((int)$order['pickup_until'])) ?></p>
 <ul class="order-lines"><?php foreach ($order['lines'] as $line): ?><li><span><?= (int)$line['qty'] ?> × <?= h($line['name']) ?></span><strong><?= h(po_money((int)$line['price'] * (int)$line['qty'])) ?></strong></li><?php endforeach; ?></ul>
 <p class="total"><span>Total pengajuan</span><strong><?= h(po_money((int)$order['total'])) ?></strong></p>
-<p class="muted">Belum ada pembayaran yang diproses atau dicatat. Simpan tautan pribadi ini untuk melihat status. Jangan membagikannya kepada orang lain.</p>
+<p class="muted">Belum ada pembayaran yang diproses atau dicatat.</p>
+<label for="po-status-link">Tautan pribadi pesanan Anda</label>
+<input id="po-status-link" type="text" readonly spellcheck="false" autocomplete="off" value="https://staging.ruethiespatisserie.com/pre-order/status/?t=<?= h($token) ?>" aria-describedby="po-link-help">
+<p class="muted" id="po-link-help">Simpan tautan ini untuk melihat status. Jangan membagikannya kepada orang lain. Anda juga bisa memilih teks tautan lalu menyalinnya secara manual.</p>
+<button type="button" class="secondary" id="po-copy-link" hidden>Salin tautan pesanan</button>
+<p id="po-copy-feedback" role="status" aria-live="polite"></p>
 <div class="actions"><a class="button" href="/pre-order/status/?t=<?= h($token) ?>">Perbarui status</a><a class="button secondary" href="/pre-order/">Lihat jadwal lain</a></div>
 </section>
 
@@ -115,9 +120,9 @@ function po_value(array $values, string $key): string { return is_string($values
 <form method="post" action="/pre-order/" id="po-form"><input type="hidden" name="action" value="review"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="slot_id" value="<?= (int)$slot['id'] ?>">
 <section class="panel" id="pilihan"><p class="eyebrow">02 · PILIH SAJIAN</p><h2><?= h($slot['title']) ?></h2><p class="muted">Jumlah 0 berarti tidak dipilih. Ketersediaan akhir dikonfirmasi oleh admin.</p>
 <?php if (!$products): ?><div class="empty">Produk untuk jadwal ini sedang disiapkan.</div><?php endif; ?>
-<?php foreach ($products as $p): $left = max(0, (int)$p['quota'] - (int)$p['reserved']); $qty = is_array($values['qty'] ?? null) ? ($values['qty'][$p['id']] ?? 0) : 0; ?>
-<div class="product"><div class="product-info"><?php if ($p['image']): ?><img class="product-photo" src="/<?= h($p['image']) ?>" alt="" width="88" height="66" loading="lazy"><?php endif; ?><div><h3><?= h($p['name']) ?></h3><p class="muted"><?= h($p['description']) ?></p><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small></div></div>
-<label>Jumlah<input type="number" name="qty[<?= (int)$p['id'] ?>]" min="0" max="<?= min(20,$left) ?>" step="1" value="<?= h(is_scalar($qty) ? (string)$qty : '0') ?>" data-price="<?= (int)$p['price'] ?>" <?= !$left ? 'disabled' : '' ?> aria-label="Jumlah <?= h($p['name']) ?>"></label></div>
+<?php foreach ($products as $p): $left = max(0, (int)$p['quota'] - (int)$p['reserved']); $minQty = (int)($p['min_qty'] ?? 1); $maxQty = min((int)($p['max_qty'] ?? 20),$left); $canOrder = $maxQty >= $minQty; $qty = is_array($values['qty'] ?? null) ? ($values['qty'][$p['id']] ?? 0) : 0; ?>
+<div class="product"><div class="product-info"><?php if ($p['image']): ?><img class="product-photo" src="/<?= h($p['image']) ?>" alt="" width="88" height="66" loading="lazy"><?php endif; ?><div><h3><?= h($p['name']) ?></h3><p class="muted"><?= h($p['description']) ?></p><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small><br><small>Minimal <?= $minQty ?> · Maksimal <?= (int)($p['max_qty'] ?? 20) ?> buah per pesanan</small><?php if ($left && !$canOrder): ?><br><small>Sisa kuota kurang dari minimal pembelian.</small><?php endif; ?></div></div>
+<label>Jumlah<input type="number" name="qty[<?= (int)$p['id'] ?>]" min="0" max="<?= $maxQty ?>" data-min-qty="<?= $minQty ?>" step="1" value="<?= h(is_scalar($qty) ? (string)$qty : '0') ?>" data-price="<?= (int)$p['price'] ?>" <?= !$canOrder ? 'disabled' : '' ?> aria-label="Jumlah <?= h($p['name']) ?>"></label></div>
 <?php endforeach; ?>
 <p class="total"><span>Perkiraan total</span><strong id="po-total" aria-live="polite">Rp0</strong></p></section>
 <section class="panel"><p class="eyebrow">03 · DETAIL PENGAMBILAN</p><h2>Siapa yang akan mengambil?</h2>

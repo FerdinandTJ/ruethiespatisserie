@@ -96,6 +96,11 @@ function po_migrate_catalog(PDO $db): void {
   $indexes = array_column($db->query('SHOW INDEX FROM po_products')->fetchAll(), 'Key_name');
   if (!in_array('po_slot_menu',$indexes,true)) $db->exec('ALTER TABLE po_products ADD UNIQUE KEY po_slot_menu (slot_id,menu_uid)');
 }
+function po_migrate_limits(PDO $db): void {
+  $columns = array_column($db->query('SHOW COLUMNS FROM po_products')->fetchAll(), 'Field');
+  if (!in_array('min_qty', $columns, true)) $db->exec('ALTER TABLE po_products ADD min_qty INT UNSIGNED NOT NULL DEFAULT 1');
+  if (!in_array('max_qty', $columns, true)) $db->exec('ALTER TABLE po_products ADD max_qty INT UNSIGNED NOT NULL DEFAULT 20');
+}
 function po_catalog(): array {
   $raw = @file_get_contents(RUETHIES_PUBLIC . '/menu.json');
   $items = $raw === false ? null : json_decode($raw,true);
@@ -206,6 +211,9 @@ function po_save_product(PDO $db, array $input): int {
     po_slot($db, $sid, true);
     $row = $id ? po_query($db,'SELECT * FROM po_products WHERE id=? AND slot_id=? FOR UPDATE',[$id,$sid])->fetch() : null;
     if ($id && !$row) throw new DomainException('Produk tidak ditemukan.');
+    $minQty = po_int($input['min_qty'] ?? ($row['min_qty'] ?? 1), 1, 10000);
+    $maxQty = po_int($input['max_qty'] ?? ($row['max_qty'] ?? 20), 1, 10000);
+    if ($minQty > $maxQty || $minQty > $quota) throw new DomainException('Minimal beli tidak boleh melebihi maksimal beli atau kuota total.');
     $uid = po_text($input['menu_uid'] ?? ($row['menu_uid'] ?? ''), 'Pilihan menu', 0, 32);
     if ($row && $row['menu_uid'] && $uid !== $row['menu_uid']) throw new DomainException('Identitas produk tidak bisa diganti. Tambahkan produk PO baru.');
     $source = po_catalog()[$uid] ?? null;
@@ -219,10 +227,10 @@ function po_save_product(PDO $db, array $input): int {
     if ($uid !== '' && po_query($db,'SELECT id FROM po_products WHERE slot_id=? AND menu_uid=? AND id<>?',[$sid,$uid,$id])->fetch()) throw new DomainException('Menu ini sudah ada pada jadwal PO ini. Edit harga atau kuotanya di produk yang sudah ada.');
     if ($id) {
       if (!$row || $quota < (int)$row['reserved']) throw new DomainException('Kuota tidak boleh di bawah jumlah yang sudah dikonfirmasi.');
-      po_query($db, 'UPDATE po_products SET name=?,price=?,quota=?,active=?,menu_uid=?,image=? WHERE id=?', [$name,$price,$quota,$active,$uid ?: null,$image,$id]);
+      po_query($db, 'UPDATE po_products SET name=?,price=?,quota=?,active=?,menu_uid=?,image=?,min_qty=?,max_qty=? WHERE id=?', [$name,$price,$quota,$active,$uid ?: null,$image,$minQty,$maxQty,$id]);
     } else {
       if ((int)po_query($db,'SELECT COUNT(*) FROM po_products WHERE slot_id=?',[$sid])->fetchColumn() >= 100) throw new DomainException('Maksimal 100 produk per jadwal.');
-      po_query($db, 'INSERT INTO po_products(slot_id,name,price,quota,active,menu_uid,image) VALUES(?,?,?,?,?,?,?)', [$sid,$name,$price,$quota,$active,$uid ?: null,$image]);
+      po_query($db, 'INSERT INTO po_products(slot_id,name,price,quota,active,menu_uid,image,min_qty,max_qty) VALUES(?,?,?,?,?,?,?,?,?)', [$sid,$name,$price,$quota,$active,$uid ?: null,$image,$minQty,$maxQty]);
       $id = (int)$db->lastInsertId();
     }
     $db->commit(); return $id;
@@ -238,17 +246,20 @@ function po_quote(PDO $db, array $input): array {
   $products = po_public_products($db, (int)$slot['id']);
   $selected = [];
   foreach ($qty as $id => $n) {
-    $n = po_int($n === '' ? 0 : $n, 0, 20);
+    $n = po_int($n === '' ? 0 : $n, 0, 10000);
     if ($n) $selected[po_int($id, 1, PHP_INT_MAX)] = $n;
   }
-  if (!$selected || count($selected) > 12 || array_sum($selected) > 100) throw new DomainException('Pilih 1–12 produk, maksimal 20 per produk dan 100 item total.');
+  if (!$selected || count($selected) > 12) throw new DomainException('Pilih 1–12 jenis produk. Jumlah per produk mengikuti batas yang ditentukan toko.');
   $lines = []; $total = 0;
   foreach ($products as $p) {
     if (!isset($selected[$p['id']])) continue;
     $n = $selected[$p['id']];
+    $minQty = (int)($p['min_qty'] ?? 1); $maxQty = (int)($p['max_qty'] ?? 20);
+    if ($n < $minQty || $n > $maxQty) throw new DomainException('Jumlah ' . $p['name'] . ' harus antara ' . $minQty . ' dan ' . $maxQty . ' buah per pesanan.');
     if ($n > (int)$p['quota'] - (int)$p['reserved']) throw new DomainException('Kuota ' . $p['name'] . ' tidak mencukupi.');
     $lines[] = ['product_id' => (int)$p['id'], 'name' => $p['name'], 'price' => (int)$p['price'], 'qty' => $n];
     $total += (int)$p['price'] * $n;
+    if ($total > 2000000000) throw new DomainException('Total pesanan terlalu besar. Kurangi jumlah atau hubungi toko untuk pesanan khusus.');
   }
   if (count($lines) !== count($selected)) throw new DomainException('Ada produk yang tidak tersedia pada jadwal ini.');
   return ['slot' => $slot, 'lines' => $lines, 'total' => $total];
