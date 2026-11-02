@@ -49,6 +49,7 @@ function remove_fixture(string $path): void {
 try {
   mkdir(RUETHIES_PUBLIC,0700,true);file_put_contents(RUETHIES_PUBLIC.'/menu.json','[]');
   foreach (preg_split('/;\s*(?:\n|$)/',file_get_contents(dirname(__DIR__).'/admin/po-schema.sql')) as $sql) if (trim($sql)!=='') $db->exec($sql);
+  po_migrate_manual($db);
   $owner = ['role'=>'owner','name'=>'owner'];
   $payment = ['bank_name'=>'Bank Contoh','account_number'=>'0012-3456','account_name'=>'Pemilik Contoh','instructions'=>'Cantumkan nomor pesanan.','enabled'=>'1','version'=>'0'];
   verify(po_payment_settings($db) === po_payment_defaults(), 'payment starts empty and disabled');
@@ -194,7 +195,7 @@ try {
   // HTTP integration: fixture dengan layout Hostinger, akun contoh, dan database terpisah.
   $public=$root.'/public_html/staging'; $private=$root.'/ruethies-data-staging';
   mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
-  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
+  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po-manual.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
   copy(RUETHIES_PUBLIC.'/menu.json',$public.'/menu.json');
   $cfg=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret];
   file_put_contents($private.'/po-config.php','<?php return '.var_export($cfg,true).';');
@@ -292,6 +293,14 @@ try {
   [$code,$html]=http_request('/pre-order/?slot='.$sid2);
   verify(str_contains($html,'Sisa kuota kurang dari minimal pembelian.') && preg_match('/name="qty\['.$pid2.'\]"[^>]*disabled/',$html)===1, 'remaining stock below minimum disables ordering');
   po_query($db,'UPDATE po_products SET reserved=0 WHERE id=?',[$pid2]);
+  $manualSid=po_save_slot($db,['title'=>'Manual hidden fixture','flow_version'=>'manual_v1','opens_at'=>date('Y-m-d\TH:i',time()-3600),'closes_at'=>date('Y-m-d\TH:i',time()+3600),'pickup_from'=>date('Y-m-d\TH:i',time()+7200),'pickup_until'=>date('Y-m-d\TH:i',time()+10800)]);
+  [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'toggle-slot','slot_id'=>$manualSid,'is_open'=>1]);
+  verify(str_contains($html,'masih dipersiapkan') && (int)po_slot($db,$manualSid)['is_open']===0, 'owner HTTP action cannot open an unfinished manual schedule');
+  po_query($db,'UPDATE po_slots SET is_open=1 WHERE id=?',[$manualSid]); // Fixture untuk menguji pertahanan endpoint publik.
+  [$code,$html]=http_request('/pre-order/?slot='.$manualSid);
+  verify(!str_contains($html,'Manual hidden fixture'), 'manual schedule stays hidden from customer even if is_open is set directly');
+  [$code,$html]=http_request('/pre-order/',input_for($manualSid,$pid2,1,'081234567899')+['action'=>'review','csrf'=>$csrf]);
+  verify(str_contains($html,'belum menerima checkout pelanggan') && (int)po_query($db,'SELECT COUNT(*) FROM po_orders WHERE slot_id=?',[$manualSid])->fetchColumn()===0, 'forged customer POST cannot enter unfinished manual checkout');
   $webOrder=po_query($db,'SELECT id FROM po_orders WHERE request_hash=?',[hash('sha256',$webNonce)])->fetchColumn();
   [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'transition','order_id'=>$webOrder,'expected'=>'pending','target'=>'confirmed']);
   verify(str_contains($html,'Sesi formulir tidak valid'),'admin CSRF rejected');

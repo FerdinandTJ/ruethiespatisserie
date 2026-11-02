@@ -1,5 +1,6 @@
 <?php
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
+require_once __DIR__ . '/po-manual.php';
 
 const PO_STATUSES = [
   'pending' => 'Menunggu konfirmasi', 'confirmed' => 'Dikonfirmasi',
@@ -86,6 +87,9 @@ function po_payment_save(PDO $db, array $input, array $actor): void {
     }
     po_query($db, 'UPDATE po_payment_settings SET bank_name=?,account_number=?,account_name=?,instructions=?,enabled=?,version=version+1,updated_by=?,updated_at=? WHERE id=1',
       [$values['bank_name'],$values['account_number'],$values['account_name'],$values['instructions'],$values['enabled'],$name,time()]);
+    $before=array_intersect_key($current,array_flip(['bank_name','account_number','account_name','instructions','enabled']));
+    po_query($db,'INSERT INTO po_payment_events(version,actor,before_snapshot,after_snapshot,created_at) VALUES(?,?,?,?,?)',
+      [$version+1,$name,json_encode($before,JSON_THROW_ON_ERROR),json_encode($values,JSON_THROW_ON_ERROR),time()]);
     $db->commit();
   } catch (Throwable $e) { $db->rollBack(); throw $e; }
 }
@@ -178,13 +182,16 @@ function po_save_slot(PDO $db, array $input): int {
   $db->beginTransaction();
   try {
     if ($id) {
-      po_slot($db, $id, true);
+      $current = po_slot($db, $id, true);
+      if (isset($input['flow_version']) && $input['flow_version'] !== ($current['flow_version'] ?? 'legacy')) throw new DomainException('Alur jadwal tidak bisa diganti. Buat jadwal baru agar kuota demo dan manual tetap terpisah.');
       if (po_query($db, 'SELECT id FROM po_orders WHERE slot_id=? LIMIT 1', [$id])->fetch()) {
         throw new DomainException('Jadwal sudah memiliki pesanan. Buat jadwal baru untuk mengubah tanggal; buka/tutup masih bisa diubah.');
       }
       po_query($db, 'UPDATE po_slots SET title=?,opens_at=?,closes_at=?,pickup_from=?,pickup_until=? WHERE id=?', [$title,$opens,$closes,$from,$until,$id]);
     } else {
-      po_query($db, 'INSERT INTO po_slots(title,opens_at,closes_at,pickup_from,pickup_until) VALUES(?,?,?,?,?)', [$title,$opens,$closes,$from,$until]);
+      $flow = $input['flow_version'] ?? 'legacy';
+      if (!in_array($flow, ['legacy','manual_v1'], true)) throw new DomainException('Alur jadwal tidak valid.');
+      po_query($db, 'INSERT INTO po_slots(title,opens_at,closes_at,pickup_from,pickup_until,flow_version) VALUES(?,?,?,?,?,?)', [$title,$opens,$closes,$from,$until,$flow]);
       $id = (int)$db->lastInsertId();
     }
     $db->commit(); return $id;
@@ -194,7 +201,8 @@ function po_toggle_slot(PDO $db, int $id, int $open): void {
   po_int($open, 0, 1);
   $db->beginTransaction();
   try {
-    po_slot($db, $id, true);
+    $slot = po_slot($db, $id, true);
+    if ($open && ($slot['flow_version'] ?? 'legacy') === 'manual_v1') throw new DomainException('Jadwal pembayaran manual masih dipersiapkan. Pembukaan tersedia setelah invoice dan unggah bukti siap.');
     po_query($db, 'UPDATE po_slots SET is_open=? WHERE id=?', [$open,$id]);
     $db->commit();
   } catch (Throwable $e) { $db->rollBack(); throw $e; }
@@ -262,10 +270,14 @@ function po_quote(PDO $db, array $input): array {
     if ($total > 2000000000) throw new DomainException('Total pesanan terlalu besar. Kurangi jumlah atau hubungi toko untuk pesanan khusus.');
   }
   if (count($lines) !== count($selected)) throw new DomainException('Ada produk yang tidak tersedia pada jadwal ini.');
-  return ['slot' => $slot, 'lines' => $lines, 'total' => $total];
+  $quote = ['slot' => $slot, 'lines' => $lines, 'total' => $total];
+  if (($slot['flow_version'] ?? 'legacy') === 'manual_v1') $quote['bank_snapshot'] = po_manual_bank($db);
+  return $quote;
 }
 function po_quote_hash(array $quote): string {
-  return hash('sha256', json_encode([$quote['slot']['id'], $quote['slot']['title'], $quote['slot']['pickup_from'], $quote['slot']['pickup_until'], $quote['lines']], JSON_THROW_ON_ERROR));
+  $parts=[$quote['slot']['id'], $quote['slot']['title'], $quote['slot']['pickup_from'], $quote['slot']['pickup_until'], $quote['lines']];
+  if (isset($quote['bank_snapshot'])) $parts[]=$quote['bank_snapshot'];
+  return hash('sha256', json_encode($parts, JSON_THROW_ON_ERROR));
 }
 function po_customer(array $input): array {
   if (($input['consent'] ?? '') !== 'yes') throw new DomainException('Setujui penggunaan kontak untuk pengajuan ini.');
@@ -283,6 +295,9 @@ function po_rate(PDO $db, string $key, int $limit): void {
   if ($count > $limit) throw new DomainException('Terlalu banyak percobaan. Silakan coba lagi dalam 15 menit.');
 }
 function po_submit(PDO $db, array $input, string $nonce, string $quoteHash, string $secret): string {
+  $existing=po_query($db,'SELECT flow_version FROM po_orders WHERE request_hash=?',[hash('sha256',$nonce)])->fetch();
+  $slot = po_slot($db, po_int($input['slot_id'] ?? 0, 1, PHP_INT_MAX));
+  if (($slot['flow_version'] ?? 'legacy') === 'manual_v1' || ($existing['flow_version'] ?? '') === 'manual_v1') return po_manual_submit($db, $input, $nonce, $quoteHash, $secret);
   if (function_exists('content_lock')) content_lock();
   if (!preg_match('/\A[a-f0-9]{64}\z/', $nonce) || strlen($secret) < 64) throw new DomainException('Sesi pengajuan tidak valid.');
   $requestHash = hash('sha256', $nonce);
@@ -313,12 +328,12 @@ function po_submit(PDO $db, array $input, string $nonce, string $quoteHash, stri
 }
 
 function po_expire(PDO $db): void {
-  $slots = po_query($db, "SELECT DISTINCT slot_id FROM po_orders WHERE status='pending' AND expires_at<=?", [time()])->fetchAll();
+  $slots = po_query($db, "SELECT DISTINCT slot_id FROM po_orders WHERE flow_version='legacy' AND status='pending' AND expires_at<=?", [time()])->fetchAll();
   foreach ($slots as $row) {
     $db->beginTransaction();
     try {
       po_slot($db, (int)$row['slot_id'], true);
-      $expired = po_query($db, "SELECT id FROM po_orders WHERE slot_id=? AND status='pending' AND expires_at<=? FOR UPDATE", [$row['slot_id'],time()])->fetchAll();
+      $expired = po_query($db, "SELECT id FROM po_orders WHERE slot_id=? AND flow_version='legacy' AND status='pending' AND expires_at<=? FOR UPDATE", [$row['slot_id'],time()])->fetchAll();
       foreach ($expired as $order) {
         po_query($db, "UPDATE po_orders SET status='expired' WHERE id=?", [$order['id']]);
         po_query($db, 'INSERT INTO po_history(order_id,status,actor,created_at) VALUES(?,?,?,?)', [$order['id'],'expired','Sistem',time()]);
@@ -326,6 +341,7 @@ function po_expire(PDO $db): void {
       $db->commit();
     } catch (Throwable $e) { $db->rollBack(); throw $e; }
   }
+  po_manual_expire($db);
 }
 function po_transition(PDO $db, int $id, string $expected, string $target, string $actor): void {
   $sid = po_query($db, 'SELECT slot_id FROM po_orders WHERE id=?', [$id])->fetchColumn();
@@ -335,6 +351,7 @@ function po_transition(PDO $db, int $id, string $expected, string $target, strin
   try {
     po_slot($db, (int)$sid, true);
     $order = po_query($db, 'SELECT * FROM po_orders WHERE id=? FOR UPDATE', [$id])->fetch();
+    if (($order['flow_version'] ?? 'legacy') !== 'legacy') throw new DomainException('Pesanan pembayaran manual tidak dapat diproses melalui konfirmasi demo.');
     if ($order['status'] !== $expected || !in_array($target, PO_TRANSITIONS[$order['status']] ?? [], true)) throw new DomainException('Status sudah berubah atau tindakan tidak diizinkan. Muat ulang daftar.');
     if ($order['status'] === 'pending' && (int)$order['expires_at'] <= time()) throw new DomainException('Pengajuan sudah kedaluwarsa.');
     $lines = po_query($db, 'SELECT * FROM po_lines WHERE order_id=? ORDER BY product_id', [$id])->fetchAll();

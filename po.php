@@ -35,6 +35,7 @@ try {
     po_rate($db, 'ip:' . $key, 20);
     if (($_POST['action'] ?? '') === 'review') {
       $values = $_POST;
+      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy') throw new DomainException('Pembayaran manual sedang dipersiapkan. Jadwal ini belum menerima checkout pelanggan.');
       po_customer($values);
       $review = po_quote($db, $values);
       $nonce = bin2hex(random_bytes(32));
@@ -45,19 +46,21 @@ try {
       $draft = $_SESSION['po_drafts'][$nonce] ?? null;
       if (!$draft) throw new DomainException('Ringkasan kedaluwarsa. Isi formulir kembali.');
       $values = $draft['input'];
+      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy') throw new DomainException('Pembayaran manual sedang dipersiapkan. Jadwal ini belum menerima checkout pelanggan.');
       $access = po_submit($db, $values, $nonce, $draft['hash'], po_config()['secret']);
       header('Location: /pre-order/status/?t=' . $access, true, 303); exit;
     } else throw new DomainException('Tindakan tidak valid.');
   }
   if ($statusRequested) {
     $order = po_order($db, $token);
-    if (!$order) { http_response_code(404); $error = 'Tautan status tidak valid atau pesanan tidak ditemukan.'; }
+    if ($order && ($order['flow_version'] ?? 'legacy') !== 'legacy') { $order=null; http_response_code(503); $error='Halaman pembayaran manual sedang dipersiapkan. Tidak ada pembayaran yang diminta melalui halaman ini.'; }
+    elseif (!$order) { http_response_code(404); $error = 'Tautan status tidak valid atau pesanan tidak ditemukan.'; }
   }
 } catch (DomainException $e) { $error = $e->getMessage(); }
 catch (Throwable $e) { http_response_code(503); $unavailable = true; $error = 'Demo PO sedang disiapkan. Silakan coba lagi setelah admin mengaktifkan database.'; error_log('PO demo: storage or configuration unavailable'); }
 if (!$unavailable && !$statusRequested && !$review) {
   try {
-    $slots = po_query($db, 'SELECT * FROM po_slots WHERE is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from', [time(),time()])->fetchAll();
+    $slots = po_query($db, "SELECT * FROM po_slots WHERE flow_version='legacy' AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [time(),time()])->fetchAll();
     $sid = $values['slot_id'] ?? ($_GET['slot'] ?? 0);
     foreach ($slots as $s) if ((string)$s['id'] === (string)(is_scalar($sid) ? $sid : 0)) $slot = $s;
     if (!$slot && count($slots) === 1) $slot = $slots[0];
