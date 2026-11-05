@@ -29,6 +29,8 @@ function ruethies_data_dir(): string {
 // Session keras: HttpOnly + Secure (bila HTTPS) + SameSite Strict + nama non-standar.
 function ruethies_session_start(): void {
   if (session_status() === PHP_SESSION_ACTIVE) return;
+  ini_set('session.use_strict_mode','1');
+  ini_set('session.use_only_cookies','1');
   session_name(RUETHIES_STAGING ? 'RUETHIESSTG' : 'RUETHIESADM');
   $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
     || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
@@ -39,8 +41,7 @@ function ruethies_session_start(): void {
   session_start();
   // Idle timeout 30 menit, absolut 8 jam.
   $now = time();
-  if (isset($_SESSION['last']) && $now - $_SESSION['last'] > 1800) ruethies_logout();
-  if (isset($_SESSION['born']) && $now - $_SESSION['born'] > 28800) ruethies_logout();
+  if ((isset($_SESSION['last']) && $now - $_SESSION['last'] >= 1800) || (isset($_SESSION['born']) && $now - $_SESSION['born'] >= 28800)) { ruethies_logout(); ruethies_session_start(); return; }
   $_SESSION['last'] = $now;
   if (empty($_SESSION['born'])) { $_SESSION['born'] = $now; session_regenerate_id(true); }
 }

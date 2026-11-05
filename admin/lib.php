@@ -1,6 +1,7 @@
 <?php
 // Ruethies Patisserie — pustaka keamanan + penyimpanan admin (tanpa dependensi luar).
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
+require_once __DIR__ . '/security.php';
 
 const RUETHIES_CATS = ['cakery' => 'Cakery', 'coffee' => 'Coffee & Drinks', 'savoury' => 'Savoury Patisserie'];
 
@@ -38,46 +39,6 @@ function ruethies_logs(int $n = 100): array {
   return array_reverse($out);
 }
 
-/* ---------- rate limit login: maks 5 gagal / 15 mnt / IP ---------- */
-function ruethies_ratelimit_hit(): bool {
-  $f = ruethies_data_dir() . '/ratelimit.json';
-  $d = jread($f, []);
-  $ip = ruethies_ip(); $now = time();
-  $d[$ip] = array_values(array_filter($d[$ip] ?? [], fn($t) => $now - $t < 900));
-  if (count($d[$ip]) >= 5) return true;
-  $d[$ip][] = $now; jwrite($f, $d);
-  return false;
-}
-function ruethies_ratelimit_ok(): bool {
-  $f = ruethies_data_dir() . '/ratelimit.json';
-  $d = jread($f, []);
-  $ip = ruethies_ip(); $now = time();
-  $hits = array_filter($d[$ip] ?? [], fn($t) => $now - $t < 900);
-  return count($hits) < 5;
-}
-function ruethies_ratelimit_reset(): void {
-  $f = ruethies_data_dir() . '/ratelimit.json';
-  $d = jread($f, []); unset($d[ruethies_ip()]); jwrite($f, $d);
-}
-
-/* ---------- CSRF ---------- */
-function ruethies_csrf(): string {
-  if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));
-  return $_SESSION['csrf'];
-}
-function ruethies_csrf_ok(): bool {
-  return isset($_POST['csrf']) && isset($_SESSION['csrf']) && hash_equals($_SESSION['csrf'], (string)$_POST['csrf']);
-}
-
-/* ---------- pengguna ---------- */
-function users_file(): string { return ruethies_data_dir() . '/users.json'; }
-function users_all(): array { return jread(users_file(), []); }
-function users_save(array $u): bool { return jwrite(users_file(), $u); }
-function user_get(string $name): ?array {
-  foreach (users_all() as $u) if (hash_equals(strtolower($u['name']), strtolower($name))) return $u;
-  return null;
-}
-
 /* ---------- TOTP RFC 6238 (2FA tanpa layanan luar) ---------- */
 function b32enc(string $bin): string {
   $map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; $bits = '';
@@ -102,38 +63,6 @@ function totp_at(string $secret, int $counter): string {
   $code = ((ord($hash[$off]) & 0x7f) << 24 | ord($hash[$off + 1]) << 16 | ord($hash[$off + 2]) << 8 | ord($hash[$off + 3])) % 1000000;
   return str_pad((string)$code, 6, '0', STR_PAD_LEFT);
 }
-function totp_verify(string $secret, string $code): bool {
-  if (!ctype_digit($code) || strlen($code) !== 6) return false;
-  $c = (int)floor(time() / 30);
-  foreach ([-1, 0, 1] as $w) if (hash_equals(totp_at($secret, $c + $w), $code)) return true;
-  return false;
-}
-
-/* ---------- session auth ---------- */
-function current_user(): ?array {
-  if (empty($_SESSION['uid'])) return null;
-  $u = user_get($_SESSION['uid']);
-  if (!$u) { ruethies_logout(); return null; }
-  // UA binding ringan: sesi tidak bisa dibajak mentah ke browser lain.
-  if (($_SESSION['ua'] ?? '') !== md5($_SERVER['HTTP_USER_AGENT'] ?? '')) { ruethies_logout(); return null; }
-  return $u;
-}
-function is_owner(?array $u): bool { return $u && ($u['role'] ?? '') === 'owner'; }
-function ruethies_login(array $u): void {
-  session_regenerate_id(true);
-  $_SESSION['uid'] = $u['name'];
-  $_SESSION['ua'] = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
-  $_SESSION['born'] = time(); $_SESSION['last'] = time();
-}
-function ruethies_logout(): void {
-  $_SESSION = [];
-  if (ini_get('session.use_cookies')) {
-    $p = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000, $p['path'], '', $p['secure'], $p['httponly']);
-  }
-  if (session_status() === PHP_SESSION_ACTIVE) session_destroy();
-}
-
 /* ---------- menu ---------- */
 // Semua mutasi konten admin memakai lock ini sampai request selesai. Dengan begitu,
 // pemeriksaan referensi + unlink tidak bersaing dengan penyimpanan menu/galeri lain.

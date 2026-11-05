@@ -10,7 +10,7 @@ function ui_remove(string $path): void {if(!is_dir($path)||is_link($path)){unlin
 try {
   mkdir($public.'/admin',0700,true);mkdir($private,0700,true);mkdir($public.'/images/menu',0700,true);
   $source=dirname(__DIR__);
-  foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/admin.css','admin/admin.js','index.html','llms.txt']as$file)copy($source.'/'.$file,$public.'/'.$file);
+  foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/security.php','admin/admin.css','admin/admin.js','index.html','llms.txt']as$file)copy($source.'/'.$file,$public.'/'.$file);
   $menu=[
     ['uid'=>str_repeat('a',32),'cat'=>'cakery','available'=>true,'signature'=>true,'id'=>['n'=>'Croissant uji','d'=>'Lembut dan renyah'],'en'=>['n'=>'Test croissant','d'=>'Test'],'img'=>'images/menu/croissant-au-beurre.jpg'],
     ['uid'=>str_repeat('b',32),'cat'=>'coffee','available'=>true,'signature'=>false,'id'=>['n'=>'Latte uji','d'=>'Kopi susu'],'en'=>['n'=>'Test latte','d'=>'Test'],'img'=>'images/menu/cafe-latte-artisan.jpg'],
@@ -21,8 +21,8 @@ try {
   file_put_contents($public.'/atmosphere.json',json_encode([['img'=>$menu[0]['img'],'imgFull'=>$menu[0]['img'],'id'=>['cap'=>'Sudut toko'],'en'=>['cap'=>'Shop corner']]]));
   file_put_contents($public.'/faq.json',json_encode([['q'=>'Jam buka?','a'=>'Setiap hari.','qe'=>'Opening hours?','ae'=>'Every day.']]));
   file_put_contents($private.'/users.json',json_encode([
-    ['name'=>'owner','role'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>''],
-    ['name'=>'staff','role'=>'staff','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>''],
+    ['name'=>'owner','role'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>'','auth_version'=>bin2hex(random_bytes(32)),'last_totp_counter'=>-1],
+    ['name'=>'staff','role'=>'staff','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>'','auth_version'=>bin2hex(random_bytes(32)),'last_totp_counter'=>-1],
   ]));
   $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
   $process=proc_open([PHP_BINARY,'-S',$address,'-t',$public],[0=>['pipe','r'],1=>['file',$root.'/server.log','a'],2=>['file',$root.'/server.log','a']],$pipes);
@@ -34,7 +34,7 @@ try {
   for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=$request('/admin/');if($code===200)break;}
   ui_check($code===200&&str_contains($html,'name="u"')&&!str_contains($html,'class="shell"'),'login renders without exposing admin content');
   file_put_contents($public.'/admin/login-preview.html',$html);
-  [$code]=$request('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);ui_check($code===302,'owner login works');
+  [$code]=$request('/admin/index.php',['aksi'=>'login','csrf'=>ui_csrf($html),'u'=>'owner','p'=>'Demo-test-password']);ui_check($code===302,'owner login works');
   [$code,$html]=$request('/admin/');$x=ui_xpath($html);$csrf=ui_csrf($html);
   ui_check($code===200&&$x->query('//h1')->length===1&&$x->query('//*[@id="item-0"]')->length===1&&$x->query('//*[@id="galeri" and contains(@class,"card")]')->length===0,'Menu has one heading and no gallery/FAQ content payload');
   ui_check($x->query('//a[@aria-current="page"]')->length===2 && !preg_match('/<[^>]+\bclass="[^"]*"[^>]+\bclass="/', $html), 'active navigation is present without JS and attributes are not duplicated');
@@ -56,7 +56,7 @@ try {
   file_put_contents($public.'/admin/editor-preview.html',$html);
   [$code,$html]=$request('/admin/?p=pengaturan');$x=ui_xpath($html);ui_check(str_contains($html,'Ganti kata sandi')&&$x->query('//*[@id="item-0"]')->length===0&&$x->query('//div[@class="table-scroll"]')->length===1,'settings has its own heading and horizontally scrollable log');
   [$code,$html]=$request('/admin/',['aksi'=>'toggle','i'=>1,'csrf'=>'wrong']);ui_check($code===403,'mutations still require CSRF');
-  [$code]=$request('/admin/',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);ui_check($code===302,'staff login works');
+  [$code]=$request('/admin/',['aksi'=>'login','csrf'=>$csrf,'u'=>'staff','p'=>'Demo-test-password']);ui_check($code===302,'staff login works');
   [$code,$html]=$request('/admin/');ui_check(!str_contains($html,'name="aksi" value="hapus"')&&!str_contains($html,'href="?p=pengaturan"'),'staff does not see owner controls');
   [$code,$html]=$request('/admin/',['aksi'=>'toggle','i'=>2,'csrf'=>ui_csrf($html)]);ui_check($code===302&&json_decode(file_get_contents($public.'/menu.json'),true)[2]['available']===true,'staff visibility toggle still updates intended item');
   ui_check(!preg_match('/PHP (Warning|Fatal)|Uncaught/',file_get_contents($root.'/server.log')),'admin HTTP flow has no PHP warnings or fatal errors');
