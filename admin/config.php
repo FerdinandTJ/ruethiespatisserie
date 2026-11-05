@@ -20,8 +20,11 @@ function ruethies_data_dir(): string {
     die('Direktori data privat staging belum tersedia. Hubungi pengelola hosting.');
   }
   $outside = dirname(RUETHIES_PUBLIC) . '/ruethies-data';
-  if (is_dir($outside) || @mkdir($outside, 0700, true)) return $outside;
   $inside = __DIR__ . '/data';
+  if (is_link($outside)) throw new RuntimeException('Direktori data privat tidak valid.');
+  // Pertahankan instalasi lama yang memang memakai fallback berisi akun.
+  if (!is_dir($outside) && is_file($inside . '/users.json')) return $inside;
+  if (is_dir($outside) || @mkdir($outside, 0700, true)) return $outside;
   if (!is_dir($inside)) @mkdir($inside, 0700, true);
   return $inside;
 }
