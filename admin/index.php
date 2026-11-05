@@ -179,7 +179,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $row = ['img' => $img, 'imgFull' => $full !== '' ? $full : $img,
           'id' => ['cap' => $cap], 'en' => ['cap' => $cape !== '' ? $cape : $cap]];
         if ($old) $items[$i] = $row; else $items[] = $row;
-        if (atmos_save($items)) { ruethies_log($me['name'], $old ? 'galeri-ubah' : 'galeri-tambah', $cap); header('Location: ?ok=simpan#galeri'); exit; }
+        if (atmos_save($items)) { ruethies_log($me['name'], $old ? 'galeri-ubah' : 'galeri-tambah', $cap); header('Location: ?p=galeri&ok=simpan#galeri'); exit; }
         $err = 'Gagal menyimpan.';
       }
     }
@@ -189,7 +189,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $j = $i + ($d > 0 ? 1 : -1);
     if (isset($items[$i], $items[$j])) {
       [$items[$i], $items[$j]] = [$items[$j], $items[$i]];
-      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-urut', (string)$i); header('Location: ?ok=simpan#gitem-' . $j); exit; }
+      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-urut', (string)$i); header('Location: ?p=galeri&ok=simpan#gitem-' . $j); exit; }
       $err = 'Gagal menyimpan.';
     }
   }
@@ -199,7 +199,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (isset($items[$i])) {
       $nm = $items[$i]['id']['cap'] ?? '';
       array_splice($items, $i, 1);
-      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-hapus', $nm); header('Location: ?ok=hapus#galeri'); exit; }
+      if (atmos_save($items)) { ruethies_log($me['name'], 'galeri-hapus', $nm); header('Location: ?p=galeri&ok=hapus#galeri'); exit; }
       $err = 'Gagal menghapus.';
     }
   }
@@ -211,7 +211,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     else {
       if ($old) $items[$i] = $row; else $items[] = $row;
       [$okf, $msg] = faq_apply($items);
-      if ($okf) { ruethies_log($me['name'], $old ? 'faq-ubah' : 'faq-tambah', $row['q']); header('Location: ?ok=simpan#faqman'); exit; }
+      if ($okf) { ruethies_log($me['name'], $old ? 'faq-ubah' : 'faq-tambah', $row['q']); header('Location: ?p=faq&ok=simpan#faqman'); exit; }
       $err = $msg;
     }
   }
@@ -221,7 +221,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (isset($items[$i], $items[$j])) {
       [$items[$i], $items[$j]] = [$items[$j], $items[$i]];
       [$okf, $msg] = faq_apply($items);
-      if ($okf) { ruethies_log($me['name'], 'faq-urut', (string)$i); header('Location: ?ok=simpan#faqman'); exit; }
+      if ($okf) { ruethies_log($me['name'], 'faq-urut', (string)$i); header('Location: ?p=faq&ok=simpan#faqman'); exit; }
       $err = $msg;
     }
   }
@@ -234,7 +234,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $nm = $items[$i]['q'] ?? '';
         array_splice($items, $i, 1);
         [$okf, $msg] = faq_apply($items);
-        if ($okf) { ruethies_log($me['name'], 'faq-hapus', $nm); header('Location: ?ok=hapus#faqman'); exit; }
+        if ($okf) { ruethies_log($me['name'], 'faq-hapus', $nm); header('Location: ?p=faq&ok=hapus#faqman'); exit; }
         $err = $msg;
       }
     }
@@ -253,9 +253,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 /* ---------- tampilan ---------- */
-$p = $_GET['p'] ?? '';
+$p = is_string($_GET['p'] ?? null) ? $_GET['p'] : '';
 if (!$me && $p !== 'kode') $p = 'login';
 if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
+$area = str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : ($p === 'pengaturan' ? 'pengaturan' : 'menu'));
+$labels = ['menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
+$intro = ['menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
+// Baca setiap sumber sekali untuk tampilan. Indeks asli dipertahankan saat memfilter.
+$_menu = $me ? menu_load() : [];
+$_gallery = $me ? atmos_load() : [];
+$_faqs = $me ? faq_load() : [];
+$q = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']),0,80) : '';
+$category = is_string($_GET['cat'] ?? null) && isset(RUETHIES_CATS[$_GET['cat']]) ? $_GET['cat'] : '';
+$availability = in_array($_GET['show'] ?? '', ['visible','hidden'], true) ? $_GET['show'] : '';
+$filtered = array_filter($_menu, static function ($m) use ($q,$category,$availability) {
+  $visible = ($m['available'] ?? true) !== false;
+  return (!$category || ($m['cat'] ?? '') === $category)
+    && (!$availability || ($availability === 'visible' ? $visible : !$visible))
+    && ($q === '' || mb_stripos(($m['id']['n'] ?? '').' '.($m['id']['d'] ?? '').' '.($m['en']['n'] ?? ''),$q) !== false);
+});
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -263,62 +280,58 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Admin — Ruethies Patisserie</title>
-<!-- ADMIN_BUILD=2026-10-17-lacak -->
-<script src="admin.js?v=1" defer></script>
-<link rel="stylesheet" href="admin.css?v=1" />
+<title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
+<!-- ADMIN_BUILD=2026-11-05-ui -->
+<script src="admin.js?v=20261105-ui" defer></script>
+<link rel="stylesheet" href="admin.css?v=20261105-ui" />
 </head>
 <body>
+<a class="skip-admin" href="#admin-main">Langsung ke konten</a>
 <?php $isGate = ($p === 'login' || $p === 'kode'); ?>
 <?php if ($isGate): ?>
-<div class="gate"><div class="gatecard">
+<div class="gate" id="admin-main"><div class="gatecard">
 <div class="gateseal">N°51</div>
 <p class="gateno">RUETHIES PATISSERIE · ADMIN</p>
 <?php else: ?>
 <div class="shell">
 <aside class="side" aria-label="Navigasi admin">
 <div class="mark"><span class="sealmini">N°51</span><div><b>Ruethies Admin</b><span>PATISSERIE · CIKARANG</span></div></div>
-<?php $_nm = count(menu_load()); $_ng = count(atmos_load()); ?>
+<?php $_nm = count($_menu); $_ng = count($_gallery); ?>
 <nav class="nav">
 <p class="navcap">Kelola</p>
-<a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
-<a href="?#galeri"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
-<a href="?#faqman"><?= icon('check') ?> FAQ <span class="cnt"><?= count(faq_load()) ?></span></a>
-<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
+<a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
+<a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
+<a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check') ?> FAQ <span class="cnt"><?= count($_faqs) ?></span></a>
+<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
 <a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>
 </nav>
 <div class="who"><div class="who-id"><?= icon('user', 16) ?><div><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></div>
 <form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
-<p class="sidefoot">Perubahan langsung tampil di web.<br />Admin v1 · 17 Okt 2026</p>
+<p class="sidefoot">Perubahan langsung tampil di web.<br />Ruethies Patisserie</p>
 </aside>
 <div class="maincol">
-<div class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span>
-<a class="ticon <?= $p !== 'pengaturan' ? 'on' : '' ?>" href="?" aria-label="Menu"><?= icon('menu') ?></a>
-<a class="ticon" href="?#galeri" aria-label="Galeri"><?= icon('img') ?></a>
-<a class="ticon" href="?#faqman" aria-label="FAQ"><?= icon('check') ?></a>
-<?php if (is_owner($me)): ?><a class="ticon <?= $p === 'pengaturan' ? 'on' : '' ?>" href="?p=pengaturan" aria-label="Pengaturan"><?= icon('gear') ?></a><?php endif; ?>
-</div>
-<main class="main">
+<header class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span><a class="ticon" href="../" target="_blank" rel="noopener" aria-label="Lihat website"><?= icon('web',18) ?></a><form method="post"><input type="hidden" name="aksi" value="logout"><button class="ticon" aria-label="Keluar dari admin"><?= icon('out',18) ?></button></form></header>
+<main class="main" id="admin-main">
 <div class="mnav">
-<a href="?" class="<?= $p !== 'pengaturan' ? 'on' : '' ?>"><?= icon('menu', 16) ?> Menu</a>
-<a href="?#galeri"><?= icon('img', 16) ?> Galeri</a>
-<a href="?#faqman"><?= icon('check', 16) ?> FAQ</a>
-<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
+<a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu', 16) ?> Menu</a>
+<a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img', 16) ?> Galeri</a>
+<a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check', 16) ?> FAQ</a>
+<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
 <?php endif; ?>
-<?php if ($err): ?><p class="err"><?= h($err) ?></p><?php endif; ?>
-<?php if ($ok === 'simpan'): ?><p class="okmsg">Tersimpan dan langsung tampil di web.</p><?php endif; ?>
-<?php if ($ok === 'tampil'): ?><p class="okmsg">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
-<?php if ($ok === 'hapus'): ?><p class="okmsg">Item dihapus permanen.</p><?php endif; ?>
-<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg">Foto menu JPG/WebP sudah dibersihkan (atau sebelumnya sudah tidak ada).</p><?php endif; ?>
-<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'kept'): ?><p class="okmsg">Foto dipertahankan karena masih digunakan atau berada di luar folder upload menu yang diizinkan.</p><?php endif; ?>
+<?php if ($err): ?><p class="err" role="alert"><?= h($err) ?></p><?php endif; ?>
+<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status">Tersimpan dan langsung tampil di web.</p><?php endif; ?>
+<?php if ($ok === 'tampil'): ?><p class="okmsg" role="status">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
+<?php if ($ok === 'hapus'): ?><p class="okmsg" role="status">Item dihapus permanen.</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg" role="status">Foto menu JPG/WebP sudah dibersihkan (atau sebelumnya sudah tidak ada).</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'kept'): ?><p class="okmsg" role="status">Foto dipertahankan karena masih digunakan atau berada di luar folder upload menu yang diizinkan.</p><?php endif; ?>
 <?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'failed'): ?><p class="warn">Menu sudah dihapus, tetapi pembersihan foto belum tuntas. Periksa referensi dan izin file melalui File Manager; jangan hapus foto yang masih digunakan.</p><?php endif; ?>
-<?php if ($ok === 'pw'): ?><p class="okmsg">Kata sandi diganti.</p><?php endif; ?>
-<?php if ($ok === '2fa'): ?><p class="okmsg">Kode OTP aktif. Setiap login pemilik wajib memasukkan kode.</p><?php endif; ?>
-<?php if ($ok === '2fa-mati'): ?><p class="okmsg">Kode OTP dimatikan. Tidak disarankan.</p><?php endif; ?>
-<?php if ($ok === 'user'): ?><p class="okmsg">Data staf diperbarui.</p><?php endif; ?>
+<?php if ($ok === 'pw'): ?><p class="okmsg" role="status">Kata sandi diganti.</p><?php endif; ?>
+<?php if ($ok === '2fa'): ?><p class="okmsg" role="status">Kode OTP aktif. Setiap login pemilik wajib memasukkan kode.</p><?php endif; ?>
+<?php if ($ok === '2fa-mati'): ?><p class="okmsg" role="status">Kode OTP dimatikan. Tidak disarankan.</p><?php endif; ?>
+<?php if ($ok === 'user'): ?><p class="okmsg" role="status">Data staf diperbarui.</p><?php endif; ?>
 
 <?php if ($p === 'login'): ?>
 <div class="card">
@@ -343,18 +356,25 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </form>
 </div>
 <?php else: ?>
-<div class="pagehead"><div><h1>Kelola Menu</h1><p class="sub">Perubahan langsung tampil di web.</p></div><a class="btn" href="?p=tambah#formulir"><?= icon('plus', 16) ?> Tambah menu</a></div>
+<div class="pagehead"><div><p class="eyebrow">RUETHIES · KONTEN WEBSITE</p><h1><?= h($labels[$area]) ?></h1><p class="sub"><?= h($intro[$area]) ?></p></div><span class="account-chip"><?= icon('user',16) ?> <?= h($me['name']) ?> · <?= is_owner($me) ? 'Pemilik' : 'Staf' ?></span></div>
+<?php if (in_array($p,['tambah','ubah','galeri-tambah','galeri-ubah','faq-tambah','faq-ubah'],true)): ?><a class="backlink" href="<?= $area === 'menu' ? '?' : '?p='.$area ?>"><?= icon('back',16) ?> Kembali ke <?= h($labels[$area]) ?></a><?php endif; ?>
 <?php if (is_owner($me) && is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Satu langkah terakhir:</b> buka File Manager hosting, hapus file <span class="mono">admin/setup.php</span>, lalu muat ulang halaman ini. Peringatan ini hilang sendiri setelah file dihapus.</p><?php endif; ?>
-<?php if ($p !== 'pengaturan' && $p !== 'tambah' && $p !== 'ubah' && $p !== 'galeri-tambah' && $p !== 'galeri-ubah'):
-  $_items = menu_load(); $_vis = array_filter($_items, fn($m) => !empty($m['available']));
-  $_sig = array_filter($_items, fn($m) => !empty($m['signature']) && !empty($m['available']));
-  $_gal = atmos_load(); ?>
-<div class="stats">
-<div class="stat"><span class="ic"><?= icon('menu', 20) ?></span><b><?= count($_items) ?></b><span>Total menu</span></div>
-<div class="stat"><span class="ic"><?= icon('eye', 20) ?></span><b><?= count($_vis) ?></b><span>Tampil</span></div>
-<div class="stat"><span class="ic"><?= icon('star', 20) ?></span><b><?= count($_sig) ?></b><span>Signature</span></div>
-<div class="stat"><span class="ic"><?= icon('img', 20) ?></span><b><?= count($_gal) ?></b><span>Foto galeri</span></div>
+<?php if ($area === 'menu' && !in_array($p,['tambah','ubah'],true)):
+  $_vis = array_filter($_menu, fn($m) => ($m['available'] ?? true) !== false);
+  $_sig = array_filter($_vis, fn($m) => !empty($m['signature'])); ?>
+<div class="stats" aria-label="Ringkasan menu">
+<div class="stat"><span class="ic"><?= icon('menu',20) ?></span><div><b><?= count($_menu) ?></b><span>Total menu</span></div></div>
+<div class="stat"><span class="ic"><?= icon('eye',20) ?></span><div><b><?= count($_vis) ?></b><span>Tampil di web</span></div></div>
+<div class="stat"><span class="ic"><?= icon('eyeoff',20) ?></span><div><b><?= count($_menu)-count($_vis) ?></b><span>Disembunyikan</span></div></div>
+<div class="stat"><span class="ic"><?= icon('star',20) ?></span><div><b><?= count($_sig) ?></b><span>Signature</span></div></div>
 </div>
+<div class="card menu-toolbar"><form method="get" class="menu-filter" role="search" aria-label="Cari dan filter menu">
+<label>Cari menu<input type="search" name="q" maxlength="80" placeholder="Nama atau deskripsi menu…" value="<?= h($q) ?>"></label>
+<label>Kategori<select name="cat"><option value="">Semua kategori</option><?php foreach (RUETHIES_CATS as $key=>$label): ?><option value="<?= h($key) ?>" <?= $category === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?></select></label>
+<label>Status<select name="show"><option value="">Semua status</option><option value="visible" <?= $availability === 'visible' ? 'selected' : '' ?>>Tampil</option><option value="hidden" <?= $availability === 'hidden' ? 'selected' : '' ?>>Disembunyikan</option></select></label>
+<button type="submit">Terapkan</button></form>
+<div class="list-caption"><span><?= count($filtered) ?> dari <?= count($_menu) ?> menu</span><?php if ($q !== '' || $category || $availability): ?><a href="?">Reset filter</a><?php endif; ?><a class="btn" href="?p=tambah#formulir"><?= icon('plus',16) ?> Tambah menu</a></div></div>
+<?php if (!$filtered): ?><div class="empty"><b><?= $_menu ? 'Tidak ada menu yang cocok.' : 'Belum ada menu.' ?></b><p><?= $_menu ? 'Coba kata kunci lain atau reset filter.' : 'Tambahkan sajian pertama untuk ditampilkan di website.' ?></p></div><?php endif; ?>
 <?php endif; ?>
 
 <?php if ($p === 'pengaturan' && is_owner($me)): ?>
@@ -404,21 +424,22 @@ if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 </div>
 <div class="card">
 <h2><?= icon("clock") ?> Log aktivitas</h2>
-<table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach (ruethies_logs() as $l): ?>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Log aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach (ruethies_logs() as $l): ?>
 <tr><td><?= h(date('d M Y, H:i', strtotime($l['t']) ?: time())) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
-<?php endforeach; ?></table>
+<?php endforeach; ?></table></div>
 </div>
 <?php endif; ?>
 
+<?php if ($area === 'menu'): ?>
 <?php
 $edit = null;
 if (($p === 'ubah' || $p === 'tambah')) {
-  $items0 = menu_load(); $ei = (int)($_GET['i'] ?? -1);
+  $items0 = $_menu; $ei = (int)($_GET['i'] ?? -1);
   if ($p === 'ubah' && isset($items0[$ei])) $edit = $items0[$ei] + ['_i' => $ei];
 }
 if ($p === 'tambah' || $edit):
 ?>
-<div class="card" id="formulir">
+<div class="card editor" id="formulir">
 <h2><?= icon("edit") ?> <?= $edit ? "Ubah menu" : "Tambah menu" ?></h2>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="save" />
@@ -427,8 +448,9 @@ if ($p === 'tambah' || $edit):
 <option value="<?= $k ?>" <?= (($edit['cat'] ?? '') === $k) ? 'selected' : '' ?>><?= h($v) ?></option><?php endforeach; ?></select></label>
 <label>Nama (Indonesia)<span class="count" id="c-n"></span><input name="n" maxlength="60" required data-count="c-n" value="<?= h($edit['id']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Indonesia)<span class="count" id="c-d"></span><input name="d" maxlength="160" data-count="c-d" value="<?= h($edit['id']['d'] ?? '') ?>" /></label>
-<label>Nama (Inggris, opsional)<span class="count" id="c-ne"></span><input name="ne" maxlength="60" data-count="c-ne" value="<?= h($edit['en']['n'] ?? '') ?>" /></label>
+<details class="optional-fields"><summary>Terjemahan Inggris <span>Opsional</span></summary><label>Nama (Inggris, opsional)<span class="count" id="c-ne"></span><input name="ne" maxlength="60" data-count="c-ne" value="<?= h($edit['en']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Inggris, opsional)<span class="count" id="c-de"></span><input name="de" maxlength="160" data-count="c-de" value="<?= h($edit['en']['d'] ?? '') ?>" /></label>
+</details>
 <label>Label <small class="hint">(mis. Best Seller — kosongkan bila tidak ada)</small><input name="badge" maxlength="24" value="<?= h($edit['badge'] ?? '') ?>" /></label>
 <label>Tag <small class="hint">(mis. Manis • Lembut)</small><input name="tag" maxlength="40" value="<?= h($edit['tag']['id'] ?? '') ?>" /></label>
 <label><input type="checkbox" name="signature" value="1" <?= !empty($edit['signature']) ? 'checked' : '' ?> /> Tampilkan di Signature <small class="hint">(maks 3)</small></label>
@@ -441,7 +463,7 @@ if ($p === 'tambah' || $edit):
 </div>
 <?php else: ?>
 <?php foreach (RUETHIES_CATS as $ck => $cv):
-  $items = menu_load(); ?>
+  $items = $filtered; if (!array_filter($items, fn($m)=>($m['cat'] ?? '') === $ck)) continue; ?>
 <div class="card">
 <h2><?= icon("tag") ?> <?= h($cv) ?></h2>
 <?php $ada = false; foreach ($items as $i => $m): if (($m['cat'] ?? '') !== $ck) continue; $ada = true; ?>
@@ -461,10 +483,15 @@ if ($p === 'tambah' || $edit):
 <?php endforeach; if (!$ada): ?><p class="sub">Belum ada item.</p><?php endif; ?>
 </div>
 <?php endforeach; ?>
+<?php endif; ?>
+<nav class="section-shortcuts" aria-label="Konten lainnya"><a id="galeri" href="?p=galeri">Kelola galeri →</a><a id="faqman" href="?p=faq">Kelola FAQ →</a></nav>
+<?php endif; ?>
+<?php if ($area === 'galeri'): ?>
+<?php if ($p === 'galeri'): ?>
 <div class="card" id="galeri">
 <h2><?= icon("img") ?> Galeri Suasana</h2>
 <p class="sub">Foto tampil berurutan di web dan langsung tayang.</p>
-<?php $gal = atmos_load(); foreach ($gal as $gi => $g): ?>
+<?php $gal = $_gallery; foreach ($gal as $gi => $g): ?>
 <div class="item" id="gitem-<?= $gi ?>">
 <?php if (!empty($g['img'])): ?><img class="thumb" src="../<?= h($g['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
 <span class="grow"><b><?= h($g['id']['cap'] ?? '-') ?></b><br /><small><?= h($g['en']['cap'] ?? '') ?></small></span>
@@ -480,15 +507,16 @@ if ($p === 'tambah' || $edit):
 <?php endforeach; if (!$gal): ?><p class="sub">Belum ada foto.</p><?php endif; ?>
 <a class="btn" href="?p=galeri-tambah#formulir-g"><?= icon("plus", 16) ?> Tambah foto</a>
 </div>
+<?php endif; ?>
 <?php
 $gedit = null;
 if (($p === 'galeri-ubah' || $p === 'galeri-tambah')) {
-  $g0 = atmos_load(); $gei = (int)($_GET['gi'] ?? -1);
+  $g0 = $_gallery; $gei = (int)($_GET['gi'] ?? -1);
   if ($p === 'galeri-ubah' && isset($g0[$gei])) $gedit = $g0[$gei] + ['_i' => $gei];
 }
 if ($p === 'galeri-tambah' || $gedit):
 ?>
-<div class="card" id="formulir-g">
+<div class="card editor" id="formulir-g">
 <h2><?= icon("img") ?> <?= $gedit ? "Ubah foto" : "Tambah foto" ?></h2>
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-save" />
@@ -498,14 +526,17 @@ if ($p === 'galeri-tambah' || $gedit):
 <label>Foto <small class="hint">(JPG/PNG/WebP, maks 8 MB<?= $gedit && !empty($gedit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="gfoto" accept="image/jpeg,image/png,image/webp" data-preview="prev-gfoto" /></label>
 <div class="preview" id="prev-gfoto"><?php if ($gedit && !empty($gedit['img'])): ?><img class="thumb-sm" src="../<?= h($gedit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan foto</button></div>
-<p class="center"><a class="linkbtn" href="?#galeri"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
+<p class="center"><a class="linkbtn" href="?p=galeri#galeri"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php endif; ?>
+<?php endif; ?>
+<?php if ($area === 'faq'): ?>
+<?php if ($p === 'faq'): ?>
 <div class="card" id="faqman">
 <h2><?= icon("check") ?> Tanya-Jawab (FAQ)</h2>
 <p class="sub">Tampil di web sebagai daftar buka-tutup + dibaca Google & AI. Tautan format <span class="mono">[teks](https://...)</span>.</p>
-<?php $faqs = faq_load(); foreach ($faqs as $fi => $f): ?>
+<?php $faqs = $_faqs; foreach ($faqs as $fi => $f): ?>
 <div class="item" id="fitem-<?= $fi ?>">
 <span class="grow"><b><?= h($f['q']) ?></b><br /><small><?= h(mb_strimwidth(faq_plain($f['a']), 0, 90, '…')) ?></small></span>
 <div class="actions">
@@ -520,15 +551,16 @@ if ($p === 'galeri-tambah' || $gedit):
 <?php endforeach; ?>
 <a class="btn" href="?p=faq-tambah#formulir-f"><?= icon("plus", 16) ?> Tambah pertanyaan</a>
 </div>
+<?php endif; ?>
 <?php
 $fedit = null;
 if (($p === 'faq-ubah' || $p === 'faq-tambah')) {
-  $f0 = faq_load(); $fei = (int)($_GET['fi'] ?? -1);
+  $f0 = $_faqs; $fei = (int)($_GET['fi'] ?? -1);
   if ($p === 'faq-ubah' && isset($f0[$fei])) $fedit = $f0[$fei] + ['_i' => $fei];
 }
 if ($p === 'faq-tambah' || $fedit):
 ?>
-<div class="card" id="formulir-f">
+<div class="card editor" id="formulir-f">
 <h2><?= icon("check") ?> <?= $fedit ? "Ubah pertanyaan" : "Tambah pertanyaan" ?></h2>
 <form method="post">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="faq-save" />
@@ -539,7 +571,7 @@ if ($p === 'faq-tambah' || $fedit):
 <label>Jawaban (Inggris, opsional)<textarea name="ae" rows="3" maxlength="400"><?= h($fedit['ae'] ?? '') ?></textarea></label>
 <p class="sub">Tautan ditulis <span class="mono">[teks](https://...)</span> — contoh: [Dapatkan rute](https://www.google.com/maps/dir/?api=1&amp;destination=-6.3443722,107.1490519)</p>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan FAQ</button></div>
-<p class="center"><a class="linkbtn" href="?#faqman"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
+<p class="center"><a class="linkbtn" href="?p=faq#faqman"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
 </div>
 <?php endif; ?>

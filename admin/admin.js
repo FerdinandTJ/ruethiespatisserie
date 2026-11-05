@@ -2,6 +2,18 @@
 (function () {
   'use strict';
 
+  // Tautan lama berbasis hash tetap menuju halaman yang sesuai. Tanpa JS ada tautan pengganti.
+  var params = new URLSearchParams(window.location.search);
+  if (!params.has('p')) {
+    var legacyArea = /^(#galeri|#gitem-)/.test(window.location.hash) ? 'galeri' : (/^(#faqman|#fitem-)/.test(window.location.hash) ? 'faq' : '');
+    if (legacyArea) {
+      params.set('p', legacyArea);
+      window.location.replace('?' + params.toString() + window.location.hash);
+      return;
+    }
+  }
+
+
   // Konfirmasi aksi berbahaya (pengganti onclick inline yang diblokir CSP).
   document.addEventListener('submit', function (e) {
     var f = e.target.closest('form[data-confirm]');
