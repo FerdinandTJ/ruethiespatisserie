@@ -49,6 +49,15 @@ try {
   seo_check(seo_schemas($after)===['CafeOrCoffeeShop','Menu','WebSite','FAQPage'],'FAQ update retains valid JSON-LD blocks');
   seo_check(str_contains($updated,'id="map-placeholder"') && str_contains($updated,'app.js?v=20261025-seo'),'FAQ update preserves map facade and new asset version');
   seo_check(str_contains($updated,'Pertanyaan baru?') && str_contains(file_get_contents($tmp.'/llms.txt'),'Pertanyaan baru?'),'FAQ HTML and llms content update together');
+  $hostile='Teks </script><div id="audit-marker">marker</div> & "kutipan" [lokasi](https://example.com/).';
+  [$ok,$message]=faq_apply([['q'=>'FAQ aman?','a'=>$hostile,'qe'=>'Safe FAQ?','ae'=>$hostile]]);
+  $safe=seo_document(file_get_contents($tmp.'/index.html'));
+  seo_check($ok && $safe->query('//*[@id="audit-marker"]')->length===0,'FAQ script terminator never creates an HTML element');
+  seo_check(seo_schemas($safe)===['CafeOrCoffeeShop','Menu','WebSite','FAQPage'],'hostile FAQ retains all structured data blocks');
+  $scripts=$safe->query('//script[@type="application/ld+json"]');
+  $faqSchema=json_decode($scripts->item(3)->textContent,true,512,JSON_THROW_ON_ERROR);
+  seo_check($faqSchema['mainEntity'][0]['acceptedAnswer']['text']===faq_plain($hostile),'HTML-safe encoding preserves original FAQ text and links');
+
 } finally {
   $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($tmp,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
   foreach($it as $file){$file->isDir()?rmdir($file->getPathname()):unlink($file->getPathname());}rmdir($tmp);

@@ -300,7 +300,7 @@ function faq_render_schema(array $items): string {
   foreach ($items as $f) $q[] = ['@type' => 'Question', 'name' => $f['q'],
     'acceptedAnswer' => ['@type' => 'Answer', 'text' => faq_plain($f['a'])]];
   return json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $q],
-    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
 }
 function faq_render_llms(array $items): string {
   $out = [];
