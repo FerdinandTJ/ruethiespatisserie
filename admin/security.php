@@ -46,7 +46,7 @@ function security_write(string $file, array $data): void {
 }
 function security_input(array $data,string $key,int $max=1024): string {
   $value=$data[$key] ?? '';
-  if (!is_string($value) || strlen($value)>$max) throw new DomainException('Format atau panjang isian tidak valid.');
+  if (!is_string($value) || strlen($value)>$max || str_contains($value,"\0") || !mb_check_encoding($value,'UTF-8')) throw new DomainException('Format atau panjang isian tidak valid.');
   return $value;
 }
 function users_file(): string { return ruethies_data_dir().'/users.json'; }
@@ -56,6 +56,8 @@ function users_all(): array {
   $seen=[];
   foreach ($users as $u) {
     if (!is_array($u) || !is_string($u['name'] ?? null) || $u['name']==='' || !is_string($u['hash'] ?? null) || !in_array($u['role'] ?? null,['owner','staff'],true) || !is_string($u['totp'] ?? null)) throw new RuntimeException('Data akun tidak valid.');
+    if (array_key_exists('auth_version',$u)) security_version($u);
+    if (array_key_exists('last_totp_counter',$u) && (!is_int($u['last_totp_counter']) || $u['last_totp_counter'] < -1)) throw new RuntimeException('Counter OTP akun tidak valid.');
     $key=strtolower($u['name']);if(isset($seen[$key]))throw new RuntimeException('Nama akun ganda.');$seen[$key]=true;
   }
   return $users;
@@ -82,7 +84,7 @@ function security_version(array $u): string {
 }
 function security_actor(array $users,array $actor,bool $owner=false): int {
   $i=security_user_index($users,$actor['name']);$u=$users[$i];
-  if (!hash_equals(security_version($u),security_version($actor)) || ($owner && $u['role']!=='owner')) throw new DomainException('Akses akun sudah berubah. Masuk kembali.');
+  if (!hash_equals(security_version($u),security_version($actor)) || $u['role']!==$actor['role'] || ($owner && $u['role']!=='owner')) throw new DomainException('Akses akun sudah berubah. Masuk kembali.');
   return $i;
 }
 function security_upgrade_users(bool $apply): int {
@@ -90,9 +92,9 @@ function security_upgrade_users(bool $apply): int {
     if (!$users) throw new RuntimeException('Daftar akun kosong. Tidak membuat atau mereset akun.');
     $changed=0;
     foreach($users as &$u){
-      if (!isset($u['auth_version'])){$u['auth_version']=bin2hex(random_bytes(32));$changed++;}
+      if (!array_key_exists('auth_version',$u)){$u['auth_version']=bin2hex(random_bytes(32));$changed++;}
       security_version($u);
-      if (!isset($u['last_totp_counter'])) $u['last_totp_counter']=-1;
+      if (!array_key_exists('last_totp_counter',$u)) $u['last_totp_counter']=-1;
       if (!is_int($u['last_totp_counter']) || $u['last_totp_counter'] < -1) throw new RuntimeException('Counter OTP akun tidak valid.');
     }unset($u);return $changed;
   };
@@ -136,6 +138,7 @@ function security_consume_totp(string $name,string $version,string $code): ?arra
   return users_mutate(function(&$users)use($name,$version,$code){
     $i=security_user_index($users,$name);$u=$users[$i];
     if(!hash_equals(security_version($u),$version) || empty($u['totp']))return null;
+    if(!is_int($u['last_totp_counter']??null)||$u['last_totp_counter'] < -1)throw new RuntimeException('Counter OTP tidak valid. Jalankan CLI upgrade.');
     $counter=totp_counter($u['totp'],$code);
     if($counter===null || $counter<=(int)($u['last_totp_counter'] ?? -1))return null;
     $users[$i]['last_totp_counter']=$counter;return $users[$i];
@@ -196,12 +199,13 @@ function security_reauth(array $actor,string $pass,string $code): bool {
   $u=user_get($actor['name']);
   if(!$u || !hash_equals(security_version($u),security_version($actor)) || !password_verify($pass,$u['hash']))return false;
   if($u['role']==='owner' && $u['totp']!==''){
+    security_rate_take('mfa',$u['name']);
     $u=security_consume_totp($u['name'],security_version($u),$code);if(!$u)return false;
   }else{users_mutate(function(&$users)use($actor){security_actor($users,$actor);});}
   $_SESSION['reauth_at']=time();return true;
 }
 function security_new_password(string $pass): string {
-  if(mb_strlen($pass)<12 || strlen($pass)>72)throw new DomainException('Kata sandi minimal 12 karakter dan maksimal 72 byte.');
+  if(str_contains($pass,"\0") || !mb_check_encoding($pass,'UTF-8') || mb_strlen($pass)<12 || strlen($pass)>72)throw new DomainException('Kata sandi minimal 12 karakter dan maksimal 72 byte.');
   return password_hash($pass,PASSWORD_DEFAULT);
 }
 function security_change_password(array $actor,string $pass,string $confirm): void {
