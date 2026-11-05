@@ -3,6 +3,7 @@
 define('RUETHIES_ADMIN', true);
 require __DIR__ . '/config.php';
 require __DIR__ . '/lib.php';
+foreach ($_GET as $value) if (!is_string($value) || str_contains($value,"\0") || !mb_check_encoding($value,'UTF-8')) { http_response_code(400); die('Format parameter tidak valid.'); }
 ruethies_session_start();
 header('X-Robots-Tag: noindex, nofollow', true);
 
@@ -12,12 +13,17 @@ try { $me = current_user(); } catch (RuntimeException $e) { $me=null; http_respo
 /* ---------- aksi POST ---------- */
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
  try {
-  foreach ($_POST as $value) if (!is_string($value)) throw new DomainException('Format isian tidak valid.');
+  foreach ($_POST as $value) if (!is_string($value) || str_contains($value,"\0") || !mb_check_encoding($value,'UTF-8')) throw new DomainException('Format isian tidak valid.');
   $aksi = security_input($_POST, 'aksi', 40);
   if ($aksi !== '' && !ruethies_csrf_ok()) { http_response_code(403); die('Aksi ditolak. Muat ulang formulir.'); }
   if (in_array($aksi,['pw','2fa-aktif','2fa-mati','user-tambah','user-hapus'],true)) {
     if (!$me) { http_response_code(403); die('Aksi ditolak.'); }
     security_require_reauth();
+  }
+  security_upload_input($_FILES);
+  if ($me && in_array($aksi,['save','galeri-save'],true)) {
+    $field=$aksi==='save'?'foto':'gfoto';
+    if (!empty($_FILES[$field]['name']) || !empty($_POST[$field.'_b64'])) security_rate_take('upload',$me['name'],20,false);
   }
   if ($me && ruethies_csrf_ok() && in_array($aksi, [
     'save', 'toggle', 'hapus', 'galeri-save', 'galeri-gerak', 'galeri-hapus',
@@ -230,6 +236,10 @@ $intro = ['menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun 
 $_menu = $me ? menu_load() : [];
 $_gallery = $me ? atmos_load() : [];
 $_faqs = $me ? faq_load() : [];
+$_logs=[];
+if ($p==='pengaturan' && is_owner($me)) {
+  try { $_logs=ruethies_logs(); } catch (RuntimeException $e) { http_response_code(503); $err='Log aktivitas belum dapat dibaca. Coba lagi.'; }
+}
 $q = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']),0,80) : '';
 $category = is_string($_GET['cat'] ?? null) && isset(RUETHIES_CATS[$_GET['cat']]) ? $_GET['cat'] : '';
 $availability = in_array($_GET['show'] ?? '', ['visible','hidden'], true) ? $_GET['show'] : '';
@@ -404,7 +414,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 </fieldset>
 <div class="card">
 <h2><?= icon("clock") ?> Log aktivitas</h2>
-<div class="table-scroll" tabindex="0" role="region" aria-label="Log aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach (ruethies_logs() as $l): ?>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Log aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach ($_logs as $l): ?>
 <tr><td><?= h(date('d M Y, H:i', strtotime($l['t']) ?: time())) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
 <?php endforeach; ?></table></div>
 </div>
