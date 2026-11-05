@@ -5,6 +5,9 @@ RewriteEngine On
 RewriteCond %{HTTP_HOST} !^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteCond %{THE_REQUEST} \s/+staging(?:[/\s?]) [NC]
 RewriteRule ^ - [F,L]
+# RewriteRule mencocokkan path setelah percent decoding oleh server.
+RewriteCond %{HTTP_HOST} !^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
+RewriteRule ^staging(?:/|$) - [F,L,NC]
 # Kanonis: https://ruethiespatisserie.com/ (tanpa www) — satu redirect 301, tanpa rantai
 RewriteCond %{HTTP_HOST} ^www\.ruethiespatisserie\.com$ [NC]
 RewriteRule ^ https://ruethiespatisserie.com%{REQUEST_URI} [L,R=301]
