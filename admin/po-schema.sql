@@ -108,3 +108,26 @@ CREATE TABLE IF NOT EXISTS po_payment_events (
   after_snapshot TEXT NOT NULL,
   created_at BIGINT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS po_whatsapp_outbox (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  order_id BIGINT UNSIGNED NOT NULL,
+  kind VARCHAR(24) NOT NULL,
+  event_key VARCHAR(64) NOT NULL,
+  audience VARCHAR(16) NOT NULL,
+  status VARCHAR(16) NOT NULL DEFAULT 'pending',
+  attempts INT UNSIGNED NOT NULL DEFAULT 0,
+  manual_retries INT UNSIGNED NOT NULL DEFAULT 0,
+  version INT UNSIGNED NOT NULL DEFAULT 0,
+  available_at BIGINT NOT NULL,
+  lease_until BIGINT NOT NULL DEFAULT 0,
+  claim_token CHAR(32) NULL,
+  provider_id VARCHAR(128) NOT NULL DEFAULT '',
+  last_error VARCHAR(48) NOT NULL DEFAULT '',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL,
+  FOREIGN KEY (order_id) REFERENCES po_orders(id),
+  UNIQUE KEY po_wa_event(order_id,event_key,audience),
+  INDEX po_wa_due(status,available_at,id),
+  INDEX po_wa_lease(status,lease_until)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

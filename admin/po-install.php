@@ -16,7 +16,7 @@ try {
   po_migrate_catalog($db);
   po_migrate_limits($db);
   po_migrate_manual($db);
-  print "Fondasi PO manual siap. Jadwal manual tetap ditutup sampai invoice dan unggah bukti tersedia.\n";
+  print "PO manual dan antrean WhatsApp siap. Aktivasi checkout/Fonnte dilakukan lewat konfigurasi privat staging.\n";
   $menu = jread(RUETHIES_MENU, null);
   if (!is_array($menu) || !array_is_list($menu) || array_filter($menu, fn($m)=>!is_array($m))) throw new RuntimeException('Katalog menu tidak valid.');
   $withIds = menu_with_ids($menu);

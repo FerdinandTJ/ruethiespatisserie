@@ -38,3 +38,7 @@ if (statusLink && copyLink && copyFeedback) {
     copyFeedback.textContent = copied ? 'Tautan pesanan berhasil disalin.' : 'Tautan sudah dipilih. Tekan Salin atau Ctrl+C / Cmd+C untuk menyalinnya.';
   });
 }
+
+// Browser printing stays optional; invoice content also works without JavaScript.
+const printInvoice = document.getElementById('po-print-invoice');
+if (printInvoice) { printInvoice.hidden = false; printInvoice.addEventListener('click', () => window.print()); }

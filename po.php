@@ -14,6 +14,8 @@ if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET','HEAD'], true) && $requ
   header('Location: ' . $canonicalPath . ($query !== '' ? '?' . $query : ''), true, 302);
   exit;
 }
+ini_set('session.use_strict_mode','1');
+ini_set('session.use_only_cookies','1');
 session_name('RUETHIESPODEMO');
 session_cache_limiter('');
 session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off','httponly'=>true,'samesite'=>'Lax']);
@@ -33,9 +35,12 @@ try {
     if (($_POST['website'] ?? '') !== '') throw new DomainException('Pengajuan tidak dapat diproses.');
     $key = hash_hmac('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown', po_config()['secret']);
     po_rate($db, 'ip:' . $key, 20);
-    if (($_POST['action'] ?? '') === 'review') {
+    if (($_POST['action'] ?? '') === 'report-transfer') {
+      po_manual_report($db,$token,$_POST);
+      header('Location: /pre-order/status/?t='.$token,true,303);exit;
+    } elseif (($_POST['action'] ?? '') === 'review') {
       $values = $_POST;
-      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy') throw new DomainException('Pembayaran manual sedang dipersiapkan. Jadwal ini belum menerima checkout pelanggan.');
+      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy' && !po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan.');
       po_customer($values);
       $review = po_quote($db, $values);
       $nonce = bin2hex(random_bytes(32));
@@ -46,21 +51,24 @@ try {
       $draft = $_SESSION['po_drafts'][$nonce] ?? null;
       if (!$draft) throw new DomainException('Ringkasan kedaluwarsa. Isi formulir kembali.');
       $values = $draft['input'];
-      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy') throw new DomainException('Pembayaran manual sedang dipersiapkan. Jadwal ini belum menerima checkout pelanggan.');
+      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy' && !po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan.');
       $access = po_submit($db, $values, $nonce, $draft['hash'], po_config()['secret']);
       header('Location: /pre-order/status/?t=' . $access, true, 303); exit;
     } else throw new DomainException('Tindakan tidak valid.');
   }
   if ($statusRequested) {
     $order = po_order($db, $token);
-    if ($order && ($order['flow_version'] ?? 'legacy') !== 'legacy') { $order=null; http_response_code(503); $error='Halaman pembayaran manual sedang dipersiapkan. Tidak ada pembayaran yang diminta melalui halaman ini.'; }
-    elseif (!$order) { http_response_code(404); $error = 'Tautan status tidak valid atau pesanan tidak ditemukan.'; }
+    if (!$order) { http_response_code(404); $error = 'Tautan status tidak valid atau pesanan tidak ditemukan.'; }
   }
 } catch (DomainException $e) { $error = $e->getMessage(); }
 catch (Throwable $e) { http_response_code(503); $unavailable = true; $error = 'Demo PO sedang disiapkan. Silakan coba lagi setelah admin mengaktifkan database.'; error_log('PO demo: storage or configuration unavailable'); }
+// Keep the invoice visible when a transfer report has a correctable validation error.
+if($statusRequested && !$order && !$unavailable && $db && preg_match('/\A[a-f0-9]{64}\z/',$token)) {
+  try { $order=po_order($db,$token); } catch(Throwable $e) { $unavailable=true;http_response_code(503);$error='Status pesanan belum dapat dimuat.'; }
+}
 if (!$unavailable && !$statusRequested && !$review) {
   try {
-    $slots = po_query($db, "SELECT * FROM po_slots WHERE flow_version='legacy' AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [time(),time()])->fetchAll();
+    $slots = po_query($db, "SELECT * FROM po_slots WHERE (flow_version='legacy' OR (flow_version='manual_v1' AND ?=1)) AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [po_manual_enabled()?1:0,time(),time()])->fetchAll();
     $sid = $values['slot_id'] ?? ($_GET['slot'] ?? 0);
     foreach ($slots as $s) if ((string)$s['id'] === (string)(is_scalar($sid) ? $sid : 0)) $slot = $s;
     if (!$slot && count($slots) === 1) $slot = $slots[0];
@@ -72,17 +80,17 @@ function po_value(array $values, string $key): string { return is_string($values
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261102-po-limits"><script src="/po.js?v=20261102-po-limits" defer></script></head>
+<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261108-fonnte"><script src="/po.js?v=20261108-fonnte" defer></script></head>
 <body>
 <div class="demo-banner">DEMO STAGING · Gunakan data contoh · Tidak ada pembayaran atau pesanan nyata</div>
 <header class="po-header"><a href="/" aria-label="Beranda Ruethies"><img src="/logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="/">Kembali ke website ↗</a></header>
 <main class="po-wrap">
 <p class="eyebrow">DIPERSIAPKAN DENGAN KELEMBUTAN</p>
-<h1><?= $order ? 'Pengajuan Anda' : 'Rencanakan momen manis Anda.' ?></h1>
+<h1><?= $order ? 'Pesanan Anda' : 'Rencanakan momen manis Anda.' ?></h1>
 <p class="intro">Pilih sajian favorit, ajukan pre-order, lalu ambil di toko setelah dikonfirmasi oleh tim Ruethies.</p>
 <?php if ($error): ?><div class="alert error" role="alert"><?= h($error) ?></div><?php endif; ?>
 
-<?php if ($order): ?>
+<?php if ($order && ($order['flow_version']??'legacy')==='manual_v1'): require __DIR__.'/admin/po-manual-status.php'; elseif ($order): ?>
 <section class="panel"><p class="eyebrow">NOMOR PENGAJUAN</p><h2><?= h($order['code']) ?></h2>
 <p class="status"><?= h(PO_STATUSES[$order['status']]) ?></p>
 <?php if ($order['status'] === 'pending'): ?><p>Pengajuan tercatat, tetapi <strong>belum diterima atau mengunci kuota</strong>. Tim kami akan memeriksa ketersediaan. Pengajuan yang belum dikonfirmasi sampai <?= h(po_date((int)$order['expires_at'])) ?> akan kedaluwarsa.</p>
@@ -109,7 +117,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <p class="total"><span>Total pengajuan</span><strong><?= h(po_money($review['total'])) ?></strong></p>
 <p><strong><?= h(po_value($values,'name')) ?></strong><br>WhatsApp: <?= h(po_value($values,'phone')) ?></p>
 <?php if (po_value($values,'note') !== ''): ?><p class="customer-note">Catatan: <?= h(po_value($values,'note')) ?></p><?php endif; ?>
-<div class="alert">Belum ada pembayaran. Pengajuan baru diterima setelah admin mengonfirmasi ketersediaan.</div>
+<?php if(($review['slot']['flow_version']??'legacy')==='manual_v1'): ?><div class="alert">Setelah dikirim, kuota ditahan 15 menit. Invoice dan rekening transfer akan muncul di halaman pesanan. WhatsApp adalah notifikasi tambahan; simpan tautan di website.</div><?php else: ?><div class="alert">Belum ada pembayaran. Pengajuan baru diterima setelah admin mengonfirmasi ketersediaan.</div><?php endif; ?>
 <form method="post" action="/pre-order/"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="submit"><input type="hidden" name="nonce" value="<?= h($nonce) ?>">
 <button type="submit">Kirim pengajuan PO</button> <a class="text-link" href="/pre-order/?edit=<?= h($nonce) ?>">Ubah pilihan</a></form>
 </section>
@@ -135,7 +143,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <div class="trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
 <div class="pickup"><strong>Ambil di toko Ruethies Patisserie</strong><br>Ruko The Neo Patio East No. 51, Lippo Cikarang.<br><?= h(po_date((int)$slot['pickup_from'])) ?> sampai <?= h(po_date((int)$slot['pickup_until'])) ?></div>
 <label class="check"><input type="checkbox" name="consent" value="yes" required <?= ($values['consent'] ?? '') === 'yes' ? 'checked' : '' ?>>Saya setuju kontak digunakan untuk menindaklanjuti pengajuan ini dan memahami pesanan perlu konfirmasi admin.</label>
-<button type="submit" <?= !$products ? 'disabled' : '' ?>>Periksa ringkasan →</button><p class="muted">Demo presentasi: gunakan nama dan nomor contoh. Tidak ada pesan WhatsApp otomatis.</p></section></form>
+<button type="submit" <?= !$products ? 'disabled' : '' ?>>Periksa ringkasan →</button><p class="muted">Demo presentasi: gunakan nama dan nomor contoh. Notifikasi WhatsApp staging hanya dikirim ke nomor uji yang diizinkan.</p></section></form>
 <?php endif; endif; ?>
 </main><footer class="po-footer">Ruethies Patisserie · Made With Delicacy · Demo pre-order</footer>
 </body></html>

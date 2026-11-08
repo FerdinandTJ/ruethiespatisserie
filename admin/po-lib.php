@@ -1,6 +1,8 @@
 <?php
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 require_once __DIR__ . '/po-manual.php';
+require_once __DIR__ . '/po-whatsapp.php';
+require_once __DIR__ . '/po-manual-checkout.php';
 
 const PO_STATUSES = [
   'pending' => 'Menunggu konfirmasi', 'confirmed' => 'Dikonfirmasi',
@@ -202,7 +204,10 @@ function po_toggle_slot(PDO $db, int $id, int $open): void {
   $db->beginTransaction();
   try {
     $slot = po_slot($db, $id, true);
-    if ($open && ($slot['flow_version'] ?? 'legacy') === 'manual_v1') throw new DomainException('Jadwal pembayaran manual masih dipersiapkan. Pembukaan tersedia setelah invoice dan unggah bukti siap.');
+    if ($open && ($slot['flow_version'] ?? 'legacy') === 'manual_v1') {
+      if(!po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan dalam konfigurasi privat staging.');
+      po_manual_bank($db);
+    }
     po_query($db, 'UPDATE po_slots SET is_open=? WHERE id=?', [$open,$id]);
     $db->commit();
   } catch (Throwable $e) { $db->rollBack(); throw $e; }

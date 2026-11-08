@@ -17,6 +17,7 @@ $page = max(1, min(10000, (int)filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_IN
 $total = 0; $counts = [];
 $catalog = []; $choices = [];
 $payment = po_payment_defaults();
+$waCounts=[];$waJobs=[];$waEnabled=false;$waHeartbeat=0;$waConfigError=false;
 try {
   $db = po_db();
   $catalog = po_catalog();
@@ -27,18 +28,28 @@ try {
     if ($action === 'transition') {
       po_transition($db, po_int($_POST['order_id'] ?? 0,1,PHP_INT_MAX), po_text($_POST['expected'] ?? '', 'Status',1,16), po_text($_POST['target'] ?? '', 'Status tujuan',1,16), $me['name']);
       $_SESSION['po_notice'] = 'Status pesanan diperbarui.';
+    } elseif ($action==='manual-fulfill') {
+      po_manual_fulfill($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),po_text($_POST['expected']??'','Status',1,16),po_text($_POST['target']??'','Tujuan',1,16),$me);
+      $_SESSION['po_notice']='Status pemenuhan diperbarui; notifikasi masuk antrean.';
+    } elseif (in_array($action,['manual-payment','manual-cancel','wa-retry'],true)) {
+      po_rate($db,'manual-verification:'.$me['name'],5);
+      po_manual_verify_identity($me,$_POST);
+      if($action==='manual-payment')po_manual_decide($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),po_text($_POST['decision']??'','Keputusan',1,16),$_POST,$me);
+      elseif($action==='manual-cancel')po_manual_release($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),'cancelled',$me,po_text($_POST['reason']??'','Alasan',3,160));
+      else po_wa_retry($db,po_int($_POST['job_id']??0,1,PHP_INT_MAX),po_int($_POST['version']??-1,0,PHP_INT_MAX),$me);
+      $_SESSION['po_notice']='Tindakan disimpan. Notifikasi diproses cron, bukan saat membuka halaman ini.';
     } else {
       if (!is_owner($me)) throw new DomainException('Pengaturan jadwal, produk, dan rekening hanya untuk pemilik.');
       if ($action === 'save-payment') {
         po_payment_save($db, $_POST, $me);
         ruethies_log($me['name'], 'po-rekening', 'Pengaturan rekening diperbarui.');
-        $_SESSION['po_notice'] = 'Rekening disimpan. Pengaturan ini disiapkan untuk tahap pembayaran manual; demo pelanggan belum menerima pembayaran.';
+        $_SESSION['po_notice'] = 'Rekening disimpan. Pesanan yang sudah dibuat tetap memakai snapshot rekening sebelumnya.';
         header('Location: po.php#payment', true, 303); exit;
       }
       elseif ($action === 'save-slot') {
         $sid = po_save_slot($db, $_POST);
         $_SESSION['po_notice'] = (po_slot($db,$sid)['flow_version'] ?? 'legacy') === 'manual_v1'
-          ? 'Jadwal pembayaran manual disimpan sebagai persiapan. Lengkapi produk; pembukaan menunggu invoice dan unggah bukti tersedia.'
+          ? 'Jadwal manual disimpan. Lengkapi produk dan aktifkan checkout pada konfigurasi privat sebelum membuka jadwal.'
           : 'Jadwal disimpan. Lengkapi produk, lalu buka PO.';
       }
       elseif ($action === 'toggle-slot') {
@@ -52,11 +63,18 @@ try {
     header('Location: po.php' . ($sid ? '?slot=' . $sid : ''), true, 303); exit;
   }
   $ready = true;
-} catch (DomainException $e) { $error = $e->getMessage(); $ready = true; }
+} catch (RuethiesReauthRequired $e) { header('Location: index.php?p=verifikasi',true,303);exit; }
+catch (DomainException $e) { $error = $e->getMessage(); $ready = true; }
 catch (Throwable $e) { http_response_code(503); $error = 'Database PO belum siap atau sedang bermasalah. Periksa konfigurasi privat dan jalankan installer CLI sesuai panduan.'; error_log('PO admin: storage unavailable'); }
 if ($ready) {
   try {
-    if (is_owner($me)) $payment = po_payment_settings($db);
+    if (is_owner($me)) {
+      $payment=po_payment_settings($db);
+      $waCounts=po_query($db,'SELECT status,COUNT(*) AS n FROM po_whatsapp_outbox GROUP BY status')->fetchAll();
+      $waJobs=po_query($db,"SELECT w.*,o.code FROM po_whatsapp_outbox w JOIN po_orders o ON o.id=w.order_id WHERE w.status IN ('failed','uncertain') ORDER BY w.id DESC LIMIT 20")->fetchAll();
+      try { $waEnabled=po_wa_settings(po_config())['enabled']; } catch(Throwable $e) { $waConfigError=true; }
+      $waHeartbeat=(int)(jread(ruethies_data_dir().'/po-wa-heartbeat.json',[])['last_success']??0);
+    }
     $slots = po_query($db, 'SELECT * FROM po_slots ORDER BY pickup_from DESC LIMIT 100')->fetchAll();
     foreach ($slots as $s) if ((int)$s['id'] === $sid) $selected = $s;
     if ($selected) $products = po_query($db, 'SELECT * FROM po_products WHERE slot_id=? ORDER BY id', [$sid])->fetchAll();
@@ -79,14 +97,14 @@ function po_datetime_value(?array $row, string $key): string { return $row ? dat
 <!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title>PO Demo — Ruethies Admin</title><link rel="stylesheet" href="admin.css?v=20261105-ui"><link rel="stylesheet" href="po-admin.css?v=20261105-ui"><script src="admin.js?v=20261105-ui" defer></script></head>
 <body><div class="shell"><aside class="side"><div class="mark"><span class="sealmini">N°51</span><div><b>Ruethies Admin</b><span>DEMO PRE-ORDER</span></div></div><nav class="nav"><a href="index.php">← Menu & galeri</a><a class="on" href="po.php">Pre-order</a><a href="/pre-order/" target="_blank" rel="noopener">Lihat halaman pelanggan ↗</a></nav><div class="who"><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></aside>
 <div class="maincol"><main class="main"><div class="mnav"><a href="index.php">Menu & galeri</a><a class="on" href="po.php">PO</a><a href="/pre-order/" target="_blank" rel="noopener">Lihat demo ↗</a></div>
-<div class="pagehead"><div><h1>Pre-order · Demo</h1><p class="sub">Ambil di toko. Konfirmasi manual. Belum ada pencatatan pembayaran.</p></div><a class="btn" href="/pre-order/" target="_blank" rel="noopener">Halaman pelanggan ↗</a></div>
+<div class="pagehead"><div><h1>Pre-order · Demo</h1><p class="sub">Ambil di toko. Transfer manual diperiksa pemilik; WhatsApp diproses melalui antrean.</p></div><a class="btn" href="/pre-order/" target="_blank" rel="noopener">Halaman pelanggan ↗</a></div>
 <p class="warn">Lingkungan presentasi: gunakan data contoh. Tidak ada notifikasi WhatsApp otomatis atau pembayaran nyata.</p>
 <?php if ($error): ?><p class="err" role="alert"><?= h($error) ?></p><?php endif; ?>
 <?php if ($notice): ?><p class="okmsg" role="status"><?= h($notice) ?></p><?php endif; ?>
 <?php if ($ready): ?>
 <?php if (is_owner($me)): ?>
 <section class="card" id="payment"><h2>Rekening pembayaran PO</h2>
-<p class="sub">Siapkan satu rekening transfer untuk PO manual. Tahap ini hanya menyimpan pengaturan; invoice dan unggah bukti pelanggan akan tersedia pada tahap berikutnya. Gunakan rekening contoh untuk demo staging.</p>
+<p class="sub">Atur rekening transfer untuk invoice PO manual. Gunakan rekening contoh pada staging; jangan meminta transfer sungguhan.</p>
 <p class="<?= $payment['enabled'] ? 'okmsg' : 'warn' ?>"><?= $payment['enabled'] ? 'Rekening disiapkan untuk pembayaran manual.' : 'Rekening belum diaktifkan untuk pembayaran manual.' ?></p>
 <form method="post"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="save-payment"><input type="hidden" name="version" value="<?= (int)$payment['version'] ?>">
 <div class="fgrid"><label>Nama bank<input name="bank_name" maxlength="80" value="<?= h($payment['bank_name']) ?>" placeholder="Contoh: Bank Contoh"></label>
@@ -99,15 +117,15 @@ function po_datetime_value(?array $row, string $key): string { return $row ? dat
 <button>Simpan rekening</button></form></section>
 <?php endif; ?>
 <div class="po-counts"><?php foreach ($counts as $count): ?><span class="badge"><?= h(PO_STATUSES[$count['status']] ?? $count['status']) ?>: <?= (int)$count['n'] ?></span><?php endforeach; ?></div>
-<section class="card"><h2>Jadwal PO</h2><p class="sub">Admin menentukan kapan pengajuan dibuka, ditutup, dan waktu pengambilan. Pending belum mengurangi kuota.</p>
+<section class="card"><h2>Jadwal PO</h2><p class="sub">Admin menentukan kapan pengajuan dibuka, ditutup, dan waktu pengambilan. Jadwal manual menahan kuota selama 15 menit; jadwal demo hanya menahan kuota setelah dikonfirmasi.</p>
 <?php if (!$slots): ?><p class="empty">Belum ada jadwal. Buat jadwal pertama di bawah.</p><?php endif; ?>
-<?php foreach ($slots as $s): ?><div class="item"><div class="grow"><b><?= h($s['title']) ?></b><?php if (($s['flow_version'] ?? 'legacy') === 'manual_v1'): ?><span class="badge">Pembayaran manual · persiapan</span><?php endif; ?><span class="badge"><?= po_slot_open($s) ? 'Sedang dibuka' : ((bool)$s['is_open'] ? 'Di luar waktu buka' : 'Ditutup admin') ?></span><br><small>Pengajuan <?= h(po_date((int)$s['opens_at'])) ?> – <?= h(po_date((int)$s['closes_at'])) ?><br>Ambil <?= h(po_date((int)$s['pickup_from'])) ?> – <?= h(po_date((int)$s['pickup_until'])) ?></small></div>
+<?php foreach ($slots as $s): ?><div class="item"><div class="grow"><b><?= h($s['title']) ?></b><?php if (($s['flow_version'] ?? 'legacy') === 'manual_v1'): ?><span class="badge">Transfer manual</span><?php endif; ?><span class="badge"><?= po_slot_open($s) ? 'Sedang dibuka' : ((bool)$s['is_open'] ? 'Di luar waktu buka' : 'Ditutup admin') ?></span><br><small>Pengajuan <?= h(po_date((int)$s['opens_at'])) ?> – <?= h(po_date((int)$s['closes_at'])) ?><br>Ambil <?= h(po_date((int)$s['pickup_from'])) ?> – <?= h(po_date((int)$s['pickup_until'])) ?></small></div>
 <div class="actions"><a class="btn ghost" href="?slot=<?= (int)$s['id'] ?>#products">Produk & pesanan</a>
 <?php if (is_owner($me)): ?><a class="btn ghost" href="?slot=<?= (int)$s['id'] ?>&edit=1#schedule">Ubah jadwal</a><form method="post"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="toggle-slot"><input type="hidden" name="slot_id" value="<?= (int)$s['id'] ?>"><input type="hidden" name="is_open" value="<?= $s['is_open'] ? 0 : 1 ?>"><button class="ghost"><?= $s['is_open'] ? 'Tutup PO' : 'Buka PO' ?></button></form><?php endif; ?></div></div><?php endforeach; ?></section>
 
 <?php if (is_owner($me)): ?><section class="card" id="schedule"><h2><?= $edit ? 'Ubah jadwal' : 'Buat jadwal baru' ?></h2><p class="sub">Semua waktu WIB. Setelah ada pesanan, tanggal tidak bisa diubah; buka/tutup tetap tersedia.</p>
 <form method="post"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="save-slot"><input type="hidden" name="id" value="<?= (int)($edit['id'] ?? 0) ?>">
-<?php if (!$edit): ?><label>Jenis jadwal<select name="flow_version"><option value="legacy">Demo pengajuan (tanpa pembayaran)</option><option value="manual_v1">Pembayaran manual (persiapan, belum dapat dibuka)</option></select></label><?php else: ?><p class="sub">Jenis jadwal: <?= ($edit['flow_version'] ?? 'legacy') === 'manual_v1' ? 'Pembayaran manual — persiapan' : 'Demo pengajuan tanpa pembayaran' ?>. Buat jadwal baru untuk menggunakan jenis berbeda.</p><?php endif; ?>
+<?php if (!$edit): ?><label>Jenis jadwal<select name="flow_version"><option value="legacy">Demo pengajuan (tanpa pembayaran)</option><option value="manual_v1">Transfer manual + invoice</option></select></label><?php else: ?><p class="sub">Jenis jadwal: <?= ($edit['flow_version'] ?? 'legacy') === 'manual_v1' ? 'Transfer manual + invoice' : 'Demo pengajuan tanpa pembayaran' ?>. Buat jadwal baru untuk menggunakan jenis berbeda.</p><?php endif; ?>
 <label>Nama periode<input name="title" required minlength="3" maxlength="100" placeholder="PO Weekend — Sabtu" value="<?= h($edit['title'] ?? '') ?>"></label>
 <div class="fgrid"><label>Mulai menerima pengajuan<input type="datetime-local" name="opens_at" required value="<?= h(po_datetime_value($edit,'opens_at')) ?>"></label><label>Batas pengajuan<input type="datetime-local" name="closes_at" required value="<?= h(po_datetime_value($edit,'closes_at')) ?>"></label><label>Mulai pengambilan<input type="datetime-local" name="pickup_from" required value="<?= h(po_datetime_value($edit,'pickup_from')) ?>"></label><label>Selesai pengambilan<input type="datetime-local" name="pickup_until" required value="<?= h(po_datetime_value($edit,'pickup_until')) ?>"></label></div><button>Simpan jadwal</button></form></section><?php endif; ?>
 
@@ -123,15 +141,17 @@ function po_datetime_value(?array $row, string $key): string { return $row ? dat
 <?php endforeach; ?>
 <?php if (is_owner($me)): ?><h3>Tambah dari katalog menu</h3><form method="post"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="save-product"><input type="hidden" name="slot_id" value="<?= $sid ?>"><label>Pilih menu<select name="menu_uid" required><option value="">Pilih produk yang ditampilkan di website</option><?php foreach ($choices as $uid=>$m): ?><option value="<?= h($uid) ?>"><?= h(($m['cat'] ?? '') . ' — ' . $m['id']['n']) ?></option><?php endforeach; ?></select></label><?php if (!$choices): ?><p class="sub">Semua menu yang tersedia sudah dipilih, atau belum ada menu yang ditampilkan. Kelola katalog melalui halaman Menu.</p><?php endif; ?><div class="fgrid"><label>Harga PO (Rp)<input type="number" name="price" min="1000" max="10000000" required></label><label>Kuota total<input type="number" name="quota" min="1" max="10000" required></label></div><div class="fgrid"><label>Minimal beli per pesanan<input type="number" name="min_qty" min="1" max="10000" value="1" required></label><label>Maksimal beli per pesanan<input type="number" name="max_qty" min="1" max="10000" value="20" required></label></div><p class="sub">Batas berlaku jika produk dipilih; jumlah 0 berarti tidak dipilih.</p><input type="hidden" name="active" value="1"><button <?= !$choices ? 'disabled' : '' ?>>Tambah ke jadwal PO</button></form><?php endif; ?></section><?php endif; ?>
 
+<?php if(is_owner($me)): require __DIR__.'/po-whatsapp-admin.php'; endif; ?>
 <section class="card" id="orders"><h2>Pengajuan masuk</h2><form method="get" class="po-filter"><input type="hidden" name="slot" value="<?= $sid ?>"><label>Status<select name="status"><option value="">Semua status</option><?php foreach (PO_STATUSES as $key=>$label): ?><option value="<?= h($key) ?>" <?= $status === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?></select></label><label>Cari nomor, nama, WhatsApp<input name="q" maxlength="80" value="<?= h($search) ?>"></label><button class="ghost">Cari</button></form>
 <?php if ($sid): ?><p class="sub">Filter jadwal aktif. <a href="po.php#orders">Lihat semua jadwal</a></p><?php endif; ?>
-<p class="sub"><?= $total ?> pengajuan ditemukan. Pengajuan pending kedaluwarsa saat waktu pengambilan dimulai.</p>
+<p class="sub"><?= $total ?> pengajuan ditemukan. Demo pending kedaluwarsa saat pengambilan dimulai. Untuk transfer manual, batas bayar 15 menit; laporan yang sedang diperiksa tetap menahan kuota.</p>
 <?php if (!$orders): ?><p class="empty">Belum ada pengajuan yang sesuai filter.</p><?php endif; ?>
 <?php foreach ($orders as $o): $lines = po_query($db,'SELECT * FROM po_lines WHERE order_id=? ORDER BY id',[$o['id']])->fetchAll(); $history = po_query($db,'SELECT * FROM po_history WHERE order_id=? ORDER BY id',[$o['id']])->fetchAll(); ?>
 <article class="po-order"><div class="pagehead"><h3><?= h($o['code']) ?></h3><span class="badge"><?= h(PO_STATUSES[$o['status']]) ?></span></div>
 <p><b><?= h($o['customer_name']) ?></b> · <?= h($o['phone']) ?><br><small><?= h($o['title']) ?> · Ambil <?= h(po_date((int)$o['pickup_from'])) ?><br>Diajukan <?= h(po_date((int)$o['created_at'])) ?></small></p>
 <ul><?php foreach ($lines as $l): ?><li><?= (int)$l['qty'] ?> × <?= h($l['name']) ?> — <?= h(po_money((int)$l['price']*(int)$l['qty'])) ?></li><?php endforeach; ?></ul><p><b>Total: <?= h(po_money((int)$o['total'])) ?></b></p>
 <?php if ($o['note'] !== ''): ?><p class="po-note">Catatan: <?= h($o['note']) ?></p><?php endif; ?>
+<?php if(($o['flow_version']??'legacy')==='manual_v1'): require __DIR__.'/po-manual-admin.php'; endif; ?>
 <div class="actions"><?php foreach (($o['flow_version'] ?? 'legacy') === 'legacy' ? (PO_TRANSITIONS[$o['status']] ?? []) : [] as $target): ?><form method="post" data-confirm="Ubah <?= h($o['code']) ?> menjadi <?= h(PO_STATUSES[$target]) ?>?"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="transition"><input type="hidden" name="order_id" value="<?= (int)$o['id'] ?>"><input type="hidden" name="expected" value="<?= h($o['status']) ?>"><input type="hidden" name="target" value="<?= h($target) ?>"><button class="<?= in_array($target,['rejected','cancelled'],true) ? 'danger' : '' ?>"><?= h(PO_STATUSES[$target]) ?></button></form><?php endforeach; ?></div>
 <details><summary>Riwayat status</summary><ul><?php foreach ($history as $event): ?><li><?= h(po_date((int)$event['created_at'])) ?> — <?= h(PO_STATUSES[$event['status']]) ?> · <?= h($event['actor']) ?></li><?php endforeach; ?></ul></details></article>
 <?php endforeach; ?>

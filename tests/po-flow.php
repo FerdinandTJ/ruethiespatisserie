@@ -195,7 +195,7 @@ try {
   // HTTP integration: fixture dengan layout Hostinger, akun contoh, dan database terpisah.
   $public=$root.'/public_html/staging'; $private=$root.'/ruethies-data-staging';
   mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
-  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po-manual.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
+  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po-manual.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
   copy(RUETHIES_PUBLIC.'/menu.json',$public.'/menu.json');
   $cfg=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret];
   file_put_contents($private.'/po-config.php','<?php return '.var_export($cfg,true).';');
@@ -225,7 +225,7 @@ try {
   function csrf_from(string $body): string { if(!preg_match('/name="csrf" value="([a-f0-9]+)"/',$body,$m))throw new RuntimeException('CSRF missing');return $m[1]; }
   for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=http_request('/pre-order/?slot='.$sid2);if($code===200)break;}
   verify($code===200 && str_contains($html,'DEMO STAGING'),'public page renders');
-  verify(str_contains($html,'action="/pre-order/"') && str_contains($html,'src="/images/menu/example.jpg"') && str_contains($html,'href="/po.css?v=20261102-po-limits"'),'forms and assets use root-absolute URLs');
+  verify(str_contains($html,'action="/pre-order/"') && str_contains($html,'src="/images/menu/example.jpg"') && str_contains($html,'href="/po.css?v=20261108-fonnte"'),'forms and assets use root-absolute URLs');
   $csrf=csrf_from($html);
   [$code,$html,$redirect]=http_request('/po.php?slot='.$sid2);
   verify($code===302 && $redirect===$base.'/pre-order/?slot='.$sid2,'legacy catalog URL retains slot in clean redirect');
@@ -295,12 +295,12 @@ try {
   po_query($db,'UPDATE po_products SET reserved=0 WHERE id=?',[$pid2]);
   $manualSid=po_save_slot($db,['title'=>'Manual hidden fixture','flow_version'=>'manual_v1','opens_at'=>date('Y-m-d\TH:i',time()-3600),'closes_at'=>date('Y-m-d\TH:i',time()+3600),'pickup_from'=>date('Y-m-d\TH:i',time()+7200),'pickup_until'=>date('Y-m-d\TH:i',time()+10800)]);
   [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'toggle-slot','slot_id'=>$manualSid,'is_open'=>1]);
-  verify(str_contains($html,'masih dipersiapkan') && (int)po_slot($db,$manualSid)['is_open']===0, 'owner HTTP action cannot open an unfinished manual schedule');
+  verify(str_contains($html,'belum diaktifkan') && (int)po_slot($db,$manualSid)['is_open']===0, 'owner HTTP action cannot open an unfinished manual schedule');
   po_query($db,'UPDATE po_slots SET is_open=1 WHERE id=?',[$manualSid]); // Fixture untuk menguji pertahanan endpoint publik.
   [$code,$html]=http_request('/pre-order/?slot='.$manualSid);
   verify(!str_contains($html,'Manual hidden fixture'), 'manual schedule stays hidden from customer even if is_open is set directly');
   [$code,$html]=http_request('/pre-order/',input_for($manualSid,$pid2,1,'081234567899')+['action'=>'review','csrf'=>$csrf]);
-  verify(str_contains($html,'belum menerima checkout pelanggan') && (int)po_query($db,'SELECT COUNT(*) FROM po_orders WHERE slot_id=?',[$manualSid])->fetchColumn()===0, 'forged customer POST cannot enter unfinished manual checkout');
+  verify(str_contains($html,'Checkout manual belum diaktifkan') && (int)po_query($db,'SELECT COUNT(*) FROM po_orders WHERE slot_id=?',[$manualSid])->fetchColumn()===0, 'forged customer POST cannot enter unfinished manual checkout');
   $webOrder=po_query($db,'SELECT id FROM po_orders WHERE request_hash=?',[hash('sha256',$webNonce)])->fetchColumn();
   [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'transition','order_id'=>$webOrder,'expected'=>'pending','target'=>'confirmed']);
   verify(str_contains($html,'Sesi formulir tidak valid'),'admin CSRF rejected');

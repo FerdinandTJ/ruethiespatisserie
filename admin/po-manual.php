@@ -1,5 +1,5 @@
 <?php
-// Fondasi tahap 2. Endpoint pelanggan manual tetap ditutup sampai tahap invoice/bukti selesai.
+// Reservasi manual dan migrasi kompatibel dengan pesanan legacy. Checkout dikendalikan flag privat.
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 
 function po_migrate_manual(PDO $db): void {
@@ -13,6 +13,13 @@ function po_migrate_manual(PDO $db): void {
       'reservation_status'=>"VARCHAR(16) NOT NULL DEFAULT 'legacy'",
       'bank_snapshot'=>'TEXT NULL',
       'request_fingerprint'=>'CHAR(64) NULL',
+      'notification_access'=>'TEXT NULL',
+      'payment_sender'=>"VARCHAR(80) NOT NULL DEFAULT ''",
+      'payment_report_amount'=>'INT UNSIGNED NULL',
+      'payment_report_reference'=>"VARCHAR(160) NOT NULL DEFAULT ''",
+      'payment_reported_at'=>'BIGINT NULL',
+      'payment_report_count'=>'INT UNSIGNED NOT NULL DEFAULT 0',
+      'payment_admin_reference'=>"VARCHAR(160) NOT NULL DEFAULT ''",
     ],
   ];
   foreach ($changes as $table=>$columns) {
@@ -104,6 +111,7 @@ function po_manual_submit(PDO $db, array $input, string $nonce, string $quoteHas
     foreach ($q['lines'] as $line) po_query($db,'INSERT INTO po_lines(order_id,product_id,name,price,qty) VALUES(?,?,?,?,?)',[$id,$line['product_id'],$line['name'],$line['price'],$line['qty']]);
     po_query($db,'INSERT INTO po_history(order_id,status,actor,created_at) VALUES(?,?,?,?)',[$id,'pending','Pelanggan manual',$now]);
     po_manual_event($db,$id,'checkout','Pelanggan','Reservasi pembayaran 15 menit.',null);
+    po_wa_seed($db,$id,$token,$secret);
     return $token;
   });
 }
