@@ -302,7 +302,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
 <a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check') ?> FAQ <span class="cnt"><?= count($_faqs) ?></span></a>
-<?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag') ?> Pre-order demo</a><?php endif; ?>
+<?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag') ?> Pre-order</a><?php endif; ?>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
 <a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>

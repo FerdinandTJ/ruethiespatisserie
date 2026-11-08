@@ -102,3 +102,9 @@ Setelah ada laporan/lunas, jangan restore database lama atau menghapus antrean d
 Penggabungan hardening keamanan dari main masih menunggu validasi OTP produksi oleh pemilik. Perubahan ini tidak menggabungkan main dan tidak merilis PO ke produksi. Token Fonnte, nomor uji, migrasi database hosting, konfigurasi cron, dan satu pengiriman WhatsApp uji nyata tetap perlu disiapkan operator hosting sebelum dinyatakan aktif live.
 
 Referensi API: [Sending API Messages — Fonnte](https://docs.fonnte.com/api-send-message/).
+
+## Penataan admin PO — 8 November 2026
+
+Admin PO mengikuti tampilan Menu/Galeri/FAQ, dengan lima bagian: **Pesanan**, **Jadwal**, **Produk**, **Rekening**, dan **WhatsApp**. Halaman pertama berisi daftar pesanan, ringkasan status, serta filter jadwal/pembayaran/status/pencarian. Buka **Lihat detail** untuk tindakan pembayaran, pemenuhan, dan riwayat. Produk dan jadwal memakai daftar ringkas dengan editor terpisah. Rekening dan pemantauan WhatsApp hanya tersedia untuk pemilik.
+
+Jika integrasi sebelumnya sudah dimigrasi dan dikonfigurasi, pembaruan UI ini cukup `git pull --ff-only origin staging` dari checkout staging, kemudian muat ulang halaman admin. Tidak ada migrasi database atau perubahan token/cron tambahan untuk penataan UI ini. Link lama `?slot=ID` dan `?slot=ID&edit=1` tetap dapat digunakan.

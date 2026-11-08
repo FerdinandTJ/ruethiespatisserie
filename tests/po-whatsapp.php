@@ -19,7 +19,7 @@ function wa_order(PDO $db,int $sid,int $pid):array{global $secret;static $phone=
 function wa_parallel(array $jobs):array{global $testDsn,$user,$pass,$options;$children=[];foreach($jobs as$job){$code='define("RUETHIES_ADMIN",true);require '.var_export(dirname(__DIR__).'/admin/po-lib.php',true).';$db=new PDO('.var_export($testDsn,true).','.var_export($user,true).','.var_export($pass,true).','.var_export($options,true).');'.$job;$p=proc_open([PHP_BINARY,'-r',$code],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$children[]=[$p,$pipes];}$out=[];foreach($children as[$p,$pipes]){$out[]=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);wa_check(proc_close($p)===0&&$err==='','parallel worker completes');}sort($out);return $out;}
 try{
  mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
- foreach(glob(dirname(__DIR__).'/admin/*.php')as$file)copy($file,$public.'/admin/'.basename($file));
+ foreach(array_merge(glob(dirname(__DIR__).'/admin/*.php'),glob(dirname(__DIR__).'/admin/*.css'),glob(dirname(__DIR__).'/admin/*.js'))as$file)copy($file,$public.'/admin/'.basename($file));
  foreach(['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','index.html','llms.txt']as$file)copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
  file_put_contents($public.'/menu.json',json_encode([['uid'=>str_repeat('a',32),'cat'=>'cakery','id'=>['n'=>'Croissant Contoh','d'=>'Test'],'available'=>true,'img'=>'']]));
  $config=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret,'manual_checkout_enabled'=>true,'fonnte'=>['enabled'=>false]];
@@ -89,7 +89,26 @@ try{
  [$code,$html]=$http('/admin/index.php');[$code]=$http('/admin/index.php',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);wa_check($code===302,'staff fixture login works');[$code,$html]=$http('/admin/index.php');$adminCsrf=$csrf($html);
  $webToken=substr($statusPath,strpos($statusPath,'t=')+2);$webOrder=po_order($db,$webToken);
  [$code,$html]=$http('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'manual-payment','order_id'=>$webOrder['id'],'decision'=>'paid','verified_amount'=>25000,'expected_report'=>1,'admin_reference'=>'Demo','current_password'=>'Demo-test-password']);wa_check(po_order($db,$webToken)['payment_status']==='under_review','HTTP staff cannot approve payment');
- [$code]=$http('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);[$code,$html]=$http('/admin/po.php');$adminCsrf=$csrf($html);wa_check(str_contains($html,'Notifikasi WhatsApp'),'owner sees notification queue dashboard');
+ foreach(['rekening','notifikasi']as$restricted){[$code,$restrictedHtml]=$http('/admin/po.php?view='.$restricted);wa_check($code===403&&!str_contains($restrictedHtml,'name="bank_name"')&&!str_contains($restrictedHtml,'name="job_id"'),'staff cannot open owner-only PO page: '.$restricted);}
+ [$code]=$http('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);[$code,$html]=$http('/admin/po.php?view=notifikasi');$adminCsrf=$csrf($html);wa_check(str_contains($html,'Notifikasi WhatsApp'),'owner sees notification queue dashboard');
+ // UI routes use the same lightweight admin shell and isolate editors from lists.
+ $previewPages=[];
+ foreach(['pesanan','jadwal','produk','rekening','notifikasi']as$view){
+   $path='/admin/po.php?view='.$view.($view==='produk'?'&slot='.$sid:'');[$code,$pageHtml]=$http($path);$previewPages[$view]=$pageHtml;
+   wa_check($code===200&&substr_count($pageHtml,'<h1>')===1&&str_contains($pageHtml,'class="po-tabs"'),'PO page has one heading and shared navigation: '.$view);
+ }
+ [$code,$filtered]=$http('/admin/po.php?view=pesanan&payment=under_review&status=pending&q=Web');wa_check($code===200&&substr_count($filtered,'class="po-order-row"')===1&&str_contains($filtered,$webOrder['code']),'combined order filters preserve the matching order');
+ wa_check(!str_contains($previewPages['pesanan'],'name="bank_name"')&&!str_contains($previewPages['pesanan'],'name="verified_amount"')&&!str_contains($previewPages['pesanan'],'id="whatsapp"'),'order list excludes bank settings, payment forms and notification payload');
+ wa_check(str_contains($previewPages['pesanan'],'name="payment"')&&str_contains($previewPages['pesanan'],'Lihat detail'),'order list provides payment filters and detail links');
+ wa_check(!str_contains($previewPages['jadwal'],'name="title"')&&!str_contains($previewPages['produk'],'name="price"'),'schedule and product lists do not render every edit form');
+ wa_check(str_contains($previewPages['rekening'],'name="bank_name"')&&!str_contains($previewPages['rekening'],'id="orders"'),'bank editor is isolated from orders');
+ [$code,$pageHtml]=$http('/admin/po.php?view=jadwal&edit=new');wa_check($code===200&&str_contains($pageHtml,'name="opens_at"')&&!str_contains($pageHtml,'id="schedule-list"'),'new schedule editor opens without schedule list');$previewPages['schedule-editor']=$pageHtml;
+ [$code,$pageHtml]=$http('/admin/po.php?view=jadwal&slot='.$sid.'&edit=1');wa_check(str_contains($pageHtml,'class="po-form-fields" disabled'),'schedule containing orders shows locked dates before submission');
+ [$code,$pageHtml]=$http('/admin/po.php?view=produk&slot='.$sid.'&product='.$pid);wa_check($code===200&&substr_count($pageHtml,'name="price"')===1&&str_contains($pageHtml,'value="25000"'),'product edit opens only the selected product');$previewPages['product-editor']=$pageHtml;
+ [$code,$pageHtml]=$http('/admin/po.php?view=produk&slot='.$sid.'&product=999999');wa_check($code===404&&!str_contains($pageHtml,'name="price"'),'unknown product cannot open another product editor');
+ [$code,$pageHtml]=$http('/admin/po.php?view=pesanan&order='.$webOrder['id']);wa_check($code===200&&str_contains($pageHtml,'name="verified_amount"')&&!str_contains($pageHtml,'role="search"'),'payment actions and history appear on order details only');$previewPages['order-detail']=$pageHtml;
+ [$code,$pageHtml]=$http('/admin/po.php?view=pesanan&order=999999');wa_check($code===404,'unknown order detail returns 404');
+ if(getenv('PO_UI_KEEP_FIXTURE'))foreach($previewPages as$name=>$body)file_put_contents($public.'/admin/preview-'.$name.'.html',$body);
  $paymentPost=['action'=>'manual-payment','order_id'=>$webOrder['id'],'decision'=>'paid','verified_amount'=>25000,'expected_report'=>1,'admin_reference'=>'Mutasi web test','current_password'=>'Demo-test-password'];
  [$code,$html]=$http('/admin/po.php',$paymentPost+['csrf'=>'wrong']);wa_check(po_order($db,$webToken)['payment_status']==='under_review','payment approval requires CSRF');
  [$code,$html]=$http('/admin/po.php',array_replace($paymentPost,['current_password'=>'wrong','csrf'=>$adminCsrf]));wa_check(po_order($db,$webToken)['payment_status']==='under_review','payment approval requires current owner identity');
@@ -98,8 +117,8 @@ try{
  $worker=proc_open([PHP_BINARY,$public.'/admin/po-cron.php','--run'],[1=>['pipe','w'],2=>['pipe','w']],$wp);$stdout=stream_get_contents($wp[1]);$stderr=stream_get_contents($wp[2]);fclose($wp[1]);fclose($wp[2]);wa_check(proc_close($worker)===0&&$stderr===''&&is_file($private.'/po-wa-heartbeat.json')&&json_decode($stdout,true)['disabled']===true,'cron performs expiry and heartbeat with API disabled');
  [$badOrder,$badToken]=wa_order($db,$sid,$pid);po_query($db,'UPDATE po_orders SET expires_at=0 WHERE id=?',[$badOrder['id']]);$badConfig=$config;$badConfig['fonnte']=['enabled'=>true,'token'=>'FAKE_TEST_ONLY','allowed_recipients'=>[]];file_put_contents($private.'/po-config.php','<?php return '.var_export($badConfig,true).';');
  $worker=proc_open([PHP_BINARY,$public.'/admin/po-cron.php','--run'],[1=>['pipe','w'],2=>['pipe','w']],$wp);$stdout=stream_get_contents($wp[1]);$stderr=stream_get_contents($wp[2]);fclose($wp[1]);fclose($wp[2]);wa_check(proc_close($worker)===1&&json_decode($stdout,true)['notification_error']===true&&po_query($db,'SELECT status FROM po_orders WHERE id=?',[$badOrder['id']])->fetchColumn()==='expired','invalid Fonnte config cannot prevent reservation expiry');
- [$code,$html]=$http('/admin/po.php');wa_check($code===200&&str_contains($html,'Konfigurasi Fonnte belum valid')&&str_contains($html,'Pengajuan masuk'),'invalid Fonnte config cannot block order management');
+ [$code,$html]=$http('/admin/po.php?view=notifikasi');wa_check($code===200&&str_contains($html,'Konfigurasi Fonnte belum valid'),'invalid Fonnte config is visible on notification page');[$code,$html]=$http('/admin/po.php');wa_check($code===200&&str_contains($html,'Daftar pesanan'),'invalid Fonnte config cannot block order management');
  echo "All Fonnte/manual checkout tests passed; no real messages sent.\n";
 }finally{
- if($curl)$curl=null;if(is_resource($process)){proc_terminate($process);proc_close($process);} $db=null;$server->exec("DROP DATABASE `$database`");if(is_dir($root))wa_remove($root);
+ if($curl)$curl=null;if(is_resource($process)){proc_terminate($process);proc_close($process);} $db=null;$server->exec("DROP DATABASE `$database`");if(getenv('PO_UI_KEEP_FIXTURE'))echo 'UI preview fixture: '.$public."\n";elseif(is_dir($root))wa_remove($root);
 }

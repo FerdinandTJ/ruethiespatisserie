@@ -195,7 +195,7 @@ try {
   // HTTP integration: fixture dengan layout Hostinger, akun contoh, dan database terpisah.
   $public=$root.'/public_html/staging'; $private=$root.'/ruethies-data-staging';
   mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
-  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po-manual.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
+  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po-manual.php','admin/po-view-pesanan.php','admin/po-view-jadwal.php','admin/po-view-produk.php','admin/po-view-rekening.php','admin/po-view-notifikasi.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
   copy(RUETHIES_PUBLIC.'/menu.json',$public.'/menu.json');
   $cfg=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret];
   file_put_contents($private.'/po-config.php','<?php return '.var_export($cfg,true).';');
@@ -267,18 +267,18 @@ try {
   [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'toggle-slot','slot_id'=>$sid2,'is_open'=>0]);
   verify(str_contains($html,'hanya untuk pemilik') && (int)po_slot($db,$sid2)['is_open']===1,'staff cannot change schedule');
   [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);verify($code===302,'owner login works');
-  [$code,$html]=http_request('/admin/po.php');$adminCsrf=csrf_from($html);
+  [$code,$html]=http_request('/admin/po.php?view=rekening');$adminCsrf=csrf_from($html);
   verify(str_contains($html,'id="payment"') && str_contains($html,'value="00123456"'), 'owner sees saved bank configuration');
   $bankPost=array_replace($payment,['version'=>'3','bank_name'=>'Bank <Contoh>','instructions'=>'<script>alert(1)</script>']);
   [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'save-payment']+$bankPost);
   verify(str_contains($html,'Sesi formulir tidak valid') && (int)po_payment_settings($db)['version']===3, 'bank settings require CSRF');
   [$code,$html,$redirect]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'save-payment']+$bankPost);
-  verify($code===303 && str_ends_with($redirect,'/admin/po.php#payment') && (int)po_payment_settings($db)['version']===4, 'owner bank save redirects after persistence');
-  [$code,$html]=http_request('/admin/po.php');
+  verify($code===303 && str_ends_with($redirect,'/admin/po.php?view=rekening') && (int)po_payment_settings($db)['version']===4, 'owner bank save redirects after persistence');
+  [$code,$html]=http_request('/admin/po.php?view=rekening');
   verify(str_contains($html,'Bank &lt;Contoh&gt;') && str_contains($html,'&lt;script&gt;alert(1)&lt;/script&gt;') && !str_contains($html,'<script>alert(1)</script>'), 'bank settings escape saved HTML in form');
   [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'save-payment']+$bankPost);
   verify(str_contains($html,'Rekening sudah diubah') && (int)po_payment_settings($db)['version']===4, 'stale HTTP bank form cannot overwrite new version');
-  [$code,$catalogHtml]=http_request('/admin/po.php?slot='.$sid2);
+  [$code,$catalogHtml]=http_request('/admin/po.php?view=produk&slot='.$sid2.'&product=new');
   verify(str_contains($catalogHtml,'name="menu_uid"') && str_contains($catalogHtml,'Tambah dari katalog'),'admin renders catalog selector instead of manual name field');
   verify(str_contains($catalogHtml,'name="min_qty"') && str_contains($catalogHtml,'name="max_qty"'), 'admin renders purchase limits for product create and edit');
   $productPost=['action'=>'save-product','id'=>$pid2,'slot_id'=>$sid2,'price'=>25000,'quota'=>20,'active'=>1,'min_qty'=>3,'max_qty'=>12];
