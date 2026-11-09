@@ -217,7 +217,7 @@ footer a{color:var(--beige)}
 /* MODAL */
 .backdrop{position:fixed;inset:0;background:rgba(43,35,32,.45);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 .backdrop[hidden]{display:none}
-.x{position:absolute;top:16px;right:16px;border:0;background:var(--beige-deep);width:32px;height:32px;border-radius:50%;cursor:pointer}
+.x{position:absolute;top:16px;right:16px;z-index:3;border:0;background:var(--beige-deep);width:44px;height:44px;border-radius:50%;cursor:pointer}
 @keyframes up{from{opacity:0;transform:translateY(16px)}}
 @media(max-width:960px){
   body{padding-bottom:82px}
