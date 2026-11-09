@@ -32,6 +32,7 @@ Periksa bahwa semua backup berhasil sebelum melanjutkan. Arsip data privat menga
 Jika CMS telah mengubah file tracked, simpan dahulu perubahan tersebut:
 
 ```sh
+umask 022
 git stash push -m "backup CMS sebelum SEO lokal" -- index.html menu.json faq.json atmosphere.json llms.txt
 git pull --ff-only origin main
 ```
@@ -42,10 +43,14 @@ Lanjutkan hanya jika pull berhasil. Pulihkan **JSON hosting**, bukan template HT
 cp "$SEO_BACKUP_DIR/menu.json" menu.json
 cp "$SEO_BACKUP_DIR/faq.json" faq.json
 cp "$SEO_BACKUP_DIR/atmosphere.json" atmosphere.json
+chmod 644 index.php index.html styles.css app.js product.js menu.json faq.json atmosphere.json llms.txt sitemap.xml public-lib/seo.php
+chmod 755 public-lib
 php admin/seo-upgrade.php --check
 php admin/seo-upgrade.php --apply
 php admin/seo-upgrade.php --check
 ```
+
+`umask 077` hanya untuk backup privat. Sebelum operasi Git gunakan `umask 022`; file statis publik memerlukan izin 644 dan direktori publik 755. Git tidak mendeteksi perbedaan 600 vs 644 melalui `git status`. Jangan menggunakan chmod rekursif pada data privat, akun, token, atau direktori backup. Jika beranda PHP 200 tetapi CSS/JS 403 setelah pull, periksa `ls -l styles.css app.js product.js` dan jalankan perbaikan izin publik di atas.
 
 `--check` tidak membuat file atau mengubah data. `--apply` menambahkan ID, slug dan timestamp yang belum ada, dengan backup `menu-before-seo-*` di direktori data privat. Hash password, secret 2FA dan versi autentikasi tidak disentuh. Pengulangan `--apply` tidak mengganti metadata yang sudah ada.
 
@@ -98,10 +103,17 @@ git stash push -m "snapshot CMS sebelum rollback SEO" -- index.html menu.json fa
 
 ```sh
 SEO_PREVIOUS_RELEASE="$(cat "$SEO_BACKUP_DIR/release-before.txt")"
+umask 022
 git switch --detach "$SEO_PREVIOUS_RELEASE"
 cp "$SEO_ROLLBACK_DIR/menu.json" menu.json
 cp "$SEO_ROLLBACK_DIR/faq.json" faq.json
 cp "$SEO_ROLLBACK_DIR/atmosphere.json" atmosphere.json
+```
+
+Perbaiki izin hanya file publik yang ada pada release lama:
+
+```sh
+chmod 644 index.html app.js styles.css menu.json faq.json atmosphere.json llms.txt sitemap.xml
 ```
 
 3. Kode lama mengabaikan metadata SEO tambahan. Regenerasi FAQ statis dari FAQ terbaru memakai fungsi yang sudah tersedia pada release sebelumnya:
