@@ -10,7 +10,7 @@ function ui_remove(string $path): void {if(!is_dir($path)||is_link($path)){unlin
 try {
   mkdir($root.'/sessions',0700,true);mkdir($public.'/admin',0700,true);mkdir($private,0700,true);mkdir($public.'/images/menu',0700,true);
   $source=dirname(__DIR__);
-  foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/security-upgrade.php','admin/admin.css','admin/admin.js','index.html','llms.txt']as$file)copy($source.'/'.$file,$public.'/'.$file);
+  foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/security-upgrade.php','admin/admin.css','admin/admin.js','index.html','llms.txt','app.js','styles.css']as$file)copy($source.'/'.$file,$public.'/'.$file);
   $menu=[
     ['uid'=>str_repeat('a',32),'cat'=>'cakery','available'=>true,'signature'=>true,'id'=>['n'=>'Croissant uji','d'=>'Lembut dan renyah'],'en'=>['n'=>'Test croissant','d'=>'Test'],'img'=>'images/menu/croissant-au-beurre.jpg'],
     ['uid'=>str_repeat('b',32),'cat'=>'packages','available'=>true,'signature'=>false,'id'=>['n'=>'Snackbox uji','d'=>'Paket kudapan'],'en'=>['n'=>'Test snackbox','d'=>'Test'],'img'=>'images/menu/snackbox.jpg'],
@@ -61,6 +61,7 @@ try {
   [$code,$html]=$request('/admin/?p=faq-ubah&fi=0');$x=ui_xpath($html);ui_check($x->query('//*[@id="formulir-f"]')->length===1&&$x->query('//*[@id="fitem-0"]')->length===0,'FAQ editor opens directly');
   [$code,$html,$redirect]=$request('/admin/?p=faq-ubah&fi=0',['aksi'=>'faq-save','csrf'=>$csrf,'fi'=>0,'q'=>'Jam buka?','a'=>'Setiap pagi.']);ui_check($code===302&&str_contains($redirect,'p=faq&ok=simpan'),'FAQ save returns to FAQ');
   [$code,$html]=$request('/admin/?p=ubah&i=1');$x=ui_xpath($html);ui_check($x->query('//*[@id="formulir"]')->length===1&&str_contains($html,'value="Snackbox uji"')&&$x->query('//*[@id="fitem-0"]')->length===0,'menu editor is isolated and prefilled');
+  ui_check($x->query('//input[@type="file"]')->length===3 && $x->query('//input[@name="detail1"]')->length===1 && $x->query('//input[@name="detail2"]')->length===1,'menu editor provides exactly one main and two detail upload slots');
   file_put_contents($public.'/admin/editor-preview.html',$html);
   [$code,$html]=$request('/admin/?p=pengaturan');$x=ui_xpath($html);ui_check(str_contains($html,'Ganti kata sandi')&&$x->query('//*[@id="item-0"]')->length===0&&$x->query('//div[@class="table-scroll"]')->length===1,'settings has its own heading and horizontally scrollable log');
   [$code,$html]=$request('/admin/',['aksi'=>'toggle','i'=>1,'csrf'=>'wrong']);ui_check($code===403,'mutations still require CSRF');
@@ -80,6 +81,27 @@ try {
     $edit='ini_set("session.use_cookies","0");session_cache_limiter("");session_save_path('.var_export($root.'/sessions',true).');session_id('.var_export($sid,true).');session_start();foreach('.var_export($fields,true).' as $k=>$v)$_SESSION[$k]=$v;session_write_close();';
     $p=proc_open([PHP_BINARY,'-r',$edit],[1=>['pipe','w'],2=>['pipe','w']],$ep);foreach($ep as$pipe){$output=stream_get_contents($pipe);fclose($pipe);if($output!=='')throw new RuntimeException('fixture session worker warning');}if(proc_close($p)!==0)throw new RuntimeException('fixture session worker failed');
   };
+  // Detail images: native multipart and hosting-compatible base64 use the same server limits.
+  $portrait=imagecreatetruecolor(300,600);ob_start();imagejpeg($portrait);$raw=ob_get_clean();unset($portrait);
+  $portraitPath=$root.'/portrait.jpg';file_put_contents($portraitPath,$raw);
+  $base=['aksi'=>'save','csrf'=>$csrf,'i'=>'1','cat'=>'packages','n'=>'Menu detail uji','available'=>'1'];
+  [$code]=$request('/admin/',$base+['detail1'=>new CURLFile($portraitPath,'image/jpeg','portrait.jpg'),'detail2'=>new CURLFile($portraitPath,'image/jpeg','portrait2.jpg')],true);
+  $saved=json_decode(file_get_contents($public.'/menu.json'),true)[1];$details=$saved['detail_images'];
+  ui_check($code===302 && count($details)===2 && $details[0]!==$details[1] && is_file($public.'/'.$details[1]),'multipart stores two independent detail photos alongside existing main');
+  $size=getimagesize($public.'/'.$details[0]);ui_check($size[0]===300 && $size[1]===600,'portrait detail keeps its aspect ratio');
+  [$code]=$request('/admin/',$base+['d'=>'Updated description']);$saved=json_decode(file_get_contents($public.'/menu.json'),true)[1];
+  ui_check($code===302 && $saved['detail_images']===$details,'text-only editing preserves both existing details');
+  [$code]=$request('/admin/',$base+['detail1_b64'=>'data:image/jpeg;base64,'.base64_encode($raw),'detail3_b64'=>'data:image/jpeg;base64,'.base64_encode($raw)]);
+  $saved=json_decode(file_get_contents($public.'/menu.json'),true)[1];$replacement=$saved['detail_images'][0];
+  ui_check($code===302 && count($saved['detail_images'])===2 && $replacement!==$details[0] && $saved['detail_images'][1]===$details[1] && !is_file($public.'/'.$details[0]),'base64 replaces only selected detail and ignores unsupported third slot');
+  $beforeMenu=file_get_contents($public.'/menu.json');$beforeFiles=glob($public.'/images/menu/*');
+  [$code]=$request('/admin/',$base+['detail1_b64'=>'data:image/jpeg;base64,'.base64_encode($raw),'detail2_b64'=>'data:image/jpeg;base64,'.base64_encode('invalid')]);
+  ui_check($code===200 && file_get_contents($public.'/menu.json')===$beforeMenu && glob($public.'/images/menu/*')===$beforeFiles,'invalid second photo leaves saved menu unchanged and cleans first temporary upload');
+  [$code]=$request('/admin/',$base+['detail1_remove'=>'1']);$saved=json_decode(file_get_contents($public.'/menu.json'),true)[1];
+  ui_check($code===302 && $saved['detail_images'][0]==='' && $saved['detail_images'][1]===$details[1] && !is_file($public.'/'.$replacement),'remove one detail keeps the other slot and deletes unreferenced files');
+  [$code]=$request('/admin/',array_merge($base,['i'=>'-1','n'=>'New menu without photo']));
+  ui_check($code===200 && count(json_decode(file_get_contents($public.'/menu.json'),true))===3,'new menu requires a main display photo');
+  [$code]=$request('/admin/',$base+['detail1_remove'=>['1']]);ui_check($code===200,'array detail inputs are handled without warnings');
   $updateSession(['reauth_at'=>time()-300]);
   $before=file_get_contents($private.'/users.json');
   [$code,$html,$redirect]=$request('/admin/',['aksi'=>'user-tambah','csrf'=>$csrf,'nu'=>'newstaff','np'=>'Demo-test-password']);ui_check($code===303&&str_contains($redirect,'p=verifikasi')&&file_get_contents($private.'/users.json')===$before,'expired reauth prevents staff creation without storing pending secrets');

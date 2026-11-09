@@ -347,3 +347,11 @@ footer a{color:var(--beige)}
 #faq details[open] summary::after{transform:rotate(45deg)}
 #faq details p{margin:0;padding:0 20px 18px;color:var(--muted);line-height:1.7}
 #faq details p a{color:var(--wine)}
+
+/* Foto display membuka detail produk, tetap memakai ukuran kartu yang ada. */
+.product-photo{padding:0;display:block;background:transparent;color:inherit;cursor:pointer;font:inherit}
+.card .product-photo{width:100%;border:0;text-align:inherit}
+.product-photo:focus-visible{outline:3px solid var(--wine);outline-offset:4px}
+.lb-arch img{object-fit:contain}
+#lb-wa{display:table;margin:12px auto 0}
+#lb-wa[hidden],.lb-nav[hidden]{display:none}

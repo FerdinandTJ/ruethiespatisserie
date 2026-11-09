@@ -126,7 +126,11 @@ function menu_validate(array $in): ?array {
   $ne = trim(strip_tags($in['ne'] ?? '')); if (mb_strlen($ne) > 60) return null;
   $de = trim(strip_tags($in['de'] ?? '')); if (mb_strlen($de) > 160) return null;
   $badge = trim(strip_tags($in['badge'] ?? '')); if (mb_strlen($badge) > 24) return null;
+  $details = $in['detail_images'] ?? [];
+  if (!is_array($details) || count($details) > 2) return null;
+  foreach ($details as $image) if (!is_string($image) || ($image !== '' && !preg_match('~\Aimages/menu/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:jpg|webp)\z~D', $image))) return null;
   return [
+    'detail_images' => array_values($details),
     'cat' => $cat, 'badge' => $badge, 'signature' => !empty($in['signature']),
     'available' => !isset($in['available']) || !empty($in['available']),
     'tag' => ['id' => trim(strip_tags($in['tag'] ?? '')), 'en' => ''],
@@ -225,7 +229,7 @@ function icon(string $n, int $s = 18): string {
   return '<svg width="' . $s . '" height="' . $s . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$n] ?? '') . '</svg>';
 }
 /* ---------- upload foto menu: re-encode (buang EXIF) + normalkan 640x480 ---------- */
-function photo_upload(array $file, string $name): array {
+function photo_upload(array $file, string $name, bool $detail = false): array {
   security_upload_input([$file]);
   if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return [null, null];
   if (($file['error'] ?? 1) !== UPLOAD_ERR_OK) return [null, 'Upload gagal, coba lagi.'];
@@ -234,24 +238,7 @@ function photo_upload(array $file, string $name): array {
   $mime = $finfo->file($file['tmp_name']);
   if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) return [null, 'File harus JPG, PNG, atau WebP.'];
   $raw = @file_get_contents($file['tmp_name'],false,null,0,5*1024*1024+1);
-  [$im,$error] = security_image_decode($raw ?: '',5*1024*1024);
-  if ($error) return [null, $error];
-  // Center-crop 4:3 lalu resize 640x480.
-  $w = imagesx($im); $hh = imagesy($im); $tr = 640 / 480; $sr = $w / $hh;
-  if ($sr > $tr) { $nw = (int)($hh * $tr); $x = (int)(($w - $nw) / 2); $crop = imagecrop($im, ['x' => $x, 'y' => 0, 'width' => $nw, 'height' => $hh]); }
-  else { $nh = (int)($w / $tr); $y = (int)(($hh - $nh) / 2); $crop = imagecrop($im, ['x' => 0, 'y' => $y, 'width' => $w, 'height' => $nh]); }
-  if ($crop) { unset($im); $im = $crop; }
-  $dst = imagecreatetruecolor(640, 480);
-  imagecopyresampled($dst, $im, 0, 0, 0, 0, 640, 480, imagesx($im), imagesy($im));
-  unset($im);
-  if (!is_dir(RUETHIES_IMGDIR)) @mkdir(RUETHIES_IMGDIR, 0755, true);
-  $base = photo_slug($name); $try = $base; $i = 2;
-  while (is_file(RUETHIES_IMGDIR . "/$try.jpg")) { $try = "$base-$i"; $i++; }
-  $jpg = RUETHIES_IMGDIR . "/$try.jpg";
-  if (!@imagejpeg($dst, $jpg, 68)) { unset($dst); return [null, 'Gagal menyimpan foto.']; }
-  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", 66);
-  unset($dst);
-  return ["images/menu/$try.jpg", null];
+  return photo_upload_raw($raw ?: '', $name, $detail, 5*1024*1024);
 }
 
 /* ---------- FAQ: sumber faq.json, tulis ulang blok statis index.html + llms.txt ---------- */
@@ -367,10 +354,14 @@ function b64_image(string $field, int $maxBytes): array {
   if ($error=security_image_metadata($raw,$maxBytes)) return [null,$error];
   return [$raw, null];
 }
-function photo_upload_raw(string $raw, string $name): array {
-  [$src,$error] = security_image_decode($raw,3*1024*1024);
+function photo_upload_raw(string $raw, string $name, bool $detail = false, int $maxBytes = 3145728): array {
+  [$src,$error] = security_image_decode($raw,$maxBytes);
   if ($error) return [null,$error];
-  $dst = img_crop_resize($src, 640, 480); unset($src);
+  if ($detail) {
+    $scale = min(1, 1200 / max(imagesx($src), imagesy($src)));
+    $dst = imagescale($src, max(2, (int)round(imagesx($src)*$scale)), max(2, (int)round(imagesy($src)*$scale)));
+  } else $dst = img_crop_resize($src, 640, 480);
+  unset($src);
   if (!$dst) return [null, 'Gagal memproses foto.'];
   $try = img_unique(RUETHIES_IMGDIR, photo_slug($name));
   if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", 68)) { unset($dst); return [null, 'Gagal menyimpan foto.']; }

@@ -22,8 +22,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   }
   security_upload_input($_FILES);
   if ($me && in_array($aksi,['save','galeri-save'],true)) {
-    $field=$aksi==='save'?'foto':'gfoto';
-    if (!empty($_FILES[$field]['name']) || !empty($_POST[$field.'_b64'])) security_rate_take('upload',$me['name'],20,false);
+    foreach ($aksi==='save' ? ['foto','detail1','detail2'] : ['gfoto'] as $field) {
+      if (!empty($_FILES[$field]['name']) || !empty($_POST[$field.'_b64'])) security_rate_take('upload',$me['name'],20,false);
+    }
   }
   if ($me && ruethies_csrf_ok() && in_array($aksi, [
     'save', 'toggle', 'hapus', 'galeri-save', 'galeri-gerak', 'galeri-hapus',
@@ -77,36 +78,48 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
     $img = $old['img'] ?? '';
+    $details = array_pad(array_slice($old['detail_images'] ?? [], 0, 2), 2, '');
+    $created = [];
     $ulock = upload_lock();
-    if (!empty($_FILES['foto']['name'] ?? '')) {
-      [$path, $perr] = photo_upload($_FILES['foto'], $_POST['n'] ?? 'menu');
-      if ($perr) $err = $perr; else $img = $path;
-    } elseif (!empty($_POST['foto_b64'] ?? '')) {
-      [$braw, $berr] = b64_image('foto_b64', 3 * 1024 * 1024);
-      if ($berr) $err = $berr;
-      else { [$path, $perr] = photo_upload_raw($braw, $_POST['n'] ?? 'menu'); if ($perr) $err = $perr; else $img = $path; }
-    }
-    upload_unlock($ulock);
+    try {
+      foreach (['foto','detail1','detail2'] as $slot => $field) {
+        if ($slot > 0 && !empty($_POST[$field.'_remove'])) $details[$slot-1] = '';
+        $path = null; $perr = null;
+        if (!empty($_FILES[$field]['name'] ?? '')) {
+          [$path, $perr] = photo_upload($_FILES[$field], ($_POST['n'] ?? 'menu').($slot ? '-detail-'.$slot : ''), $slot > 0);
+        } elseif (!empty($_POST[$field.'_b64'] ?? '')) {
+          [$raw, $perr] = b64_image($field.'_b64', 3 * 1024 * 1024);
+          if (!$perr) [$path, $perr] = photo_upload_raw($raw, ($_POST['n'] ?? 'menu').($slot ? '-detail-'.$slot : ''), $slot > 0);
+        }
+        if ($perr) { $err = $perr; break; }
+        if ($path) { $created[] = $path; if ($slot === 0) $img = $path; else $details[$slot-1] = $path; }
+      }
+    } finally { upload_unlock($ulock); }
+    if ($err === '' && $img === '') $err = 'Foto utama wajib diunggah.';
     if ($err === '') {
-      $row = menu_validate(array_merge($_POST, ['img' => $img]));
+      $row = menu_validate(array_merge($_POST, ['img' => $img, 'detail_images' => $details]));
       if (!$row) $err = 'Periksa isian: nama wajib, kategori valid.';
       else {
-        if ($old) { $row['img'] = $img; $items[$i] = $row; }
-        else $items[] = $row;
-        if (menu_save($items)) { ruethies_log($me['name'], $old ? 'ubah' : 'tambah', $row['id']['n']); header('Location: ?ok=simpan'); exit; }
+        if ($old) $items[$i] = $row; else $items[] = $row;
+        if (menu_save($items)) {
+          foreach (array_merge([$old['img'] ?? ''], $old['detail_images'] ?? []) as $previous) menu_photo_delete_unused($previous);
+          ruethies_log($me['name'], $old ? 'ubah' : 'tambah', $row['id']['n']); header('Location: ?ok=simpan'); exit;
+        }
         $err = 'Gagal menyimpan.';
       }
     }
+    foreach ($created as $unused) menu_photo_delete_unused($unused);
   }
   elseif ($aksi === 'hapus') {
     if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
       $nm = $items[$i]['id']['n'] ?? '';
-      $image = (string)($items[$i]['img'] ?? '');
+      $images = array_merge([(string)($items[$i]['img'] ?? '')], $items[$i]['detail_images'] ?? []);
       array_splice($items, $i, 1);
       if (menu_save($items)) {
-        $photo = menu_photo_delete_unused($image);
+        $results = array_map('menu_photo_delete_unused', $images);
+        $photo = in_array('failed',$results,true) ? 'failed' : (in_array('kept',$results,true) ? 'kept' : 'deleted');
         ruethies_log($me['name'], 'hapus', $nm . ' | foto: ' . $photo);
         header('Location: ?ok=hapus&photo=' . $photo); exit;
       }
@@ -259,8 +272,8 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <meta name="robots" content="noindex, nofollow" />
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
-<script src="admin.js?v=20261105-ui" defer></script>
-<link rel="stylesheet" href="admin.css?v=20261105-security" />
+<script src="admin.js?v=20261109-details" defer></script>
+<link rel="stylesheet" href="admin.css?v=20261109-details" />
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
@@ -445,8 +458,16 @@ if ($p === 'tambah' || $edit):
 <label>Tag <small class="hint">(mis. Manis • Lembut)</small><input name="tag" maxlength="40" value="<?= h($edit['tag']['id'] ?? '') ?>" /></label>
 <label><input type="checkbox" name="signature" value="1" <?= !empty($edit['signature']) ? 'checked' : '' ?> /> Tampilkan di Signature <small class="hint">(maks 3)</small></label>
 <label><input type="checkbox" name="available" value="1" <?= !isset($edit) || !empty($edit['available']) ? 'checked' : '' ?> /> Tampilkan di web</label>
-<label>Foto <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
+<label>Foto display utama <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
 <div class="preview" id="prev-foto"><?php if ($edit && !empty($edit['img'])): ?><img class="thumb-sm" src="../<?= h($edit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
+<fieldset class="photo-details"><legend>Foto detail (opsional, maksimal 2)</legend>
+<p class="sub">Ditampilkan saat pengunjung mengeklik foto menu. Kosongkan untuk mempertahankan foto lama. Foto pengganti akan menggantikan slot yang sama.</p>
+<?php for ($slot=1; $slot<=2; $slot++): $detail=$edit['detail_images'][$slot-1] ?? ''; ?>
+<label>Foto detail <?= $slot ?> <small class="hint">(JPG/PNG/WebP, maks 5 MB)</small><input type="file" name="detail<?= $slot ?>" accept="image/jpeg,image/png,image/webp" data-preview="prev-detail<?= $slot ?>"></label>
+<div class="preview" id="prev-detail<?= $slot ?>"><?php if ($detail): ?><img class="thumb-sm" src="../<?= h($detail) ?>" alt="Foto detail <?= $slot ?> saat ini"><?php endif; ?></div>
+<?php if ($detail): ?><label><input type="checkbox" name="detail<?= $slot ?>_remove" value="1"> Hapus foto detail <?= $slot ?></label><?php endif; ?>
+<?php endfor; ?>
+</fieldset>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan menu</button></div>
 <p class="center"><a class="linkbtn" href="?"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>

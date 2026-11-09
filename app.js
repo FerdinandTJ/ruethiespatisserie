@@ -206,7 +206,7 @@ function applyLang(){
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
   document.getElementById("btn-id").classList.toggle("on", lang==="id");
   document.getElementById("btn-en").classList.toggle("on", lang==="en");
-  if(!document.getElementById("lightbox").hidden && ATMOS[lbIdx]) lbCap.textContent = atmosCap(ATMOS[lbIdx]);
+  if(!document.getElementById("lightbox").hidden) showLB(lbIdx);
   renderMenus();
   renderAtmos();
   renderFAQ();
@@ -215,10 +215,12 @@ function applyLang(){
   if(map) map.title = t("visit.mapTitle");
 }
 
+function productIndex(m){ return MENU.indexOf(m); }
+function productPhotoLabel(name){ return (lang === "en" ? "View photos: " : "Lihat foto: ") + name; }
 function cardHTML(m, i){
   const v = m[lang] || m.id;
   const no = String(i+1).padStart(2,"0");
-  return `<article class="card rv"><div class="ph">${pic(m.img, v.n, 640, 480)}</div>
+  return `<article class="card rv"><button type="button" class="ph product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, v.n, 640, 480)}</button>
     <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}<h3>${esc(v.n)}</h3><p>${esc(v.d)}</p></div></article>`;
 }
 
@@ -231,7 +233,7 @@ function rowHTML(m, i){
     <div class="mbody"><h3>${esc(v.n)}</h3><p>${esc(v.d)}</p>
       <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></div></div>
     <span class="mdots" aria-hidden="true"></span>
-    <span class="mpeek">${pic(m.img, "", 640, 480)}</span>
+    <button type="button" class="mpeek product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, "", 640, 480)}</button>
   </article>`;
 }
 
@@ -431,21 +433,33 @@ function loadAtmos(){
     .finally(()=>{ atmosReady = true; atmosLoading = false; renderAtmos(); });
 }
 
-// Lightbox (dari data master ATMOS yang sama)
-let lbIdx = 0;
-const lb = document.getElementById("lightbox"), lbImg = document.getElementById("lb-img"), lbCap = document.getElementById("lb-cap"), lbCount = document.getElementById("lb-count");
+// Satu lightbox untuk suasana dan foto produk. Foto detail dimuat saat dibuka.
+let lbIdx = 0, lbProduct = null, lbReturnFocus = null;
+const lb = document.getElementById("lightbox"), lbImg = document.getElementById("lb-img"), lbCap = document.getElementById("lb-cap"), lbCount = document.getElementById("lb-count"), lbWA = document.getElementById("lb-wa");
+function productPhotos(m){
+  return [m.img, ...(Array.isArray(m.detail_images) ? m.detail_images.slice(0,2) : [])].filter(src=>typeof src === "string" && /^images\/menu\/[a-z0-9-]+\.(jpg|webp)$/i.test(src));
+}
 function showLB(i){
-  lbIdx = (i + ATMOS.length) % ATMOS.length;
-  const a = ATMOS[lbIdx], cap = atmosCap(a);
-  lbImg.src = a.imgFull || a.img; lbImg.alt = cap; lbCap.textContent = cap;
-  if(lbCount) lbCount.textContent = `0${lbIdx+1} / 0${ATMOS.length}`;
+  const photos = lbProduct ? productPhotos(lbProduct) : ATMOS.map(a=>a.imgFull || a.img);
+  if(!photos.length) return;
+  if(lb.hidden) lbReturnFocus = document.activeElement;
+  lbIdx = (i + photos.length) % photos.length;
+  const cap = lbProduct ? (lbProduct[lang] || lbProduct.id).n : atmosCap(ATMOS[lbIdx]);
+  lbImg.src = photos[lbIdx]; lbImg.alt = cap; lbCap.textContent = cap;
+  lbCount.textContent = `${String(lbIdx+1).padStart(2,"0")} / ${String(photos.length).padStart(2,"0")}`;
+  document.getElementById("lb-prev").hidden = document.getElementById("lb-next").hidden = photos.length < 2;
+  lbWA.hidden = !lbProduct;
+  if(lbProduct) { lbWA.href = whatsappURL(productMessage(cap)); lbWA.textContent = t("menu.ask") + " →"; }
+  lb.querySelector('[role="dialog"]').setAttribute("aria-label", lbProduct ? productPhotoLabel(cap) : (lang === "en" ? "Atmosphere gallery" : "Galeri suasana"));
   lb.hidden = false; modalOpen = true; stickybar.classList.add("hide");
   document.getElementById("lb-close").focus();
 }
-function hideLB(){ lb.hidden = true; modalOpen = false; stickybar.classList.remove("hide"); onScroll(); }
-document.getElementById("archrow").addEventListener("click", e=>{
+function hideLB(){ lb.hidden = true; lbImg.removeAttribute("src"); modalOpen = false; stickybar.classList.remove("hide"); onScroll(); if(lbReturnFocus?.isConnected) lbReturnFocus.focus(); }
+document.addEventListener("click", e=>{
+  const product = e.target.closest("[data-product]");
+  if(product){ lbProduct = MENU[Number(product.dataset.product)]; if(lbProduct && lbProduct.available !== false) showLB(0); return; }
   const b = e.target.closest("[data-lb]");
-  if(b) showLB(+b.dataset.lb);
+  if(b){ lbProduct = null; showLB(+b.dataset.lb); }
 });
 document.getElementById("lb-close").onclick = hideLB;
 document.getElementById("lb-prev").onclick = (e)=>{ e.stopPropagation(); showLB(lbIdx-1); };
@@ -454,8 +468,14 @@ lb.addEventListener("click",e=>{ if(e.target===lb) hideLB(); });
 document.addEventListener("keydown",e=>{
   if(lb.hidden) return;
   if(e.key==="Escape") hideLB();
-  if(e.key==="ArrowLeft") showLB(lbIdx-1);
-  if(e.key==="ArrowRight") showLB(lbIdx+1);
+  if(e.key==="ArrowLeft") { e.preventDefault(); showLB(lbIdx-1); }
+  if(e.key==="ArrowRight") { e.preventDefault(); showLB(lbIdx+1); }
+  if(e.key==="Tab"){
+    const buttons = [...lb.querySelectorAll('button, a[href]')].filter(el=>!el.hidden);
+    const first=buttons[0], last=buttons[buttons.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
 });
 let tx = 0;
 lb.addEventListener("touchstart",e=>{ tx = e.touches[0].clientX; },{passive:true});
