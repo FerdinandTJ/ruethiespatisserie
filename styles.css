@@ -380,3 +380,4 @@ html:not(.enhanced) .menu-tools,html:not(.enhanced) .tabs{display:none}
 .backdrop.lb .lb-inner,.backdrop.lb figure{max-height:calc(100dvh - 40px)}
 .backdrop.lb figure{overflow-y:auto;min-height:0;overscroll-behavior:contain}
 #lb-description{max-height:110px;overflow-y:auto;overscroll-behavior:contain;white-space:pre-line}
+.error-page{text-align:center}.error-page .eyebrow{justify-content:center}.error-page .muted{margin:18px auto;max-width:52ch}.error-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:24px}

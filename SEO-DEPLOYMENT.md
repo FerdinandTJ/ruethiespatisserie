@@ -43,8 +43,9 @@ Lanjutkan hanya jika pull berhasil. Pulihkan **JSON hosting**, bukan template HT
 cp "$SEO_BACKUP_DIR/menu.json" menu.json
 cp "$SEO_BACKUP_DIR/faq.json" faq.json
 cp "$SEO_BACKUP_DIR/atmosphere.json" atmosphere.json
-chmod 644 index.php index.html styles.css app.js product.js menu.json faq.json atmosphere.json llms.txt sitemap.xml public-lib/seo.php
+chmod 644 .htaccess index.php index.html styles.css app.js product.js menu.json faq.json atmosphere.json llms.txt sitemap.xml public-lib/seo.php
 chmod 755 public-lib
+touch .htaccess
 php admin/seo-upgrade.php --check
 php admin/seo-upgrade.php --apply
 php admin/seo-upgrade.php --check
@@ -55,6 +56,8 @@ php admin/seo-upgrade.php --check
 `--check` tidak membuat file atau mengubah data. `--apply` menambahkan ID, slug dan timestamp yang belum ada, dengan backup `menu-before-seo-*` di direktori data privat. Hash password, secret 2FA dan versi autentikasi tidak disentuh. Pengulangan `--apply` tidak mengganti metadata yang sudah ada.
 
 Jangan menjalankan `git stash pop` setelahnya: itu dapat mengembalikan template HTML lama. FAQ asli tetap dibaca dari `faq.json` dan ringkasan `llms.txt` dilayani secara dinamis. Tidak perlu menjalankan ulang upgrade keamanan untuk rilis SEO ini.
+
+Jika beranda PHP sudah normal tetapi semua URL produk 404, `/index.html` masih 200, atau sitemap tetap berisi satu URL lama, aturan rewrite belum aktif. Jalankan `chmod 644 .htaccess` dan `touch .htaccess` untuk memperbaiki izin serta memicu pembacaan ulang konfigurasi. Jika tetap gagal, periksa `ls -l .htaccess` dan `sed -n '1,40p' .htaccess` melalui SSH; jangan menimpa konfigurasi hosting tanpa meninjau isinya.
 
 Jika CLI menolak JSON rusak, metadata duplikat atau slug tidak valid, jangan menggantinya dengan menu laptop; periksa backup hosting dan hentikan deployment sampai datanya valid.
 
@@ -113,7 +116,7 @@ cp "$SEO_ROLLBACK_DIR/atmosphere.json" atmosphere.json
 Perbaiki izin hanya file publik yang ada pada release lama:
 
 ```sh
-chmod 644 index.html app.js styles.css menu.json faq.json atmosphere.json llms.txt sitemap.xml
+chmod 644 .htaccess index.html app.js styles.css menu.json faq.json atmosphere.json llms.txt sitemap.xml
 ```
 
 3. Kode lama mengabaikan metadata SEO tambahan. Regenerasi FAQ statis dari FAQ terbaru memakai fungsi yang sudah tersedia pada release sebelumnya:
