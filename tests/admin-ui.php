@@ -10,7 +10,7 @@ function ui_remove(string $path): void {if(!is_dir($path)||is_link($path)){unlin
 try {
   mkdir($root.'/sessions',0700,true);mkdir($public.'/admin',0700,true);mkdir($private,0700,true);mkdir($public.'/images/menu',0700,true);
   $source=dirname(__DIR__);
-  foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/security-upgrade.php','admin/admin.css','admin/admin.js','index.html','llms.txt','app.js','styles.css']as$file)copy($source.'/'.$file,$public.'/'.$file);
+  foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/catalog.php','admin/security.php','admin/security-resources.php','admin/security-upgrade.php','admin/admin.css','admin/admin.js','index.html','llms.txt','app.js','styles.css']as$file)copy($source.'/'.$file,$public.'/'.$file);
   $menu=[
     ['uid'=>str_repeat('a',32),'cat'=>'cakery','available'=>true,'signature'=>true,'id'=>['n'=>'Croissant uji','d'=>'Lembut dan renyah'],'en'=>['n'=>'Test croissant','d'=>'Test'],'img'=>'images/menu/croissant-au-beurre.jpg'],
     ['uid'=>str_repeat('b',32),'cat'=>'packages','available'=>true,'signature'=>false,'id'=>['n'=>'Snackbox uji','d'=>'Paket kudapan'],'en'=>['n'=>'Test snackbox','d'=>'Test'],'img'=>'images/menu/snackbox.jpg'],

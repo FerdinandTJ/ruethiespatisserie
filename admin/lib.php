@@ -3,6 +3,7 @@
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/security-resources.php';
+require_once __DIR__ . '/catalog.php';
 
 const RUETHIES_CATS = ['cakery' => 'Kue & Jajanan', 'savoury' => 'Camilan Gurih', 'packages' => 'Paket & Sajian'];
 
@@ -102,8 +103,9 @@ function menu_photo_delete_unused(string $image): string {
 }
 
 function menu_load(): array {
-  $d = jread(RUETHIES_MENU, []);
-  return is_array($d) ? array_values(array_filter($d, fn($m) => is_array($m))) : [];
+  $d = catalog_read_json(RUETHIES_MENU);
+  catalog_validate($d,false);
+  return $d;
 }
 function menu_save(array $items): bool {
   // Backup 5 versi terakhir sebelum tulis.
@@ -111,12 +113,8 @@ function menu_save(array $items): bool {
   if (!is_dir($dir)) @mkdir($dir, 0700, true);
   if (is_file(RUETHIES_MENU)) @copy(RUETHIES_MENU, $dir . '/menu-' . date('Ymd-His') . '.json');
   foreach (glob($dir . '/menu-*.json') ?: [] as $i => $f) if ($i >= 4) @unlink($f);
-  $fh = @fopen(RUETHIES_MENU, 'c+');
-  if (!$fh) return false;
-  flock($fh, LOCK_EX); ftruncate($fh, 0);
-  $ok = fwrite($fh, json_encode(array_values($items), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT));
-  fflush($fh); flock($fh, LOCK_UN); fclose($fh);
-  return $ok !== false;
+  $items = catalog_metadata($items, time());
+  return catalog_atomic_write(RUETHIES_MENU,$items);
 }
 function menu_validate(array $in): ?array {
   $cat = $in['cat'] ?? '';
@@ -129,14 +127,17 @@ function menu_validate(array $in): ?array {
   $details = $in['detail_images'] ?? [];
   if (!is_array($details) || count($details) > 2) return null;
   foreach ($details as $image) if (!is_string($image) || ($image !== '' && !preg_match('~\Aimages/menu/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:jpg|webp)\z~D', $image))) return null;
+  $detail = trim(strip_tags($in['detail'] ?? ''));
+  $detaile = trim(strip_tags($in['detaile'] ?? ''));
+  if (mb_strlen($detail)>4000 || mb_strlen($detaile)>4000) return null;
   return [
     'detail_images' => array_values($details),
     'cat' => $cat, 'badge' => $badge, 'signature' => !empty($in['signature']),
     'available' => !isset($in['available']) || !empty($in['available']),
     'tag' => ['id' => trim(strip_tags($in['tag'] ?? '')), 'en' => ''],
     'img' => $in['img'] ?? '',
-    'id' => ['n' => $n, 'd' => $d],
-    'en' => ['n' => $ne !== '' ? $ne : $n, 'd' => $de !== '' ? $de : $d],
+    'id' => ['n' => $n, 'd' => $d, 'detail' => $detail],
+    'en' => ['n' => $ne !== '' ? $ne : $n, 'd' => $de !== '' ? $de : $d, 'detail' => $detaile],
   ];
 }
 
@@ -313,13 +314,8 @@ function faq_apply(array $items): array {
   // Verifikasi sebelum tulis: schema valid + jumlah cocok + details cocok.
   if (!str_contains($html, '"@type":"FAQPage"')) return [false, 'Verifikasi gagal — TIDAK ada yang diubah.'];
   if (substr_count($html, '<details><summary>') < count($items)) return [false, 'Verifikasi gagal — TIDAK ada yang diubah.'];
-  $fh = @fopen($idx, 'c+');
-  if (!$fh) return [false, 'index.html tidak bisa ditulis.'];
-  flock($fh, LOCK_EX); ftruncate($fh, 0);
-  $ok = fwrite($fh, $html);
-  fflush($fh); flock($fh, LOCK_UN); fclose($fh);
-  if ($ok === false) return [false, 'Gagal menulis index.html.'];
-  if (@file_put_contents($llmsf, $llms, LOCK_EX) === false) return [false, 'index.html updated, TAPI llms.txt gagal — hubungi pengembang.'];
+  if (!catalog_atomic_text($idx,$html)) return [false, 'Gagal menulis index.html.'];
+  if (!catalog_atomic_text($llmsf,$llms)) return [false, 'index.html updated, TAPI llms.txt gagal — hubungi pengembang.'];
   return [true, ''];
 }
 

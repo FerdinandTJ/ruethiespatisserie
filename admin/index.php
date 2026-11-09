@@ -69,6 +69,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   elseif ($aksi === 'toggle') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
+      $items[$i]['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
       $items[$i]['available'] = empty($items[$i]['available']) || $items[$i]['available'] === false ? true : false;
       if (menu_save($items)) { ruethies_log($me['name'], 'toggle', ($items[$i]['id']['n'] ?? '') . ' => ' . ($items[$i]['available'] ? 'tampil' : 'sembunyi')); header('Location: ?ok=tampil#item-' . $i); exit; }
       $err = 'Gagal menyimpan.';
@@ -97,9 +98,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     } finally { upload_unlock($ulock); }
     if ($err === '' && $img === '') $err = 'Foto utama wajib diunggah.';
     if ($err === '') {
-      $row = menu_validate(array_merge($_POST, ['img' => $img, 'detail_images' => $details]));
+      $row = menu_validate(array_merge(['detail'=>$old['id']['detail'] ?? '', 'detaile'=>$old['en']['detail'] ?? ''], $_POST, ['img' => $img, 'detail_images' => $details, 'available'=>!empty($_POST['available'])]));
       if (!$row) $err = 'Periksa isian: nama wajib, kategori valid.';
       else {
+        if ($old) {
+          $row = array_replace($old, $row); // Preserve IDs, stable slug and unknown future metadata.
+          $row['id'] = array_replace($old['id'], $row['id']);
+          $row['en'] = array_replace($old['en'] ?? [], $row['en']);
+        }
+        $row['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
         if ($old) $items[$i] = $row; else $items[] = $row;
         if (menu_save($items)) {
           foreach (array_merge([$old['img'] ?? ''], $old['detail_images'] ?? []) as $previous) menu_photo_delete_unused($previous);
@@ -166,6 +173,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       else {
         $row = ['img' => $img, 'imgFull' => $full !== '' ? $full : $img,
           'id' => ['cap' => $cap], 'en' => ['cap' => $cape !== '' ? $cape : $cap]];
+        if ($old) {
+          $row = array_replace($old, $row); // Preserve IDs, stable slug and unknown future metadata.
+          $row['id'] = array_replace($old['id'], $row['id']);
+          $row['en'] = array_replace($old['en'] ?? [], $row['en']);
+        }
+        $row['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
         if ($old) $items[$i] = $row; else $items[] = $row;
         if (atmos_save($items)) { ruethies_log($me['name'], $old ? 'galeri-ubah' : 'galeri-tambah', $cap); header('Location: ?p=galeri&ok=simpan#galeri'); exit; }
         $err = 'Gagal menyimpan.';
@@ -246,7 +259,7 @@ $area = str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ?
 $labels = ['menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
 $intro = ['menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
 // Baca setiap sumber sekali untuk tampilan. Indeks asli dipertahankan saat memfilter.
-$_menu = $me ? menu_load() : [];
+try { $_menu = $me ? menu_load() : []; } catch (RuntimeException $e) { http_response_code(503);$_menu=[];$err='Data menu tidak dapat dibaca. Pulihkan file menu sebelum menyimpan perubahan.'; }
 $_gallery = $me ? atmos_load() : [];
 $_faqs = $me ? faq_load() : [];
 $_logs=[];
@@ -451,8 +464,10 @@ if ($p === 'tambah' || $edit):
 <option value="<?= $k ?>" <?= (($edit['cat'] ?? '') === $k) ? 'selected' : '' ?>><?= h($v) ?></option><?php endforeach; ?></select></label>
 <label>Nama (Indonesia)<span class="count" id="c-n"></span><input name="n" maxlength="60" required data-count="c-n" value="<?= h($edit['id']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Indonesia)<span class="count" id="c-d"></span><input name="d" maxlength="160" data-count="c-d" value="<?= h($edit['id']['d'] ?? '') ?>" /></label>
+<label>Deskripsi detail (opsional)<small class="hint">Informasi produk yang sudah pasti, bukan harga atau ketentuan yang belum dikonfirmasi. Tampil pada halaman detail.</small><textarea name="detail" maxlength="4000" rows="5"><?= h($edit['id']['detail'] ?? '') ?></textarea></label>
 <details class="optional-fields"><summary>Terjemahan Inggris <span>Opsional</span></summary><label>Nama (Inggris, opsional)<span class="count" id="c-ne"></span><input name="ne" maxlength="60" data-count="c-ne" value="<?= h($edit['en']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Inggris, opsional)<span class="count" id="c-de"></span><input name="de" maxlength="160" data-count="c-de" value="<?= h($edit['en']['d'] ?? '') ?>" /></label>
+<label>Deskripsi detail Inggris (opsional)<textarea name="detaile" maxlength="4000" rows="5"><?= h($edit['en']['detail'] ?? '') ?></textarea></label>
 </details>
 <label>Label <small class="hint">(mis. Best Seller — kosongkan bila tidak ada)</small><input name="badge" maxlength="24" value="<?= h($edit['badge'] ?? '') ?>" /></label>
 <label>Tag <small class="hint">(mis. Manis • Lembut)</small><input name="tag" maxlength="40" value="<?= h($edit['tag']['id'] ?? '') ?>" /></label>
