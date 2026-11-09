@@ -10,8 +10,18 @@ const IMG = (id) => {
 };
 
 // Snapshot HTML dan interaksi memakai data yang sama, tanpa katalog contoh ketika JSON rusak.
-const catalogueSnapshot = JSON.parse(document.getElementById("catalog-data").textContent);
+const catalogueElement = document.getElementById("catalog-data");
+const catalogueSnapshot = catalogueElement ? JSON.parse(catalogueElement.textContent) : {menu:[],faq:null};
 let MENU = catalogueSnapshot.menu;
+// Older HTML may remain in a CDN during deployment. Read actual hosting data,
+// never a built-in catalogue; normal server-rendered pages do not make this request.
+if(!catalogueElement){
+  fetch("/menu.json",{cache:"reload"}).then(r=>{if(!r.ok)throw new Error("menu");return r.json();}).then(items=>{
+    if(!Array.isArray(items) || items.some(m=>!m || typeof m.id?.n!=="string" || typeof m.id?.d!=="string" || typeof m.img!=="string" || !["cakery","savoury","packages"].includes(m.cat)))throw new Error("menu");
+    MENU=items.map(m=>({...m,url:typeof m.slug==="string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(m.slug)?(m.slug==="snackbox"?"/snack-box-cikarang/":"/menu/"+m.slug+"/"):"/#menu"}));
+    renderMenus();
+  }).catch(()=>{MENU=[];renderMenus();});
+}
 
 const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",

@@ -8,6 +8,7 @@ $tmp=sys_get_temp_dir().'/ruethies-seo-apache-'.bin2hex(random_bytes(5));$public
 function sr_check(bool $ok,string $label):void{if(!$ok)throw new RuntimeException($label);echo "PASS: $label\n";}
 function sr_remove(string $path):void{if(!is_dir($path)){unlink($path);return;}foreach(scandir($path)as$n)if($n!=='.'&&$n!=='..')sr_remove($path.'/'.$n);rmdir($path);}
 try{
+ sr_check(!str_ends_with(catalog_slug(str_repeat('a',69).' word'),'-'),'slug truncation never leaves an invalid trailing hyphen');
  foreach(['.htaccess','index.html','404.html','faq.json','admin/catalog.php','public-lib/seo.php']as$file)copy($source.'/'.$file,$public.'/'.$file);
  file_put_contents($public.'/menu.json',json_encode(catalog_metadata(catalog_read_json($source.'/menu.json'),filemtime($source.'/menu.json'))));
  file_put_contents($public.'/index.php','#!/usr/bin/env -S '.$cgi.' -d cgi.force_redirect=0'."\n".file_get_contents($source.'/index.php'));chmod($public.'/index.php',0700);

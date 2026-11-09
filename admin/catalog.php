@@ -9,7 +9,7 @@ function catalog_image($path): bool { return is_string($path) && (bool)preg_matc
 function catalog_slug(string $name): string {
   $ascii = iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$name);
   $slug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($ascii === false ? $name : $ascii)), '-');
-  return substr($slug ?: 'menu', 0, 70);
+  return rtrim(substr($slug ?: 'menu', 0, 70), '-') ?: 'menu';
 }
 function catalog_path(array $item): string { return ($item['slug'] === 'snackbox') ? '/snack-box-cikarang/' : '/menu/'.$item['slug'].'/'; }
 function catalog_read_json(string $path): array {
