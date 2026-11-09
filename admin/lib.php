@@ -4,7 +4,7 @@ defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/security-resources.php';
 
-const RUETHIES_CATS = ['cakery' => 'Cakery', 'coffee' => 'Coffee & Drinks', 'savoury' => 'Savoury Patisserie'];
+const RUETHIES_CATS = ['cakery' => 'Kue & Jajanan', 'savoury' => 'Camilan Gurih', 'packages' => 'Paket & Sajian'];
 
 /* ---------- util ---------- */
 function h($s): string { return htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8'); }

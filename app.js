@@ -15,15 +15,63 @@ const IMG = (id) => {
 // jika menu.json gagal dimuat (misal buka via file:// atau jaringan gagal).
 // Sumber utama SATU-SATUNYA adalah menu.json — edit di sana saja.
 let MENU = [
-  { cat:"cakery", badge:"Best Seller", signature:true, tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:"images/menu/opera-cake-noir.jpg",
-    id:{n:"Opera Cake Noir",d:"Lapisan almond, ganache dark chocolate, glaze mengilap."},
-    en:{n:"Noir Opera Cake",d:"Almond layers, dark ganache, mirror glaze."} },
-  { cat:"coffee", badge:"Signature", signature:true, tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:"images/menu/cafe-creme-brulee-latte.jpg",
-    id:{n:"Café Crème Brûlée Latte",d:"Espresso, susu creamy, gula brûlée di atas."},
-    en:{n:"Crème Brûlée Latte",d:"Espresso with creamy milk, torched sugar top."} },
-  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Favorit",en:"Savoury • Crowd Favourite"}, img:"images/menu/risol-mayo-smoked-beef.jpg",
-    id:{n:"Risol Mayo Smoked Beef",d:"Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."},
-    en:{n:"Smoked Beef Risol Mayo",d:"Smoked beef, mayo & egg in crisp thin skin."} },
+  {
+    "cat": "cakery",
+    "badge": "",
+    "signature": true,
+    "available": true,
+    "tag": {
+      "id": "Kue & Jajanan",
+      "en": "Cakes & Desserts"
+    },
+    "img": "images/menu/brownies-cokelat.jpg",
+    "id": {
+      "n": "Brownies Cokelat",
+      "d": "Brownies cokelat yang dapat dinikmati per potong atau untuk berbagi."
+    },
+    "en": {
+      "n": "Chocolate Brownies",
+      "d": "Chocolate brownies to enjoy by the slice or share."
+    }
+  },
+  {
+    "cat": "savoury",
+    "badge": "",
+    "signature": true,
+    "available": true,
+    "tag": {
+      "id": "Camilan Gurih",
+      "en": "Savoury Snacks"
+    },
+    "img": "images/menu/pastel.jpg",
+    "id": {
+      "n": "Pastel",
+      "d": "Pastel dengan kulit berlipat, untuk camilan atau sajian acara."
+    },
+    "en": {
+      "n": "Pastel",
+      "d": "Folded savoury pastries for snacks or gatherings."
+    }
+  },
+  {
+    "cat": "packages",
+    "badge": "",
+    "signature": true,
+    "available": true,
+    "tag": {
+      "id": "Paket & Sajian",
+      "en": "Boxes & Platters"
+    },
+    "img": "images/menu/snackbox.jpg",
+    "id": {
+      "n": "Snackbox",
+      "d": "Paket kudapan dalam kotak untuk acara dan pertemuan. Tanyakan pilihan isi."
+    },
+    "en": {
+      "n": "Snackbox",
+      "d": "Boxed treats for gatherings and meetings. Ask about available selections."
+    }
+  }
 ];
 
 function normMenu(items){
@@ -39,16 +87,16 @@ fetch("menu.json", { cache: "reload" })
 
 const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.reserve":"Reservasi","nav.skip":"Langsung ke menu",
-    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
-    "hero.french":"croissants · cakery · pastel — depuis Cikarang",
-    "hero.sub":"Croissant berlapis, kue lembut, serta pastel, kroket, dan risol favorit — lengkap dengan espresso pilihan. Elegan dan hangat. #MadeWithDelicacy.",
-    "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Fresh dari oven setiap pagi","hero.p3":"Buka setiap hari",
-    "hero.b1":"Fresh Setiap Hari","hero.b2":"Croissant Andalan",
-    "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Tiga menu yang paling sering dipesan tamu saat pertama datang.",
+    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Sajian untuk <em>Momen Manis</em>',
+    "hero.french":"kue klasik · camilan gurih · snackbox",
+    "hero.sub":"Bolu Jadoel, brownies, Lapis Surabaya, dan pilihan camilan untuk menemani momen Anda. Lengkapi acara dengan platter atau snackbox. #MadeWithDelicacy.",
+    "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Untuk dinikmati bersama","hero.p3":"Buka setiap hari",
+    "hero.b1":"Untuk Momen Anda","hero.b2":"Kue & Kudapan Pilihan",
+    "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Kenali pilihan kue, camilan gurih, dan paket untuk momen Anda.",
     "quote.text":'"Bagi kami, kue bukan sekadar hidangan — melainkan <em>momen lembut</em> untuk dinikmati."',
-    "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
-    "menu.note":"Pastel, kroket, dan risol digoreng dadakan — waktu tunggu sekitar 10 menit. Silakan tanya ketersediaan harian via WhatsApp.",
-    "menu.searchPh":"Cari croissant, kopi, risol…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
+    "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Kue & Jajanan","menu.t2":"Camilan Gurih","menu.t3":"Paket & Sajian",
+    "menu.note":"Tanyakan ketersediaan, varian isi, ukuran, harga, dan pilihan paket melalui WhatsApp.",
+    "menu.searchPh":"Cari brownies, pastel, snackbox…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
     "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
@@ -59,16 +107,16 @@ const I18N = {
     "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Silakan buka WhatsApp untuk mengirim.","wa.back":"Ubah detail",
     "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
   en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.reserve":"Reserve","nav.skip":"Skip to menu",
-    "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
-    "hero.french":"croissants · cakery · pastel — depuis Cikarang",
-    "hero.sub":"Flaky croissants, delicate cakery and beloved savouries — pastel, kroket, risol — paired with fine espresso. Elegant, warm, #MadeWithDelicacy.",
-    "hero.cta1":"Explore Menu","hero.cta2":"Reserve via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Fresh from the oven daily","hero.p3":"Open daily",
-    "hero.b1":"Fresh Daily","hero.b2":"Signature Croissant",
-    "sig.eyebrow":"01 — Signature","sig.title":'Most <em>Missed</em> Favourites',"sig.sub":"Three must-tries on your first visit.",
+    "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Treats for <em>Sweet Moments</em>',
+    "hero.french":"classic cakes · savoury snacks · snackboxes",
+    "hero.sub":"Classic cakes, brownies, Lapis Surabaya and savoury snacks for your moments together. Explore our platters and snackboxes for gatherings. #MadeWithDelicacy.",
+    "hero.cta1":"Explore Menu","hero.cta2":"Reserve via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Made for sharing","hero.p3":"Open daily",
+    "hero.b1":"For Your Moments","hero.b2":"Cakes & Treats",
+    "sig.eyebrow":"01 — Signature","sig.title":'Most <em>Missed</em> Favourites',"sig.sub":"Discover cakes, savoury snacks and boxes for your next gathering.",
     "quote.text":'"We don\'t sell cake. We sell <em>tender moments</em> you can taste."',
-    "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
-    "menu.note":"Pastel • Kroket • Risol are fried to order — approx. 10 min. Ask daily availability via WhatsApp.",
-    "menu.searchPh":"Search croissant, coffee, risol…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
+    "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakes & Desserts","menu.t2":"Savoury Snacks","menu.t3":"Boxes & Platters",
+    "menu.note":"Ask about availability, fillings, sizes, prices and package options via WhatsApp.",
+    "menu.searchPh":"Search brownies, pastel, snackbox…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
     "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.res":"Reserve a Table","visit.call":"Call",
@@ -204,7 +252,7 @@ function renderMenus(){
   document.querySelectorAll(".tab").forEach(tb=>{
     const on = tb.dataset.cat===activeCat;
     tb.setAttribute("aria-selected", on);
-    const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="coffee" ? "menu.t2" : "menu.t3";
+    const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="savoury" ? "menu.t2" : "menu.t3";
     const n = vis.filter(m=>m.cat===tb.dataset.cat).length;
     tb.innerHTML = `${t(key)} <span class="tcount">${n}</span>`;
   });

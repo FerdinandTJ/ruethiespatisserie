@@ -13,7 +13,7 @@ try {
   foreach(['admin/index.php','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/security-upgrade.php','admin/admin.css','admin/admin.js','index.html','llms.txt']as$file)copy($source.'/'.$file,$public.'/'.$file);
   $menu=[
     ['uid'=>str_repeat('a',32),'cat'=>'cakery','available'=>true,'signature'=>true,'id'=>['n'=>'Croissant uji','d'=>'Lembut dan renyah'],'en'=>['n'=>'Test croissant','d'=>'Test'],'img'=>'images/menu/croissant-au-beurre.jpg'],
-    ['uid'=>str_repeat('b',32),'cat'=>'coffee','available'=>true,'signature'=>false,'id'=>['n'=>'Latte uji','d'=>'Kopi susu'],'en'=>['n'=>'Test latte','d'=>'Test'],'img'=>'images/menu/cafe-latte-artisan.jpg'],
+    ['uid'=>str_repeat('b',32),'cat'=>'packages','available'=>true,'signature'=>false,'id'=>['n'=>'Snackbox uji','d'=>'Paket kudapan'],'en'=>['n'=>'Test snackbox','d'=>'Test'],'img'=>'images/menu/snackbox.jpg'],
     ['uid'=>str_repeat('c',32),'cat'=>'savoury','available'=>false,'signature'=>false,'id'=>['n'=>'Risol tersembunyi','d'=>'Tidak tampil'],'en'=>['n'=>'Hidden risol','d'=>'Test'],'img'=>'images/menu/risol-mayo-smoked-beef.jpg'],
   ];
   foreach($menu as$m)copy($source.'/'.$m['img'],$public.'/'.$m['img']);
@@ -48,7 +48,7 @@ try {
   ui_check($x->query('//a[@aria-current="page"]')->length===2 && !preg_match('/<[^>]+\bclass="[^"]*"[^>]+\bclass="/', $html), 'active navigation is present without JS and attributes are not duplicated');
   ui_check($x->query('//form[@role="search"]')->length===1&&str_contains($html,'name="cat"')&&str_contains($html,'name="show"'),'search/category/status filters are plain HTML forms');
   file_put_contents($public.'/admin/menu-preview.html',$html);
-  [$code,$html]=$request('/admin/?q=Latte&cat=coffee&show=visible');$x=ui_xpath($html);
+  [$code,$html]=$request('/admin/?q=Snackbox&cat=packages&show=visible');$x=ui_xpath($html);
   ui_check($x->query('//*[@id="item-1"]')->length===1&&$x->query('//*[@id="item-0"]')->length===0&&str_contains($html,'name="i" value="1"'),'filter retains original menu indexes for actions');
   [$code,$html]=$request('/admin/?show=hidden');$x=ui_xpath($html);ui_check($x->query('//*[@id="item-2"]')->length===1&&$x->query('//*[@id="item-1"]')->length===0,'hidden filter works without JavaScript');
   [$code,$html]=$request('/admin/?q=does-not-exist');ui_check(str_contains($html,'Tidak ada menu yang cocok.'),'empty search has a recovery message');
@@ -60,7 +60,7 @@ try {
   [$code,$html]=$request('/admin/?p=faq');$x=ui_xpath($html);ui_check($x->query('//*[@id="fitem-0"]')->length===1&&$x->query('//*[@id="item-0"]')->length===0,'FAQ renders its own list only');
   [$code,$html]=$request('/admin/?p=faq-ubah&fi=0');$x=ui_xpath($html);ui_check($x->query('//*[@id="formulir-f"]')->length===1&&$x->query('//*[@id="fitem-0"]')->length===0,'FAQ editor opens directly');
   [$code,$html,$redirect]=$request('/admin/?p=faq-ubah&fi=0',['aksi'=>'faq-save','csrf'=>$csrf,'fi'=>0,'q'=>'Jam buka?','a'=>'Setiap pagi.']);ui_check($code===302&&str_contains($redirect,'p=faq&ok=simpan'),'FAQ save returns to FAQ');
-  [$code,$html]=$request('/admin/?p=ubah&i=1');$x=ui_xpath($html);ui_check($x->query('//*[@id="formulir"]')->length===1&&str_contains($html,'value="Latte uji"')&&$x->query('//*[@id="fitem-0"]')->length===0,'menu editor is isolated and prefilled');
+  [$code,$html]=$request('/admin/?p=ubah&i=1');$x=ui_xpath($html);ui_check($x->query('//*[@id="formulir"]')->length===1&&str_contains($html,'value="Snackbox uji"')&&$x->query('//*[@id="fitem-0"]')->length===0,'menu editor is isolated and prefilled');
   file_put_contents($public.'/admin/editor-preview.html',$html);
   [$code,$html]=$request('/admin/?p=pengaturan');$x=ui_xpath($html);ui_check(str_contains($html,'Ganti kata sandi')&&$x->query('//*[@id="item-0"]')->length===0&&$x->query('//div[@class="table-scroll"]')->length===1,'settings has its own heading and horizontally scrollable log');
   [$code,$html]=$request('/admin/',['aksi'=>'toggle','i'=>1,'csrf'=>'wrong']);ui_check($code===403,'mutations still require CSRF');
@@ -72,7 +72,7 @@ try {
   [$code,$html]=$request('/admin/?p=pengaturan');$csrf=ui_csrf($html);
   [$code]=$request('/admin/',['aksi'=>'galeri-save','csrf'=>$csrf,'gi'=>'0','cap'=>'Multipart normal','gfoto'=>new CURLFile($public.'/'.$menu[0]['img'],'image/jpeg','normal.jpg')],true);$gallery=json_decode(file_get_contents($public.'/atmosphere.json'),true);
   ui_check($code===302&&getimagesize($public.'/'.$gallery[0]['img'])[0]===640,'normal multipart upload passes metadata validation and re-encoding');
-  [$code]=$request('/admin/',['aksi'=>'save','csrf'=>$csrf,'i'=>'1','cat'=>'coffee','n'=>'Menu base64','foto_b64'=>'data:image/jpeg;base64,'.base64_encode(file_get_contents($public.'/'.$menu[1]['img']))]);$updated=json_decode(file_get_contents($public.'/menu.json'),true);
+  [$code]=$request('/admin/',['aksi'=>'save','csrf'=>$csrf,'i'=>'1','cat'=>'packages','n'=>'Menu base64','foto_b64'=>'data:image/jpeg;base64,'.base64_encode(file_get_contents($public.'/'.$menu[1]['img']))]);$updated=json_decode(file_get_contents($public.'/menu.json'),true);
   ui_check($code===302&&$updated[1]['id']['n']==='Menu base64'&&getimagesize($public.'/'.$updated[1]['img'])[0]===640,'base64 CMS upload succeeds end to end');
   $updateSession=static function(array $fields)use($curl,$root):void {
     $sid=null;foreach(curl_getinfo($curl,CURLINFO_COOKIELIST)as$cookie){$parts=explode("\t",$cookie);if(($parts[5]??'')==='RUETHIESADM')$sid=$parts[6];}

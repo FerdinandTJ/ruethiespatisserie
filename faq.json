@@ -13,9 +13,9 @@
     },
     {
         "q": "Apakah pastel, kroket, dan risol selalu tersedia?",
-        "a": "Digoreng dadakan (waktu tunggu sekitar 10 menit). Silakan tanya ketersediaan harian via WhatsApp.",
+        "a": "Ketersediaan dan pilihan isi dapat berbeda. Silakan tanyakan menu yang tersedia melalui WhatsApp.",
         "qe": "Are pastel, kroket, and risol always available?",
-        "ae": "Fried to order (about 10 minutes wait). Please ask daily availability via WhatsApp."
+        "ae": "Availability and fillings may vary. Please ask about available selections via WhatsApp."
     },
     {
         "q": "Jam berapa buka?",
@@ -25,8 +25,8 @@
     },
     {
         "q": "Berapa kisaran harga?",
-        "a": "Rp20.000–Rp85.000.",
+        "a": "Harga mengikuti produk, ukuran, dan pilihan paket. Silakan hubungi WhatsApp untuk informasi harga terbaru.",
         "qe": "What is the price range?",
-        "ae": "Rp20,000–Rp85,000."
+        "ae": "Prices depend on the product, size and package selection. Please contact us on WhatsApp for current prices."
     }
 ]
