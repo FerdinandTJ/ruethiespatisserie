@@ -1,3 +1,4 @@
+document.documentElement.classList.add("enhanced");
 // Aktivasi font dari script eksternal: kompatibel dengan CSP script-src 'self'.
 const fontStyles = document.getElementById("site-fonts");
 if(fontStyles) fontStyles.media = "all";
@@ -8,89 +9,17 @@ const IMG = (id) => {
   return id;
 };
 
-// Fallback bawaan (dipakai jika menu.json gagal dimuat, misal buka via file://).
-// Untuk ubah menu: edit menu.json saja, tidak perlu sentuh file ini.
-// Fallback mini (bukan sumber utama): hanya 3 item agar halaman tidak kosong
-// jika menu.json gagal dimuat (misal buka via file:// atau jaringan gagal).
-// Sumber utama SATU-SATUNYA adalah menu.json — edit di sana saja.
-let MENU = [
-  {
-    "cat": "cakery",
-    "badge": "",
-    "signature": true,
-    "available": true,
-    "tag": {
-      "id": "Kue & Jajanan",
-      "en": "Cakes & Desserts"
-    },
-    "img": "images/menu/brownies-cokelat.jpg",
-    "id": {
-      "n": "Brownies Cokelat",
-      "d": "Brownies cokelat yang dapat dinikmati per potong atau untuk berbagi."
-    },
-    "en": {
-      "n": "Chocolate Brownies",
-      "d": "Chocolate brownies to enjoy by the slice or share."
-    }
-  },
-  {
-    "cat": "savoury",
-    "badge": "",
-    "signature": true,
-    "available": true,
-    "tag": {
-      "id": "Camilan Gurih",
-      "en": "Savoury Snacks"
-    },
-    "img": "images/menu/pastel.jpg",
-    "id": {
-      "n": "Pastel",
-      "d": "Pastel dengan kulit berlipat, untuk camilan atau sajian acara."
-    },
-    "en": {
-      "n": "Pastel",
-      "d": "Folded savoury pastries for snacks or gatherings."
-    }
-  },
-  {
-    "cat": "packages",
-    "badge": "",
-    "signature": true,
-    "available": true,
-    "tag": {
-      "id": "Paket & Sajian",
-      "en": "Boxes & Platters"
-    },
-    "img": "images/menu/snackbox.jpg",
-    "id": {
-      "n": "Snackbox",
-      "d": "Paket kudapan dalam kotak untuk acara dan pertemuan. Tanyakan pilihan isi."
-    },
-    "en": {
-      "n": "Snackbox",
-      "d": "Boxed treats for gatherings and meetings. Ask about available selections."
-    }
-  }
-];
-
-function normMenu(items){
-  if(!Array.isArray(items)) return null;
-  const clean = items.filter(m => m && m.cat && (m.id || m.en)).map(m => ({ ...m, img: IMG(m.img || "") }));
-  return clean.length ? clean : null;
-}
-
-fetch("menu.json", { cache: "reload" })
-  .then(r => { if(!r.ok) throw 0; return r.json(); })
-  .then(j => { const c = normMenu(j); if(c){ MENU = c; renderMenus(); } })
-  .catch(()=>{ /* fallback bawaan tetap dipakai */ });
+// Snapshot HTML dan interaksi memakai data yang sama, tanpa katalog contoh ketika JSON rusak.
+const catalogueSnapshot = JSON.parse(document.getElementById("catalog-data").textContent);
+let MENU = catalogueSnapshot.menu;
 
 const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",
-    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Sajian untuk <em>Momen Manis</em>',
+    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Snack Box &amp; Kue di <em>Cikarang</em>',
     "hero.french":"kue klasik · camilan gurih · snackbox",
-    "hero.sub":"Bolu Jadoel, brownies, Lapis Surabaya, dan pilihan camilan untuk menemani momen Anda. Lengkapi acara dengan platter atau snackbox. #MadeWithDelicacy.",
+    "hero.sub":"Kenali snack box, Bolu Jadoel, brownies, Lapis Surabaya, dan camilan gurih Ruethies Patisserie di Lippo Cikarang. Tanyakan pilihan dan pemesanan melalui WhatsApp. #MadeWithDelicacy.",
     "hero.cta1":"Lihat Menu","hero.cta2":"Hubungi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Untuk dinikmati bersama","hero.p3":"Buka setiap hari",
-    "hero.b1":"Untuk Momen Anda","hero.b2":"Kue & Kudapan Pilihan",
+    "hero.snack":"Kenali snack box kami →","hero.b1":"Untuk Momen Anda","hero.b2":"Kue & Kudapan Pilihan",
     "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Kenali pilihan kue, camilan gurih, dan paket untuk momen Anda.",
     "quote.text":'"Bagi kami, kue bukan sekadar hidangan — melainkan <em>momen lembut</em> untuk dinikmati."',
     "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Kue & Jajanan","menu.t2":"Camilan Gurih","menu.t3":"Paket & Sajian",
@@ -103,11 +32,11 @@ const I18N = {
     "faq.eyebrow":"05 — Informasi","faq.title":"Pertanyaan Umum",
     "foot.visit":"Kunjungi","foot.contact":"Kontak" },
   en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Skip to menu",
-    "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Treats for <em>Sweet Moments</em>',
+    "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Snack Boxes &amp; Cakes in <em>Cikarang</em>',
     "hero.french":"classic cakes · savoury snacks · snackboxes",
-    "hero.sub":"Classic cakes, brownies, Lapis Surabaya and savoury snacks for your moments together. Explore our platters and snackboxes for gatherings. #MadeWithDelicacy.",
+    "hero.sub":"Explore snack boxes, classic cakes, brownies and savoury snacks at Ruethies Patisserie in Lippo Cikarang. Ask about selections and ordering on WhatsApp. #MadeWithDelicacy.",
     "hero.cta1":"Explore Menu","hero.cta2":"Contact via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Made for sharing","hero.p3":"Open daily",
-    "hero.b1":"For Your Moments","hero.b2":"Cakes & Treats",
+    "hero.snack":"Explore our snack boxes →","hero.b1":"For Your Moments","hero.b2":"Cakes & Treats",
     "sig.eyebrow":"01 — Signature","sig.title":'Most <em>Missed</em> Favourites',"sig.sub":"Discover cakes, savoury snacks and boxes for your next gathering.",
     "quote.text":'"We don\'t sell cake. We sell <em>tender moments</em> you can taste."',
     "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakes & Desserts","menu.t2":"Savoury Snacks","menu.t3":"Boxes & Platters",
@@ -141,7 +70,7 @@ function productMessage(name){
 // Escape teks data sebelum masuk HTML (anti-XSS abadi untuk era Sheets/admin)
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-let FAQ = null;
+let FAQ = catalogueSnapshot.faq;
 const faqMarkup = text => esc(text).replace(
   /\[([^\[\]]{1,80})\]\((https?:\/\/[^\s()<>"]{1,300})\)/g,
   (_, label, url) => `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
@@ -216,11 +145,12 @@ function applyLang(){
 }
 
 function productIndex(m){ return MENU.indexOf(m); }
+function productURL(m){ return m.url; }
 function productPhotoLabel(name){ return (lang === "en" ? "View photos: " : "Lihat foto: ") + name; }
 function cardHTML(m, i){
   const v = m[lang] || m.id;
   const no = String(i+1).padStart(2,"0");
-  return `<article class="card rv"><button type="button" class="ph product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, v.n, 640, 480)}</button>
+  return `<article class="card rv"><a href="${esc(productURL(m))}" class="ph product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, v.n, 640, 480)}</a>
     <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}<h3>${esc(v.n)}</h3><p>${esc(v.d)}</p></div></article>`;
 }
 
@@ -230,10 +160,10 @@ function rowHTML(m, i){
   const num = String(i+1).padStart(2,"0");
   return `<article class="mrow rv">
     <span class="mnum">${num}</span>
-    <div class="mbody"><h3><button type="button" class="menu-title-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${esc(v.n)}</button></h3><p>${esc(v.d)}</p>
-      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<span class="menu-actions"><button type="button" class="detail-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${lang === "en" ? "View details" : "Lihat detail"}<span aria-hidden="true"> ↗</span></button><a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></span></div></div>
+    <div class="mbody"><h3><a href="${esc(productURL(m))}" class="menu-title-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${esc(v.n)}</a></h3><p>${esc(v.d)}</p>
+      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<span class="menu-actions"><a href="${esc(productURL(m))}" class="detail-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${lang === "en" ? "View details" : "Lihat detail"}<span aria-hidden="true"> ↗</span></a><a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></span></div></div>
     <span class="mdots" aria-hidden="true"></span>
-    <button type="button" class="mpeek product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, "", 640, 480)}</button>
+    <a href="${esc(productURL(m))}" class="mpeek product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, "", 640, 480)}</a>
   </article>`;
 }
 
@@ -247,7 +177,7 @@ function matchQ(m){
 function renderMenus(){
   const vis = MENU.filter(m=>m.available !== false);
   const flagged = vis.filter(m=>m.signature);
-  const sig = flagged.length >= 3 ? flagged.slice(0,3) : [vis[0], vis[3], vis[8]].filter(Boolean);
+  const sig = [...flagged, ...vis.filter(m=>!m.signature)].slice(0,3);
   document.getElementById("signature").innerHTML = sig.map((m,i)=>cardHTML(m,i)).join("");
   document.getElementById("signature").removeAttribute("aria-busy");
   const items = vis.filter(m=>m.cat===activeCat).filter(matchQ);
@@ -448,7 +378,7 @@ function showLB(i){
   lbImg.src = photos[lbIdx]; lbImg.alt = cap; lbCap.textContent = cap;
   const description = document.getElementById("lb-description");
   if(description){
-    description.textContent = lbProduct ? ((lbProduct[lang] || lbProduct.id).d || "") : "";
+    description.textContent = lbProduct ? ((lbProduct[lang] || lbProduct.id).detail || (lbProduct[lang] || lbProduct.id).d || "") : "";
     description.hidden = !description.textContent;
   }
   lbCount.textContent = `${String(lbIdx+1).padStart(2,"0")} / ${String(photos.length).padStart(2,"0")}`;
@@ -462,7 +392,12 @@ function showLB(i){
 function hideLB(){ lb.hidden = true; lbImg.removeAttribute("src"); modalOpen = false; stickybar.classList.remove("hide"); onScroll(); if(lbReturnFocus?.isConnected) lbReturnFocus.focus(); }
 document.addEventListener("click", e=>{
   const product = e.target.closest("[data-product]");
-  if(product){ lbProduct = MENU[Number(product.dataset.product)]; if(lbProduct && lbProduct.available !== false) showLB(0); return; }
+  if(product){
+    if(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    lbProduct = MENU[Number(product.dataset.product)];
+    if(lbProduct && lbProduct.available !== false){ e.preventDefault(); showLB(0); }
+    return;
+  }
   const b = e.target.closest("[data-lb]");
   if(b){ lbProduct = null; showLB(+b.dataset.lb); }
 });

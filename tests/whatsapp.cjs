@@ -4,7 +4,7 @@ const helpers=source.slice(source.indexOf('function whatsappURL('),source.indexO
 const row=source.slice(source.indexOf('function rowHTML('),source.indexOf('let query ='));
 const esc=source.slice(source.indexOf('const esc ='),source.indexOf('let FAQ ='));
 for(const lang of ['id','en']){
- const context=vm.createContext({lang,WA_NUMBER:'6285139281257',t:()=>lang==='id'?'Tanya via WA':'Ask on WA',pic:()=>'',productIndex:()=>0,productPhotoLabel:n=>'Lihat foto: '+n});
+ const context=vm.createContext({lang,WA_NUMBER:'6285139281257',t:()=>lang==='id'?'Tanya via WA':'Ask on WA',pic:()=>'',productIndex:()=>0,productURL:()=>"/menu/test/",productPhotoLabel:n=>'Lihat foto: '+n});
  vm.runInContext(helpers+esc+row,context);
  const general=new URL(vm.runInContext('whatsappURL(contactMessage())',context));
  assert.equal(general.origin,'https://wa.me');assert.equal(general.pathname,'/6285139281257');assert.match(general.searchParams.get('text'),lang==='id'?/menu dan pemesanan/:/menu and placing an order/);

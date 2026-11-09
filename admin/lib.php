@@ -111,8 +111,13 @@ function menu_save(array $items): bool {
   // Backup 5 versi terakhir sebelum tulis.
   $dir = ruethies_data_dir() . '/backups';
   if (!is_dir($dir)) @mkdir($dir, 0700, true);
-  if (is_file(RUETHIES_MENU)) @copy(RUETHIES_MENU, $dir . '/menu-' . date('Ymd-His') . '.json');
-  foreach (glob($dir . '/menu-*.json') ?: [] as $i => $f) if ($i >= 4) @unlink($f);
+  if (is_file(RUETHIES_MENU)) {
+    $stamp=(new DateTimeImmutable('now',new DateTimeZone('UTC')))->format('Ymd-His-u');
+    if (!@copy(RUETHIES_MENU,$dir.'/menu-'.$stamp.'.json')) return false;
+  }
+  // Routine retention must never remove the separate pre-SEO deployment backup.
+  $versions=glob($dir.'/menu-[0-9]*.json') ?: []; rsort($versions,SORT_STRING);
+  foreach(array_slice($versions,5) as $version) @unlink($version);
   $items = catalog_metadata($items, time());
   return catalog_atomic_write(RUETHIES_MENU,$items);
 }

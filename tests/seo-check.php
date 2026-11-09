@@ -47,7 +47,7 @@ try {
   seo_check($ok,'FAQ admin save succeeds: '.$message);
   $updated=file_get_contents($tmp.'/index.html');$after=seo_document($updated);
   seo_check(seo_schemas($after)===['CafeOrCoffeeShop','Menu','WebSite','FAQPage'],'FAQ update retains valid JSON-LD blocks');
-  seo_check(str_contains($updated,'id="map-placeholder"') && str_contains($updated,'app.js?v=20261109-detail-links'),'FAQ update preserves map facade and new asset version');
+  seo_check(str_contains($updated,'id="map-placeholder"') && str_contains($updated,'app.js?v=20261109-seo'),'FAQ update preserves map facade and new asset version');
   seo_check(str_contains($updated,'Pertanyaan baru?') && str_contains(file_get_contents($tmp.'/llms.txt'),'Pertanyaan baru?'),'FAQ HTML and llms content update together');
   $hostile='Teks </script><div id="audit-marker">marker</div> & "kutipan" [lokasi](https://example.com/).';
   [$ok,$message]=faq_apply([['q'=>'FAQ aman?','a'=>$hostile,'qe'=>'Safe FAQ?','ae'=>$hostile]]);

@@ -365,3 +365,18 @@ footer a{color:var(--beige)}
 .detail-link:hover{text-decoration-color:var(--wine)}
 .detail-link span{display:inline-block;margin-left:3px}
 #lb-description{font-size:.82rem;line-height:1.5;text-align:center;color:var(--beige);max-width:48ch;margin:6px auto 0}
+
+/* SEO pages reuse the existing wine/beige typography and catalogue components. */
+.hero-snack{margin:14px 0 0;font-size:.82rem}.hero-snack a{color:var(--wine);text-underline-offset:4px}
+.menu-title-link{display:inline;color:inherit}
+.product-page{padding-top:28px;padding-bottom:64px}.breadcrumbs{font-size:.78rem;color:var(--muted);margin-bottom:36px;line-height:1.8}.breadcrumbs a{color:var(--wine)}
+.product-intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}.product-intro h1{margin:12px 0 20px}.product-summary{font-size:1rem;color:var(--muted);line-height:1.7}.product-context,#product-detail p{margin:16px 0;line-height:1.7}.product-note{font-size:.8rem;line-height:1.7;margin-top:16px}
+.product-photos{display:grid;gap:20px}.product-photo-frame{margin:0;min-width:0}.product-photo-frame img{width:100%;height:auto;max-height:520px;object-fit:contain;border-radius:24px;border:1px solid var(--wine-12)}.product-photo-frame figcaption{font-size:.76rem;color:var(--muted);margin-top:6px}
+.product-information{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin:56px 0;border-top:1px solid var(--wine-12);padding-top:36px}.product-information p{margin:12px 0}.product-information ol{padding-left:22px;line-height:1.8}.product-information a{color:var(--wine)}.product-faq{margin-bottom:48px}.product-related h2{margin-bottom:20px}#product-detail p{white-space:pre-line}
+@media(max-width:760px){.product-intro,.product-information{grid-template-columns:1fr;gap:28px}.product-page{padding-top:20px}.product-information{margin-top:36px}.product-photos{grid-template-columns:1fr}.product-intro .btn{white-space:normal;text-align:center}.breadcrumbs{margin-bottom:24px}}
+
+html:not(.enhanced) .menu-tools,html:not(.enhanced) .tabs{display:none}
+/* Long admin descriptions scroll within the dialog; close stays reachable. */
+.backdrop.lb .lb-inner,.backdrop.lb figure{max-height:calc(100dvh - 40px)}
+.backdrop.lb figure{overflow-y:auto;min-height:0;overscroll-behavior:contain}
+#lb-description{max-height:110px;overflow-y:auto;overscroll-behavior:contain;white-space:pre-line}

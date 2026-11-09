@@ -20,7 +20,7 @@ function catalog_read_json(string $path): array {
     $raw = stream_get_contents($fh); flock($fh, LOCK_UN);
   } finally { fclose($fh); }
   try { $data = json_decode($raw, true, 64, JSON_THROW_ON_ERROR); } catch (JsonException $e) { throw new RuntimeException('Konten tidak valid.', 0, $e); }
-  if (!is_array($data) || !array_is_list($data)) throw new RuntimeException('Daftar konten tidak valid.');
+  if (!str_starts_with(ltrim($raw),'[') || !is_array($data) || !array_is_list($data)) throw new RuntimeException('Daftar konten tidak valid.');
   return $data;
 }
 function catalog_validate(array $items, bool $metadata = true): void {
@@ -77,4 +77,26 @@ function catalog_atomic_text(string $path, string $encoded): bool {
 
 function catalog_atomic_write(string $path, array $items): bool {
   return catalog_atomic_text($path,json_encode(array_values($items),JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n");
+}
+
+// Copy describes the existing catalogue only; ordering terms stay on WhatsApp.
+function catalog_detail(array $item,string $language): string {
+  $custom=$item[$language]['detail'] ?? '';
+  if ($custom!=='') return $custom;
+  $copy=[
+    'snackbox'=>['Paket kudapan dalam kotak menjadi bagian dari katalog Ruethies Patisserie di Lippo Cikarang. Untuk membahas kebutuhan acara, kirimkan jumlah kotak dan tanggal kebutuhan melalui WhatsApp. Pilihan isi dan kemasan dikonfirmasi bersama tim Ruethies.','Boxed treats are part of the Ruethies Patisserie catalogue in Lippo Cikarang. Share the number of boxes and your date on WhatsApp to discuss your gathering. Confirm contents and packaging with our team.'],
+    'bolu-jadoel'=>['Bolu klasik dengan taburan cokelat yang menjadi salah satu pilihan Kue & Jajanan Ruethies. Lihat foto sebagai referensi tampilan produk, lalu tanyakan pilihan sajian dan kemasannya melalui WhatsApp.','A classic cake with chocolate sprinkles in the Ruethies Cakes & Desserts selection. Use the photos as a reference and ask about presentation and packaging on WhatsApp.'],
+    'brownies-cokelat'=>['Brownies cokelat untuk dinikmati per potong atau bersama. Gunakan foto produk sebagai referensi tampilan brownies saat membicarakan kebutuhan Anda. Konfirmasikan pilihan serta ukuran brownies melalui WhatsApp.','Chocolate brownies to enjoy by the slice or share. Use the product photos as a reference when discussing the brownies you need. Confirm brownie selections and sizes on WhatsApp.'],
+    'lapis-surabaya'=>['Kue berlapis dengan tampilan klasik dalam pilihan Kue & Jajanan Ruethies. Foto produk memperlihatkan sajian Lapis Surabaya sebagai referensi sebelum Anda menanyakan ukuran dan pilihan pemesanannya.','A layered cake with a classic presentation in our Cakes & Desserts selection. The product photos show Lapis Surabaya as a reference before you ask about sizes and ordering options.'],
+    'marble-cake'=>['Pola marmer pada setiap irisan menjadi tampilan khas Marble Cake dalam katalog Ruethies. Bandingkan foto produk dengan pilihan bolu lainnya, lalu hubungi WhatsApp untuk memastikan ukuran dan sajian yang tersedia.','The marble pattern in each slice distinguishes Marble Cake in our catalogue. Compare the product photos with our other cakes, then ask on WhatsApp about available sizes and presentation.'],
+    'jongkong'=>['Jongkong tampil dalam cup dengan lapisan hijau dan putih. Produk ini melengkapi pilihan kue dan jajanan di Ruethies Patisserie. Tanyakan ketersediaan serta kebutuhan jumlah cup melalui WhatsApp.','Jongkong is presented in cups with green and white layers. It complements the cakes and traditional treats at Ruethies Patisserie. Ask on WhatsApp about availability and the number of cups you need.'],
+    'pastel'=>['Pastel dengan kulit berlipat berada dalam pilihan Camilan Gurih Ruethies, bersama kroket dan risol. Lihat foto untuk mengenali sajiannya dan tanyakan pilihan isi yang tersedia melalui WhatsApp.','Folded pastel pastries are part of our Savoury Snacks selection alongside croquettes and risol. Browse the photos and ask about available fillings on WhatsApp.'],
+    'kroket'=>['Kroket berbalut tepung panir dengan tampilan keemasan merupakan salah satu pilihan camilan gurih. Jika ingin memadukannya dengan sajian lain, diskusikan pilihan kroket, pastel, dan risol melalui WhatsApp.','Golden, breadcrumb-coated croquettes are one of our savoury snack selections. Discuss croquettes, pastel and risol on WhatsApp if you would like to combine different treats.'],
+    'risol'=>['Risol berbalut tepung panir melengkapi pilihan Camilan Gurih di Ruethies Patisserie. Gunakan nama produk saat menghubungi WhatsApp agar tim dapat membantu mengonfirmasi pilihan isi dan kebutuhan pesanan.','Breadcrumb-coated risol completes our savoury snack selection. Mention the product name on WhatsApp so our team can confirm fillings and your ordering needs.'],
+    'platter'=>['Platter merupakan pilihan sajian campuran dalam katalog Paket & Sajian Ruethies. Foto dapat menjadi referensi untuk membicarakan pilihan sajian. Konfirmasikan isi serta kemasannya melalui WhatsApp.','Platters offer a mixed selection in our Boxes & Platters catalogue. Use the photos as a reference when discussing your selection. Confirm contents and packaging on WhatsApp.'],
+  ];
+  // A renamed product must never inherit a description about its previous identity.
+  $original=['snackbox'=>'Snackbox','bolu-jadoel'=>'Bolu Jadoel','brownies-cokelat'=>'Brownies Cokelat','lapis-surabaya'=>'Lapis Surabaya','marble-cake'=>'Marble Cake','jongkong'=>'Jongkong','pastel'=>'Pastel','kroket'=>'Kroket','risol'=>'Risol','platter'=>'Platter'];
+  if (($item['id']['n'] ?? '')!==($original[$item['slug']] ?? null)) return '';
+  return $copy[$item['slug']][$language==='en'?1:0] ?? '';
 }
