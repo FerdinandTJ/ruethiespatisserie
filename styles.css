@@ -355,3 +355,13 @@ footer a{color:var(--beige)}
 .lb-arch img{object-fit:contain}
 #lb-wa{display:table;margin:12px auto 0}
 #lb-wa[hidden],.lb-nav[hidden]{display:none}
+
+/* Akses detail bergaya tautan, mengikuti tipografi daftar menu. */
+.menu-title-link{border:0;background:none;padding:0;text-align:left;color:inherit;font:inherit;cursor:pointer;text-decoration:none;text-underline-offset:5px}
+.menu-title-link:hover{text-decoration:underline;text-decoration-thickness:1px}
+.mtags{flex-wrap:wrap}
+.menu-actions{display:inline-flex;align-items:center;gap:18px;flex-wrap:wrap}
+.detail-link{border:0;background:none;padding:10px 0;color:var(--wine);font:inherit;font-size:.76rem;font-weight:500;cursor:pointer;text-decoration:underline;text-decoration-color:var(--wine-12);text-underline-offset:5px;text-decoration-thickness:1px;min-height:44px}
+.detail-link:hover{text-decoration-color:var(--wine)}
+.detail-link span{display:inline-block;margin-left:3px}
+#lb-description{font-size:.82rem;line-height:1.5;text-align:center;color:var(--beige);max-width:48ch;margin:6px auto 0}

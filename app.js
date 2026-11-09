@@ -230,8 +230,8 @@ function rowHTML(m, i){
   const num = String(i+1).padStart(2,"0");
   return `<article class="mrow rv">
     <span class="mnum">${num}</span>
-    <div class="mbody"><h3>${esc(v.n)}</h3><p>${esc(v.d)}</p>
-      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></div></div>
+    <div class="mbody"><h3><button type="button" class="menu-title-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${esc(v.n)}</button></h3><p>${esc(v.d)}</p>
+      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<span class="menu-actions"><button type="button" class="detail-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${lang === "en" ? "View details" : "Lihat detail"}<span aria-hidden="true"> ↗</span></button><a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></span></div></div>
     <span class="mdots" aria-hidden="true"></span>
     <button type="button" class="mpeek product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, "", 640, 480)}</button>
   </article>`;
@@ -446,6 +446,11 @@ function showLB(i){
   lbIdx = (i + photos.length) % photos.length;
   const cap = lbProduct ? (lbProduct[lang] || lbProduct.id).n : atmosCap(ATMOS[lbIdx]);
   lbImg.src = photos[lbIdx]; lbImg.alt = cap; lbCap.textContent = cap;
+  const description = document.getElementById("lb-description");
+  if(description){
+    description.textContent = lbProduct ? ((lbProduct[lang] || lbProduct.id).d || "") : "";
+    description.hidden = !description.textContent;
+  }
   lbCount.textContent = `${String(lbIdx+1).padStart(2,"0")} / ${String(photos.length).padStart(2,"0")}`;
   document.getElementById("lb-prev").hidden = document.getElementById("lb-next").hidden = photos.length < 2;
   lbWA.hidden = !lbProduct;

@@ -9,7 +9,7 @@ for(const lang of ['id','en']){
  const general=new URL(vm.runInContext('whatsappURL(contactMessage())',context));
  assert.equal(general.origin,'https://wa.me');assert.equal(general.pathname,'/6285139281257');assert.match(general.searchParams.get('text'),lang==='id'?/menu dan pemesanan/:/menu and placing an order/);
  const name='Kue "A&B" <spesial> + café #1?';context.item={id:{n:name,d:'Deskripsi'},en:{n:name,d:'Description'},cat:'cakery',img:'test.jpg'};
- const html=vm.runInContext('rowHTML(item,0)',context);assert(html.includes('data-product="0"'));assert(!html.includes('<spesial>'));assert(html.includes('target="_blank" rel="noopener"'));
+ const html=vm.runInContext('rowHTML(item,0)',context);assert.equal((html.match(/data-product="0"/g)||[]).length,3);assert(html.includes(lang==='id'?'Lihat detail':'View details'));assert(html.includes('class="menu-title-link"')); assert(!html.includes('<spesial>'));assert(html.includes('target="_blank" rel="noopener"'));
  const url=new URL(html.match(/class="askbtn" href="([^"]+)"/)[1].replace(/&amp;/g,'&'));assert(url.searchParams.get('text').includes(name));assert.match(url.searchParams.get('text'),lang==='id'?/harga dan pemesanan/:/prices and ordering/);
  console.log('PASS: general and product links preserve language, destination and special characters: '+lang);
 }

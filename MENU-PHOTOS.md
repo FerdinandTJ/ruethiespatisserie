@@ -8,7 +8,7 @@ Di **Admin → Kelola Menu → Tambah menu / Ubah menu**:
 - Format JPG, PNG, atau WebP; maksimal 5 MB per foto sumber. Browser mengompres foto berurutan sebelum dikirim. Tanpa JavaScript, unggahan multipart tetap didukung selama total request sesuai batas hosting.
 - Foto utama menjadi 640 × 480. Foto detail mempertahankan proporsi dengan sisi terpanjang maksimal 1.200 piksel. Validasi keamanan gambar dan pembatasan 20 percobaan unggahan per akun per 15 menit tetap berlaku, setiap foto dihitung satu percobaan.
 
-Klik foto pada daftar menu atau kartu Signature untuk membuka galeri produk. Galeri berisi foto utama diikuti foto detail yang tersedia, maksimal tiga foto. Tersedia navigasi, swipe, Escape untuk menutup, dan tautan pertanyaan WhatsApp sesuai produk dan bahasa. Foto detail tidak dimuat sebelum dibuka.
+Klik nama menu, foto, atau tautan teks “Lihat detail” pada daftar menu untuk membuka detail produk berisi nama, deskripsi, dan galeri foto. Foto pada kartu Signature juga membuka detail yang sama. Galeri berisi foto utama diikuti foto detail yang tersedia, maksimal tiga foto. Tersedia navigasi, swipe, Escape untuk menutup, dan tautan pertanyaan WhatsApp sesuai produk dan bahasa. Foto detail tidak dimuat sebelum dibuka.
 
 Data detail disimpan pada `detail_images` di `menu.json`; data lama tanpa field ini tetap didukung. Tidak perlu impor SQL, migrasi database, atau menjalankan ulang upgrade keamanan untuk fitur foto ini. Foto hero beranda tetap terpisah.
 
