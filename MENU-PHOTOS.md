@@ -28,6 +28,13 @@ Setelah pull, buka Tambah/Ubah menu, uji foto utama dan dua detail, simpan, lalu
 ## Pemeriksaan
 
 - `php tests/admin-ui.php`: fixture HTTP terisolasi; dua jalur upload, penyimpanan tiga foto, penggantian/penghapusan, proporsi, rollback unggahan tidak valid, serta regresi akses admin.
+- `node tests/admin-upload.cjs`: pengiriman tiga foto melalui data URL yang diizinkan CSP, termasuk kegagalan baca/decode dan percobaan ulang.
 - `node tests/menu-gallery.cjs`: batas dan jalur foto publik, navigasi produk, WhatsApp dan galeri suasana.
 - `php tests/security-resources.php`, `php tests/menu-photo-delete.php`, `php tests/security-upgrade.php`, `php tests/catalog.php`, `php tests/seo-check.php`, `php tests/whatsapp.php`, `node tests/whatsapp.cjs`.
 - Browser lokal: desktop/mobile, tiga foto dalam satu pengiriman form admin, navigasi galeri, pemuatan tertunda, fokus keyboard, galeri suasana, dan tautan WhatsApp.
+
+## Kompatibilitas CSP unggahan
+
+Preview dan kompresi di admin membaca file melalui `FileReader.readAsDataURL`, sesuai `img-src` hosting yang mengizinkan `data:`. CSP tidak perlu dilonggarkan untuk mengizinkan `blob:`. Versi aset admin dinaikkan agar browser mengambil kode unggahan terbaru.
+
+Regresi browser lokal diperiksa dengan header CSP yang sama persis dari `.htaccess` dan tiga WebP Bolu Jadoel dari Hasil Sortir (`01_Utama_IMG_5085`, `02_Pendamping_IMG_5082`, `03_Kemasan_IMG_5111`). Kode lama mereproduksi pelanggaran CSP pada `blob:` dan tidak mengubah menu; kode baru berhasil menyimpan ketiga foto. File sumber tidak diubah.

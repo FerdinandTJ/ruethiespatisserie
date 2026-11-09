@@ -70,7 +70,7 @@
         for (var input of inputs) {
           var file = input.files[0];
           var dataUrl = await new Promise(function (resolve, reject) {
-            var image = new Image(), url = URL.createObjectURL(file);
+            var image = new Image(), reader = new FileReader();
             image.onload = function () {
               try {
                 var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
@@ -79,10 +79,13 @@
                 canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
                 resolve(canvas.toDataURL('image/jpeg', 0.82));
               } catch (err) { reject(err); }
-              finally { URL.revokeObjectURL(url); }
             };
-            image.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Foto tidak dapat dibaca.')); };
-            image.src = url;
+            image.onerror = function () { reject(new Error('Foto tidak dapat dibaca.')); };
+            // CSP hosting mengizinkan data:, bukan blob:. Gunakan jalur yang sama dengan preview.
+            reader.onload = function () { image.src = reader.result; };
+            reader.onerror = function () { reject(new Error('File foto tidak dapat dibaca.')); };
+            reader.onabort = function () { reject(new Error('Pembacaan foto dibatalkan.')); };
+            reader.readAsDataURL(file);
           });
           results.push([input, dataUrl]);
         }
@@ -94,7 +97,7 @@
       } catch (err) {
         delete form.dataset.sending;
         if (btn) { btn.disabled = false; btn.innerHTML = original; }
-        alert('Gagal menyiapkan foto. Pilih ulang atau kecilkan ukuran foto, lalu coba lagi.');
+        alert('Gagal membaca atau memproses foto. Pilih ulang file dan coba lagi. Foto belum dikirim.');
       }
     });
   });

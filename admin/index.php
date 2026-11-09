@@ -272,7 +272,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <meta name="robots" content="noindex, nofollow" />
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
-<script src="admin.js?v=20261109-details" defer></script>
+<script src="admin.js?v=20261109-upload-csp" defer></script>
 <link rel="stylesheet" href="admin.css?v=20261109-details" />
 </head>
 <body>
