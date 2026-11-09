@@ -3,7 +3,6 @@ const fontStyles = document.getElementById("site-fonts");
 if(fontStyles) fontStyles.media = "all";
 
 const WA_NUMBER = "6285139281257";
-const WA_DISPLAY = "0851-3928-1257";
 const IMG = (id) => {
   if(!id) return "";
   return id;
@@ -86,11 +85,11 @@ fetch("menu.json", { cache: "reload" })
   .catch(()=>{ /* fallback bawaan tetap dipakai */ });
 
 const I18N = {
-  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.reserve":"Reservasi","nav.skip":"Langsung ke menu",
+  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",
     "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Sajian untuk <em>Momen Manis</em>',
     "hero.french":"kue klasik · camilan gurih · snackbox",
     "hero.sub":"Bolu Jadoel, brownies, Lapis Surabaya, dan pilihan camilan untuk menemani momen Anda. Lengkapi acara dengan platter atau snackbox. #MadeWithDelicacy.",
-    "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Untuk dinikmati bersama","hero.p3":"Buka setiap hari",
+    "hero.cta1":"Lihat Menu","hero.cta2":"Hubungi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Untuk dinikmati bersama","hero.p3":"Buka setiap hari",
     "hero.b1":"Untuk Momen Anda","hero.b2":"Kue & Kudapan Pilihan",
     "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Kenali pilihan kue, camilan gurih, dan paket untuk momen Anda.",
     "quote.text":'"Bagi kami, kue bukan sekadar hidangan — melainkan <em>momen lembut</em> untuk dinikmati."',
@@ -99,18 +98,15 @@ const I18N = {
     "menu.searchPh":"Cari brownies, pastel, snackbox…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
-    "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
+    "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.contact":"Hubungi via WhatsApp","visit.call":"Telepon",
     "visit.map":"Tampilkan Peta Interaktif","visit.mapTitle":"Peta Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Informasi","faq.title":"Pertanyaan Umum",
-    "foot.visit":"Kunjungi","foot.contact":"Kontak",
-    "wa.title":"Reservasi Meja","wa.sub":"Isi detail berikut, akan kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
-    "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Silakan buka WhatsApp untuk mengirim.","wa.back":"Ubah detail",
-    "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
-  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.reserve":"Reserve","nav.skip":"Skip to menu",
+    "foot.visit":"Kunjungi","foot.contact":"Kontak" },
+  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Skip to menu",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Treats for <em>Sweet Moments</em>',
     "hero.french":"classic cakes · savoury snacks · snackboxes",
     "hero.sub":"Classic cakes, brownies, Lapis Surabaya and savoury snacks for your moments together. Explore our platters and snackboxes for gatherings. #MadeWithDelicacy.",
-    "hero.cta1":"Explore Menu","hero.cta2":"Reserve via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Made for sharing","hero.p3":"Open daily",
+    "hero.cta1":"Explore Menu","hero.cta2":"Contact via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Made for sharing","hero.p3":"Open daily",
     "hero.b1":"For Your Moments","hero.b2":"Cakes & Treats",
     "sig.eyebrow":"01 — Signature","sig.title":'Most <em>Missed</em> Favourites',"sig.sub":"Discover cakes, savoury snacks and boxes for your next gathering.",
     "quote.text":'"We don\'t sell cake. We sell <em>tender moments</em> you can taste."',
@@ -119,19 +115,28 @@ const I18N = {
     "menu.searchPh":"Search brownies, pastel, snackbox…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
-    "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.res":"Reserve a Table","visit.call":"Call",
+    "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.contact":"Contact via WhatsApp","visit.call":"Call",
     "visit.map":"Show Interactive Map","visit.mapTitle":"Map of Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Information","faq.title":"Frequently Asked Questions",
-    "foot.visit":"Visit","foot.contact":"Contact",
-    "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp",
-    "wa.okt":"Ready to send!","wa.oks":"Details look good. Open WhatsApp to send.","wa.back":"Edit details",
-    "wa.ereq":"Required.","wa.epax":"1–20 guests.","wa.edate":"Pick today or later.","wa.etime":"9 AM – 9 PM only.","wa.open":"Open WhatsApp" }
+    "foot.visit":"Visit","foot.contact":"Contact" }
 };
 
 let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "id";
 let activeCat = "cakery";
 
 function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
+
+function whatsappURL(message){ return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`; }
+function contactMessage(){
+  return lang === "en"
+    ? "Hello Ruethies Patisserie! I would like to ask about your menu and placing an order."
+    : "Halo Ruethies Patisserie! Saya ingin bertanya tentang menu dan pemesanan.";
+}
+function productMessage(name){
+  return lang === "en"
+    ? `Hello Ruethies Patisserie! Is "${name}" available? I would like to ask about prices and ordering.`
+    : `Halo Ruethies Patisserie! Apakah "${name}" tersedia? Saya ingin bertanya tentang harga dan pemesanan.`;
+}
 
 // Escape teks data sebelum masuk HTML (anti-XSS abadi untuk era Sheets/admin)
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -195,6 +200,7 @@ function onceNear(id, load){
 
 function applyLang(){
   document.documentElement.lang = lang;
+  document.querySelectorAll("[data-contact-wa]").forEach(link=>{ link.href = whatsappURL(contactMessage()); });
   document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-html]").forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
@@ -220,11 +226,10 @@ function rowHTML(m, i){
   const v = m[lang] || m.id;
   const tag = m.tag ? (m.tag[lang] || m.tag.id) : "";
   const num = String(i+1).padStart(2,"0");
-  const idx = MENU.indexOf(m);
   return `<article class="mrow rv">
     <span class="mnum">${num}</span>
     <div class="mbody"><h3>${esc(v.n)}</h3><p>${esc(v.d)}</p>
-      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<button class="askbtn" data-ask="${idx}">${t("menu.ask")} →</button></div></div>
+      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></div></div>
     <span class="mdots" aria-hidden="true"></span>
     <span class="mpeek">${pic(m.img, "", 640, 480)}</span>
   </article>`;
@@ -265,17 +270,6 @@ document.getElementById("msearch").addEventListener("input", e=>{
   query = e.target.value.trim();
   renderMenus();
 });
-document.addEventListener("click", e=>{
-  const b = e.target.closest("[data-ask]");
-  if(!b) return;
-  const m = MENU[+b.dataset.ask];
-  if(!m) return;
-  const v = m[lang] || m.id;
-  const pre = lang==="id" ? `Halo! Apakah "${v.n}" tersedia hari ini? ` : `Hello! Is "${v.n}" available today? `;
-  document.getElementById("f-note").value = pre;
-  openWA();
-});
-
 // Nav aktif mengikuti section
 const secIO = new IntersectionObserver(es=>{
   es.forEach(en=>{
@@ -361,56 +355,9 @@ mmenu.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{
   mmenu.hidden = true; burger.classList.remove("open"); burger.setAttribute("aria-expanded","false");
 }));
 
-// WA modal + validation + success
-const bd = document.getElementById("backdrop");
+// Shared by the gallery lightbox and mobile contact bar.
 const stickybar = document.getElementById("stickybar");
 let modalOpen = false;
-let lastMsg = "", lastPretty = "";
-const openWA = ()=>{
-  modalOpen = true;
-  document.getElementById("wa-form").hidden = false;
-  document.getElementById("wa-success").hidden = true;
-  bd.hidden = false; stickybar.classList.add("hide");
-  setTimeout(()=>document.getElementById("f-name").focus(), 50);
-};
-const closeWA = ()=>{ modalOpen = false; bd.hidden = true; stickybar.classList.remove("hide"); onScroll(); };
-document.querySelectorAll("[data-open-wa]").forEach(b=>b.onclick=openWA);
-document.getElementById("closewa").onclick=closeWA;
-bd.addEventListener("click",e=>{ if(e.target===bd) closeWA(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !bd.hidden) closeWA(); });
-const fDate = document.getElementById("f-date");
-const todayStr = new Date().toISOString().slice(0,10);
-fDate.min = todayStr;
-if(!fDate.value) fDate.value = todayStr;
-function setErr(id, msg){ const el = document.getElementById(id); if(!msg){ el.hidden = true; return true; } el.textContent = msg; el.hidden = false; return false; }
-function buildMsg(){
-  const n=document.getElementById("f-name").value.trim(),
-        p=parseInt(document.getElementById("f-pax").value,10),
-        d=fDate.value, tm=document.getElementById("f-time").value,
-        no=document.getElementById("f-note").value.trim()||"-";
-  let ok = true;
-  ok = setErr("e-name", n ? "" : t("wa.ereq")) && ok;
-  ok = setErr("e-pax", (p>=1 && p<=20) ? "" : t("wa.epax")) && ok;
-  ok = setErr("e-date", (d && d >= todayStr) ? "" : t("wa.edate")) && ok;
-  ok = setErr("e-time", (tm >= "09:00" && tm <= "21:00") ? "" : t("wa.etime")) && ok;
-  if(!ok) return null;
-  const msg = lang==="id"
-    ? `Halo Ruethies Patisserie! Saya ${n} — reservasi ${p} orang, ${d} pukul ${tm}. Catatan: ${no}. Terima kasih! #MadeWithDelicacy`
-    : `Hello Ruethies Patisserie! I'm ${n} — reserving for ${p}, ${d} at ${tm}. Notes: ${no}. Thank you! #MadeWithDelicacy`;
-  return { msg, pretty: `${n} • ${p} 👥 • ${d} ${tm}` };
-}
-document.getElementById("sendwa").onclick=()=>{
-  const r = buildMsg(); if(!r) return;
-  lastMsg = r.msg; lastPretty = r.pretty;
-  document.getElementById("wa-preview").textContent = lastPretty;
-  document.getElementById("wa-form").hidden = true;
-  document.getElementById("wa-success").hidden = false;
-};
-document.getElementById("openwa").onclick=()=>{ window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lastMsg)}`,"_blank"); };
-document.getElementById("backwa").onclick=()=>{
-  document.getElementById("wa-success").hidden = true;
-  document.getElementById("wa-form").hidden = false;
-};
 const copyBtn = document.getElementById("copyaddr");
 const copyOrig = { id:"Salin Alamat", en:"Copy Address" };
 copyBtn.onclick=async ()=>{
