@@ -27,6 +27,11 @@ try{
  check_resource(security_image_metadata($raw,10000)===null,'normal PNG metadata accepted');
  $_POST['foto_b64']='data:image/png;base64,'.base64_encode($raw);[$decoded,$err]=b64_image('foto_b64',3*1024*1024);[$path,$err2]=photo_upload_raw($decoded,'gambar-uji');
  check_resource($err===null&&$err2===null&&getimagesize($root.'/'.$path)[0]===640,'base64 upload is re-encoded into a menu image');
+ $im=imagecreatetruecolor(1920,1280);ob_start();imagejpeg($im);$original=ob_get_clean();unset($im);
+ [$sharp,$sharpError]=photo_upload_raw($original,'sharp');$stem=preg_replace('/\.jpg$/','',$sharp);
+ check_resource(!$sharpError&&getimagesize($root.'/'.$sharp)[0]===640&&getimagesize($root.'/'.$stem.'-detail.webp')[0]===800&&getimagesize($root.'/'.$stem.'-full.webp')[0]===1600,'main upload keeps small thumbnail and creates sharp responsive photos from original');
+ [$detail,$detailError]=photo_upload_raw($original,'sharp-detail',true);
+ check_resource(!$detailError&&getimagesize($root.'/'.$detail)[0]===1600,'detail upload preserves aspect ratio and sharp 1600px size');
  [$small,$large,$err]=galeri_upload_raw($raw,'galeri-uji');check_resource(!$err&&getimagesize($root.'/'.$small)[0]===640&&getimagesize($root.'/'.$large)[0]===1200,'gallery re-encoding creates both sizes');
  for($i=0;$i<20;$i++)security_rate_take('upload','owner',20,false);security_rate_reset('owner');
  try{security_rate_take('upload','owner',20,false);throw new LogicException('upload limit bypass');}catch(RuethiesRateLimit $e){check_resource(true,'21st upload rejected and login reset does not clear upload quota');}

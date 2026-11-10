@@ -122,7 +122,7 @@ function loadFAQ(){
   .finally(()=>{ faqLoading = false; });
 }
 
-// WebP bila tersedia, fallback JPEG. Semua foto lokal dinormalkan 640x480 (hero 880x1100, lightbox 1200x900).
+// List thumbnails stay small; responsive product detail sources load only on opening.
 const webp = src => (typeof src === "string" && src.endsWith(".jpg")) ? src.slice(0, -4) + ".webp" : src;
 const pic = (src, alt, w, h, eager) =>
   `<picture><source type="image/webp" srcset="${esc(webp(src))}" /><img ${eager ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'} src="${esc(src)}" width="${w}" height="${h}" alt="${esc(alt)}" /></picture>`;
@@ -386,7 +386,18 @@ function showLB(i){
   if(lb.hidden) lbReturnFocus = document.activeElement;
   lbIdx = (i + photos.length) % photos.length;
   const cap = lbProduct ? (lbProduct[lang] || lbProduct.id).n : atmosCap(ATMOS[lbIdx]);
-  lbImg.src = photos[lbIdx]; lbImg.alt = cap; lbCap.textContent = cap;
+  // Only the selected photo gets a high-resolution request. List images stay small.
+  lbImg.removeAttribute("srcset"); lbImg.removeAttribute("sizes");
+  const source = lbProduct?.photo_sources?.[photos[lbIdx]];
+  const safeSource = source && /^images\/menu\/[a-z0-9-]+\.webp$/.test(source.src) &&
+    typeof source.srcset === "string" && source.srcset.split(", ").every(s=>/^\/images\/menu\/[a-z0-9-]+\.webp [0-9]+w$/.test(s));
+  lbImg.onerror = ()=>{ lbImg.onerror=null; lbImg.removeAttribute("srcset"); lbImg.src=photos[lbIdx]; };
+  if(safeSource){
+    lbImg.sizes = "(max-width: 760px) calc(100vw - 60px), 680px";
+    lbImg.srcset = source.srcset;
+    lbImg.src = source.src;
+  } else lbImg.src = photos[lbIdx];
+  lbImg.alt = cap; lbCap.textContent = cap;
   const description = document.getElementById("lb-description");
   if(description){
     description.textContent = lbProduct ? ((lbProduct[lang] || lbProduct.id).detail || (lbProduct[lang] || lbProduct.id).d || "") : "";
@@ -400,7 +411,7 @@ function showLB(i){
   lb.hidden = false; modalOpen = true; stickybar.classList.add("hide");
   document.getElementById("lb-close").focus();
 }
-function hideLB(){ lb.hidden = true; lbImg.removeAttribute("src"); modalOpen = false; stickybar.classList.remove("hide"); onScroll(); if(lbReturnFocus?.isConnected) lbReturnFocus.focus(); }
+function hideLB(){ lb.hidden = true; lbImg.removeAttribute("srcset"); lbImg.removeAttribute("sizes"); lbImg.removeAttribute("src"); lbImg.onerror=null; modalOpen = false; stickybar.classList.remove("hide"); onScroll(); if(lbReturnFocus?.isConnected) lbReturnFocus.focus(); }
 document.addEventListener("click", e=>{
   const product = e.target.closest("[data-product]");
   if(product){

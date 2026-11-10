@@ -70,7 +70,7 @@ function content_lock(): void {
 function menu_photo_delete_unused(string $image): string {
   if ($image === '') return 'none';
   if (!preg_match('~\Aimages/menu/([a-z0-9]+(?:-[a-z0-9]+)*)\.(?:jpg|webp)\z~D', $image, $m)) return 'kept';
-  $names = [$m[1] . '.jpg', $m[1] . '.webp'];
+  $names = [$m[1] . '.jpg', $m[1] . '.webp', $m[1] . '-detail.webp', $m[1] . '-full.webp'];
   $public = realpath(RUETHIES_PUBLIC);
   $dir = $public . '/images/menu';
   if (!$public || is_link($public . '/images') || is_link($dir) || realpath($dir) !== $dir) return 'failed';
@@ -234,7 +234,7 @@ function icon(string $n, int $s = 18): string {
   ];
   return '<svg width="' . $s . '" height="' . $s . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$n] ?? '') . '</svg>';
 }
-/* ---------- upload foto menu: re-encode (buang EXIF) + normalkan 640x480 ---------- */
+/* ---------- upload foto menu: thumb 640x480 + detail responsif tanpa crop ---------- */
 function photo_upload(array $file, string $name, bool $detail = false): array {
   security_upload_input([$file]);
   if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return [null, null];
@@ -359,15 +359,26 @@ function photo_upload_raw(string $raw, string $name, bool $detail = false, int $
   [$src,$error] = security_image_decode($raw,$maxBytes);
   if ($error) return [null,$error];
   if ($detail) {
-    $scale = min(1, 1200 / max(imagesx($src), imagesy($src)));
+    $scale = min(1, 1600 / max(imagesx($src), imagesy($src)));
     $dst = imagescale($src, max(2, (int)round(imagesx($src)*$scale)), max(2, (int)round(imagesy($src)*$scale)));
   } else $dst = img_crop_resize($src, 640, 480);
-  unset($src);
-  if (!$dst) return [null, 'Gagal memproses foto.'];
+  if (!$dst) { unset($src); return [null, 'Gagal memproses foto.']; }
   $try = img_unique(RUETHIES_IMGDIR, photo_slug($name));
-  if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", 68)) { unset($dst); return [null, 'Gagal menyimpan foto.']; }
-  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", 66);
+  if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", $detail ? 85 : 68)) { unset($dst,$src); return [null, 'Gagal menyimpan foto.']; }
+  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", $detail ? 82 : 66);
   unset($dst);
+  $written = [RUETHIES_IMGDIR . "/$try.jpg", RUETHIES_IMGDIR . "/$try.webp"];
+  foreach (['detail'=>800, 'full'=>1600] as $suffix=>$limit) {
+    $scale = min(1, $limit / max(imagesx($src), imagesy($src)));
+    $large = imagescale($src, max(2,(int)round(imagesx($src)*$scale)), max(2,(int)round(imagesy($src)*$scale)));
+    $file = RUETHIES_IMGDIR . "/$try-$suffix.webp";
+    if (!$large || !function_exists('imagewebp') || !@imagewebp($large,$file,82)) {
+      foreach (array_merge($written,[$file]) as $cleanup) if (is_file($cleanup)) @unlink($cleanup);
+      unset($src,$large); return [null, 'Gagal menyimpan foto detail.'];
+    }
+    $written[]=$file; unset($large);
+  }
+  unset($src);
   return ["images/menu/$try.jpg", null];
 }
 function galeri_upload_raw(string $raw, string $caption): array {

@@ -15,3 +15,10 @@ run('lang="en";showLB(0)');assert.equal(elements['lb-cap'].textContent,'Cake');a
 elements['lb-close'].onclick();assert.equal(elements.lightbox.hidden,true);assert.equal(elements['lb-img'].src,undefined);
 run('lbProduct=null;showLB(0)');assert.equal(elements['lb-img'].src,'images/a-xl.jpg');assert.equal(elements['lb-wa'].hidden,true);assert.equal(elements['lb-description'].hidden,true);assert.equal(elements['lb-next'].hidden,true);assert.equal(elements['lb-count'].textContent,'01 / 01');
 console.log('PASS: product galleries limit photos, reject unsafe paths, retain legacy images, navigate, localize WhatsApp and preserve atmosphere gallery');
+
+context.product.photo_sources={'images/menu/main.jpg':{src:'images/menu/main-full.webp',srcset:'/images/menu/main-detail.webp 800w, /images/menu/main-full.webp 1600w'}};
+run('lbProduct=product;showLB(0)');assert.equal(elements['lb-img'].src,'images/menu/main-full.webp');assert(elements['lb-img'].srcset.includes('1600w'));
+run('showLB(1)');assert.equal(elements['lb-img'].srcset,undefined);assert.equal(elements['lb-img'].src,context.product.detail_images[0]);
+run('showLB(0)');elements['lb-img'].onerror();assert.equal(elements['lb-img'].src,context.product.img);assert.equal(elements['lb-img'].srcset,undefined);
+run('hideLB()');assert.equal(elements['lb-img'].srcset,undefined);
+console.log('PASS: only selected photo gets responsive sources; legacy photos and failed high-resolution requests fall back safely');

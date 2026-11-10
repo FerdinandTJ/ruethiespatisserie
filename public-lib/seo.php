@@ -26,6 +26,27 @@ function seo_block(string $html,string $name,string $contents): string {
   return substr($html,0,$a+strlen($start))."\n".$contents."\n".substr($html,$b);
 }
 function seo_script(array $schema): string { return '<script type="application/ld+json">'.catalog_json($schema).'</script>'; }
+// Companion paths are derived from the current photo; no hosting JSON migration.
+function seo_photo_source(string $photo): ?array {
+  if (!catalog_image($photo)) return null;
+  $base=preg_replace('~\.(jpg|png|webp)$~','',$photo);
+  $sources=[];
+  foreach (['detail','full'] as $suffix) {
+    $path=$base.'-'.$suffix.'.webp'; $file=dirname(__DIR__).'/'.$path;
+    if (!is_file($file) || is_link($file)) continue;
+    $size=@getimagesize($file);
+    if ($size) $sources[$size[0]]=['src'=>$path,'width'=>$size[0],'height'=>$size[1]];
+  }
+  if (!$sources) return null;
+  $full=end($sources);
+  $full['srcset']=implode(', ',array_map(fn($s)=>'/'.$s['src'].' '.$s['width'].'w',$sources));
+  return $full;
+}
+function seo_detail_picture(array $item,string $photo,bool $eager): string {
+  $source=seo_photo_source($photo);
+  if (!$source) return seo_picture(array_replace($item,['img'=>$photo]),$eager);
+  return '<img src="/'.catalog_escape($source['src']).'" srcset="'.catalog_escape($source['srcset']).'" sizes="(max-width: 760px) calc(100vw - 40px), 640px" width="'.$source['width'].'" height="'.$source['height'].'" alt="'.catalog_escape($item['id']['n']).'" '.($eager?'fetchpriority="high"':'loading="lazy"').' decoding="async">';
+}
 function seo_picture(array $item,bool $eager=false): string {
   $src='/'.$item['img']; $name=catalog_escape($item['id']['n']);
   $source=str_ends_with($src,'.jpg') ? '<source type="image/webp" srcset="'.catalog_escape(substr($src,0,-4).'.webp').'">' : '';
@@ -100,7 +121,7 @@ function seo_product(string $template,array $m,array $items): string {
   $description=mb_strlen($description)>170 ? rtrim(mb_substr($description,0,167)).'…' : $description;
   $photos=array_values(array_filter(array_merge([$m['img']],$m['detail_images'] ?? [])));
   $body='<main id="home" class="product-page container"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Beranda</a><span aria-hidden="true"> / </span><a href="/#menu">Menu</a><span aria-hidden="true"> / </span><span>'.catalog_escape($name).'</span></nav><section class="product-intro"><div><p class="eyebrow">RUETHIES · LIPPO CIKARANG</p><h1 class="h2" id="product-title">'.catalog_escape($heading).'</h1><p class="product-summary" id="product-summary">'.catalog_escape($m['id']['d']).'</p><div id="product-detail">'.seo_paragraphs(catalog_detail($m,'id')).'</div><p class="product-context" data-copy="context">'.($snack?'Snack box merupakan pilihan paket kudapan dalam kotak. Hubungi Ruethies Patisserie di Lippo Cikarang untuk membicarakan kebutuhan Anda.':'Temukan '.catalog_escape($name).' dalam katalog Ruethies Patisserie di Lippo Cikarang. Hubungi kami untuk menanyakan pilihan dan ketersediaannya.').'</p><a class="btn primary" id="product-wa" href="'.seo_wa($name).'" target="_blank" rel="noopener">Tanyakan '.catalog_escape($name).' via WhatsApp</a><p class="muted product-note" data-copy="terms">Pilihan isi, ukuran, harga, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran dikonfirmasi melalui WhatsApp.</p></div><div class="product-photos">';
-  foreach($photos as $i=>$photo) $body.='<figure class="product-photo-frame">'.seo_picture(array_replace($m,['img'=>$photo]),$i===0).'<figcaption>'.catalog_escape($name).($i ? ' · Detail '.$i : '').'</figcaption></figure>';
+  foreach($photos as $i=>$photo) $body.='<figure class="product-photo-frame">'.seo_detail_picture($m,$photo,$i===0).'<figcaption>'.catalog_escape($name).($i ? ' · Detail '.$i : '').'</figcaption></figure>';
   $body.='</div></section><section class="product-information"><div><h2 class="h2" data-copy="order">Cara memesan</h2><ol id="order-steps"><li>Sebutkan produk yang Anda minati.</li><li>Sampaikan jumlah serta tanggal kebutuhan.</li><li>Konfirmasikan pilihan, harga, dan cara menerima pesanan melalui WhatsApp.</li></ol></div><div><h2 class="h2" data-copy="location">Lokasi Ruethies Patisserie</h2><p>Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.</p><p><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.3443722,107.1490519" target="_blank" rel="noopener" data-copy="directions">Dapatkan rute →</a></p><p>Email: <a href="mailto:info@ruethiespatisserie.com">info@ruethiespatisserie.com</a></p></div></section>';
   $faq=[['q'=>'Bagaimana cara memesan '.$name.'?','a'=>'Hubungi WhatsApp 0851-3928-1257. Sebutkan produk, jumlah, dan tanggal kebutuhan untuk mengonfirmasi pilihan serta harga.'],['q'=>'Apakah harga dan ketentuan pesanan tersedia di website?','a'=>'Silakan konfirmasikan harga, pilihan isi, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran melalui WhatsApp.'],['q'=>'Di mana lokasi Ruethies Patisserie?','a'=>'Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.']];
   $body.='<section class="product-faq"><h2 class="h2" data-copy="faq">Pertanyaan tentang '.catalog_escape($name).'</h2><div id="product-faq">'.seo_faq_html($faq).'</div></section><section class="product-related"><h2 class="h2" data-copy="related">Pilihan lainnya</h2><div class="cards3">';
@@ -144,6 +165,10 @@ function seo_interactive_product(array $item): array {
   foreach (['id','en'] as $language) {
     $item[$language] = $item[$language] ?? $item['id'];
     $item[$language]['detail']=catalog_detail($item,$language);
+  }
+  $item['photo_sources']=[];
+  foreach(array_merge([$item['img']],$item['detail_images'] ?? []) as $photo) {
+    if($source=seo_photo_source($photo)) $item['photo_sources'][$photo]=$source;
   }
   $item['url']=catalog_path($item);
   return $item;
