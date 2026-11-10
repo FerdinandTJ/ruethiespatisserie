@@ -14,7 +14,7 @@ function po_mt_enabled(): bool {
   try{return po_mt_settings(po_config())['enabled'];}catch(Throwable $e){return false;}
 }
 function po_mt_checkout_allowed(string $flow): bool {
-  return $flow==='legacy'||($flow==='manual_v1'&&po_manual_enabled())||($flow==='midtrans_v1'&&po_mt_enabled());
+  return $flow==='midtrans_v1' && po_mt_enabled();
 }
 function po_mt_migrate(PDO $db): void {
   $db->exec("CREATE TABLE IF NOT EXISTS po_midtrans_payments (

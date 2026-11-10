@@ -49,7 +49,7 @@ try {
       }else {try{po_mt_reconcile($db,(int)$mtOrder['id'],$settings);}catch(RuntimeException $e){throw new DomainException('Status Midtrans belum dapat dipastikan. Coba lagi nanti; jangan membayar ulang.');}}
       header('Location: /pre-order/status/?t='.$token,true,303);exit;
     } elseif (($_POST['action'] ?? '') === 'report-transfer') {
-      po_manual_report($db,$token,$_POST);
+      throw new DomainException('Transfer manual sudah dinonaktifkan. Gunakan jadwal Midtrans Sandbox.');
       header('Location: /pre-order/status/?t='.$token,true,303);exit;
     } elseif (($_POST['action'] ?? '') === 'review') {
       $values = $_POST;
@@ -72,17 +72,18 @@ try {
   }
   if ($statusRequested) {
     $order = po_order($db, $token);
+    if ($order && ($order['flow_version'] ?? 'legacy') !== 'midtrans_v1') $order = null;
     if (!$order) { http_response_code(404); $error = 'Tautan status tidak valid atau pesanan tidak ditemukan.'; }
   }
 } catch (DomainException $e) { $error = $e->getMessage(); }
-catch (Throwable $e) { http_response_code(503); $unavailable = true; $error = 'Demo PO sedang disiapkan. Silakan coba lagi setelah admin mengaktifkan database.'; error_log('PO demo: storage or configuration unavailable'); }
+catch (Throwable $e) { http_response_code(503); $unavailable = true; $error = 'PO Sandbox sedang disiapkan. Silakan coba lagi setelah admin mengaktifkan database.'; error_log('PO demo: storage or configuration unavailable'); }
 // Keep the invoice visible when a transfer report has a correctable validation error.
 if($statusRequested && !$order && !$unavailable && $db && preg_match('/\A[a-f0-9]{64}\z/',$token)) {
-  try { $order=po_order($db,$token); } catch(Throwable $e) { $unavailable=true;http_response_code(503);$error='Status pesanan belum dapat dimuat.'; }
+  try { $order=po_order($db,$token); if ($order && ($order['flow_version'] ?? 'legacy') !== 'midtrans_v1') $order=null; } catch(Throwable $e) { $unavailable=true;http_response_code(503);$error='Status pesanan belum dapat dimuat.'; }
 }
 if (!$unavailable && !$statusRequested && !$review) {
   try {
-    $slots = po_query($db, "SELECT * FROM po_slots WHERE (flow_version='legacy' OR (flow_version='manual_v1' AND ?=1) OR (flow_version='midtrans_v1' AND ?=1)) AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [po_manual_enabled()?1:0,po_mt_enabled()?1:0,time(),time()])->fetchAll();
+    $slots = po_query($db, "SELECT * FROM po_slots WHERE flow_version='midtrans_v1' AND ?=1 AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [po_mt_enabled()?1:0,time(),time()])->fetchAll();
     $sid = $values['slot_id'] ?? ($_GET['slot'] ?? 0);
     foreach ($slots as $s) if ((string)$s['id'] === (string)(is_scalar($sid) ? $sid : 0)) $slot = $s;
     if (!$slot && count($slots) === 1) $slot = $slots[0];
@@ -96,7 +97,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
 <title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261108-fonnte"><script src="/po.js?v=20261108-fonnte" defer></script></head>
 <body>
-<div class="demo-banner">DEMO STAGING · Gunakan data contoh · Tidak ada pembayaran atau pesanan nyata</div>
+<div class="demo-banner">STAGING · Midtrans Sandbox + WhatsApp · Pembayaran simulasi, bukan uang sungguhan</div>
 <header class="po-header"><a href="/" aria-label="Beranda Ruethies"><img src="/logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="/">Kembali ke website ↗</a></header>
 <main class="po-wrap">
 <p class="eyebrow">DIPERSIAPKAN DENGAN KELEMBUTAN</p>

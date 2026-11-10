@@ -16,9 +16,9 @@ $paymentFilter = is_string($_GET['payment']??null) && isset(PO_PAYMENT_LABELS[$_
 $search = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']),0,80) : '';
 $page = max(1, min(10000, (int)filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_INT)));
 $view=is_string($_GET['view']??null)?$_GET['view']:'';
-if(!in_array($view,['pesanan','jadwal','produk','rekening','notifikasi'],true)) $view=$sid?(isset($_GET['edit'])?'jadwal':'produk'):'pesanan';
+if(!in_array($view,['pesanan','jadwal','produk','notifikasi'],true)) $view=$sid?(isset($_GET['edit'])?'jadwal':'produk'):'pesanan';
 $action=is_string($_POST['action']??null)?$_POST['action']:'';
-$actionViews=['save-payment'=>'rekening','save-slot'=>'jadwal','toggle-slot'=>'jadwal','save-product'=>'produk','wa-retry'=>'notifikasi','midtrans-check'=>'pesanan','transition'=>'pesanan','manual-fulfill'=>'pesanan','manual-payment'=>'pesanan','manual-cancel'=>'pesanan'];
+$actionViews=['save-slot'=>'jadwal','toggle-slot'=>'jadwal','save-product'=>'produk','wa-retry'=>'notifikasi','midtrans-check'=>'pesanan','manual-fulfill'=>'pesanan'];
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'&&isset($actionViews[$action]))$view=$actionViews[$action];
 if(!is_owner($me)&&in_array($view,['rekening','notifikasi'],true)){http_response_code(403);$view='pesanan';$error='Bagian ini hanya tersedia untuk pemilik.';}
 $orderId=max(0,(int)filter_var($_GET['order']??($_POST['order_id']??0),FILTER_VALIDATE_INT));
@@ -38,37 +38,27 @@ try {
   if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!ruethies_csrf_ok()) throw new DomainException('Sesi formulir tidak valid. Muat ulang halaman.');
     $action = $_POST['action'] ?? '';
+    if (in_array($action, ['save-payment','transition','manual-payment','manual-cancel'], true)) throw new DomainException('Alur demo dan transfer manual sudah dinonaktifkan.');
+    if ($action === 'save-product' && (po_slot($db, po_int($_POST['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'midtrans_v1') throw new DomainException('Jadwal lama sudah dinonaktifkan.');
+    if ($action === 'manual-fulfill' && po_query($db, 'SELECT flow_version FROM po_orders WHERE id=?', [po_int($_POST['order_id'] ?? 0,1,PHP_INT_MAX)])->fetchColumn() !== 'midtrans_v1') throw new DomainException('Pesanan lama sudah dinonaktifkan.');
     if($action==='midtrans-check'){
       if(!is_owner($me))throw new DomainException('Hanya pemilik yang dapat memeriksa pembayaran.');
       po_rate($db,'midtrans-admin:'.$me['name'],10);
       try{po_mt_reconcile($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),po_mt_settings(po_config()));}catch(RuntimeException $e){throw new DomainException('Midtrans belum merespons. Status dan kuota tetap menunggu verifikasi.');}
       $_SESSION['po_notice']='Status diperiksa melalui Midtrans Sandbox.';
-    } elseif ($action === 'transition') {
-      po_transition($db, po_int($_POST['order_id'] ?? 0,1,PHP_INT_MAX), po_text($_POST['expected'] ?? '', 'Status',1,16), po_text($_POST['target'] ?? '', 'Status tujuan',1,16), $me['name']);
-      $_SESSION['po_notice'] = 'Status pesanan diperbarui.';
     } elseif ($action==='manual-fulfill') {
       po_manual_fulfill($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),po_text($_POST['expected']??'','Status',1,16),po_text($_POST['target']??'','Tujuan',1,16),$me);
       $_SESSION['po_notice']='Status pemenuhan diperbarui; notifikasi masuk antrean.';
-    } elseif (in_array($action,['manual-payment','manual-cancel','wa-retry'],true)) {
+    } elseif ($action==='wa-retry') {
       po_rate($db,'manual-verification:'.$me['name'],5);
       po_manual_verify_identity($me,$_POST);
-      if($action==='manual-payment')po_manual_decide($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),po_text($_POST['decision']??'','Keputusan',1,16),$_POST,$me);
-      elseif($action==='manual-cancel')po_manual_release($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),'cancelled',$me,po_text($_POST['reason']??'','Alasan',3,160));
-      else po_wa_retry($db,po_int($_POST['job_id']??0,1,PHP_INT_MAX),po_int($_POST['version']??-1,0,PHP_INT_MAX),$me);
+      po_wa_retry($db,po_int($_POST['job_id']??0,1,PHP_INT_MAX),po_int($_POST['version']??-1,0,PHP_INT_MAX),$me);
       $_SESSION['po_notice']='Tindakan disimpan. Notifikasi diproses cron, bukan saat membuka halaman ini.';
     } else {
-      if (!is_owner($me)) throw new DomainException('Pengaturan jadwal, produk, dan rekening hanya untuk pemilik.');
-      if ($action === 'save-payment') {
-        po_payment_save($db, $_POST, $me);
-        ruethies_log($me['name'], 'po-rekening', 'Pengaturan rekening diperbarui.');
-        $_SESSION['po_notice'] = 'Rekening disimpan. Pesanan yang sudah dibuat tetap memakai snapshot rekening sebelumnya.';
-        header('Location: '.po_admin_url('rekening'), true, 303); exit;
-      }
-      elseif ($action === 'save-slot') {
+      if (!is_owner($me)) throw new DomainException('Pengaturan jadwal dan produk hanya untuk pemilik.');
+      if ($action === 'save-slot') {
         $sid = po_save_slot($db, $_POST);
-        $_SESSION['po_notice'] = (po_slot($db,$sid)['flow_version'] ?? 'legacy') === 'midtrans_v1' ? 'Jadwal Midtrans Sandbox disimpan. Lengkapi produk dan aktifkan konfigurasi Sandbox sebelum membuka jadwal.' : ((po_slot($db,$sid)['flow_version'] ?? 'legacy') === 'manual_v1'
-          ? 'Jadwal manual disimpan. Lengkapi produk dan aktifkan checkout pada konfigurasi privat sebelum membuka jadwal.'
-          : 'Jadwal disimpan. Lengkapi produk, lalu buka PO.');
+        $_SESSION['po_notice'] = 'Jadwal Midtrans Sandbox disimpan. Lengkapi produk sebelum membuka jadwal.';
       }
       elseif ($action === 'toggle-slot') {
         $sid = po_int($_POST['slot_id'] ?? 0,1,PHP_INT_MAX);
@@ -97,7 +87,7 @@ if ($ready) {
       $waHeartbeat=(int)(jread(ruethies_data_dir().'/po-wa-heartbeat.json',[])['last_success']??0);
     }
     if(in_array($view,['pesanan','jadwal','produk'],true)) {
-      $slots=po_query($db,'SELECT * FROM po_slots ORDER BY pickup_from DESC LIMIT 100')->fetchAll();
+      $slots=po_query($db,"SELECT * FROM po_slots WHERE flow_version='midtrans_v1' ORDER BY pickup_from DESC LIMIT 100")->fetchAll();
       foreach($slots as $s)if((int)$s['id']===$sid)$selected=$s;
     }
     if($view==='jadwal'&&$scheduleEditor) {
@@ -113,10 +103,10 @@ if ($ready) {
     }
     if($view==='pesanan') {
       if($orderId) {
-        $detailOrder=po_query($db,'SELECT o.*,s.title,s.pickup_from,s.pickup_until FROM po_orders o JOIN po_slots s ON s.id=o.slot_id WHERE o.id=?',[$orderId])->fetch()?:null;
+        $detailOrder=po_query($db,'SELECT o.*,s.title,s.pickup_from,s.pickup_until FROM po_orders o JOIN po_slots s ON s.id=o.slot_id WHERE o.id=? AND o.flow_version=\'midtrans_v1\'',[$orderId])->fetch()?:null;
         if(!$detailOrder){http_response_code(404);$error='Pesanan tidak ditemukan.';}
       } else {
-        $where=[];$args=[];
+        $where=["o.flow_version='midtrans_v1'"];$args=[];
         if($status){$where[]='o.status=?';$args[]=$status;}
         if($paymentFilter){$where[]='o.payment_status=?';$args[]=$paymentFilter;}
         if($sid){$where[]='o.slot_id=?';$args[]=$sid;}
@@ -124,7 +114,7 @@ if ($ready) {
         $filter=$where?' WHERE '.implode(' AND ',$where):'';
         $total=(int)po_query($db,'SELECT COUNT(*) FROM po_orders o'.$filter,$args)->fetchColumn();
         $orders=po_query($db,'SELECT o.*,s.title,s.pickup_from,s.pickup_until FROM po_orders o JOIN po_slots s ON s.id=o.slot_id'.$filter.' ORDER BY o.id DESC LIMIT 25 OFFSET '.(($page-1)*25),$args)->fetchAll();
-        $counts=po_query($db,'SELECT status,payment_status,COUNT(*) AS n FROM po_orders GROUP BY status,payment_status')->fetchAll();
+        $counts=po_query($db,'SELECT status,payment_status,COUNT(*) AS n FROM po_orders WHERE flow_version=\'midtrans_v1\' GROUP BY status,payment_status')->fetchAll();
         foreach($counts as $c){if(isset($stats[$c['status']]))$stats[$c['status']]+=(int)$c['n'];if($c['payment_status']==='under_review')$stats['review']+=(int)$c['n'];}
       }
     }
@@ -132,7 +122,7 @@ if ($ready) {
 }
 $csrf = ruethies_csrf();
 function po_datetime_value(?array $row,string $key): string { if(($_POST['action']??'')==='save-slot'&&is_string($_POST[$key]??null))return $_POST[$key];return $row?date('Y-m-d\TH:i',(int)$row[$key]):''; }
-$poLabels=['pesanan'=>'Pesanan PO','jadwal'=>'Jadwal PO','produk'=>'Produk PO','rekening'=>'Rekening pembayaran','notifikasi'=>'Notifikasi WhatsApp'];
+$poLabels=['pesanan'=>'Pesanan PO','jadwal'=>'Jadwal PO','produk'=>'Produk PO','notifikasi'=>'Notifikasi WhatsApp'];
 $poIntros=['pesanan'=>'Pantau pesanan dan tindak lanjuti pembayaran pelanggan.','jadwal'=>'Atur periode pemesanan dan waktu pengambilan.','produk'=>'Kelola harga, kuota, dan batas pembelian setiap jadwal.','rekening'=>'Atur rekening yang tampil pada invoice pesanan baru.','notifikasi'=>'Pantau pengiriman pesan dan tindak lanjuti notifikasi yang perlu diperiksa.'];
 ?>
 <!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer"><title><?= h($poLabels[$view]) ?> — Ruethies Admin</title><link rel="stylesheet" href="admin.css?v=20261110-sync"><link rel="stylesheet" href="po-admin.css?v=20261108-po-ui"><script src="admin.js?v=20261110-sync" defer></script></head>

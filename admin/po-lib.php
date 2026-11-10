@@ -186,14 +186,15 @@ function po_save_slot(PDO $db, array $input): int {
   try {
     if ($id) {
       $current = po_slot($db, $id, true);
+      if (($current['flow_version'] ?? 'legacy') !== 'midtrans_v1') throw new DomainException('Jadwal lama sudah dinonaktifkan. Buat jadwal Midtrans baru.');
       if (isset($input['flow_version']) && $input['flow_version'] !== ($current['flow_version'] ?? 'legacy')) throw new DomainException('Alur jadwal tidak bisa diganti. Buat jadwal baru agar kuota demo dan manual tetap terpisah.');
       if (po_query($db, 'SELECT id FROM po_orders WHERE slot_id=? LIMIT 1', [$id])->fetch()) {
         throw new DomainException('Jadwal sudah memiliki pesanan. Buat jadwal baru untuk mengubah tanggal; buka/tutup masih bisa diubah.');
       }
       po_query($db, 'UPDATE po_slots SET title=?,opens_at=?,closes_at=?,pickup_from=?,pickup_until=? WHERE id=?', [$title,$opens,$closes,$from,$until,$id]);
     } else {
-      $flow = $input['flow_version'] ?? 'legacy';
-      if (!in_array($flow, ['legacy','manual_v1','midtrans_v1'], true)) throw new DomainException('Alur jadwal tidak valid.');
+      $flow = $input['flow_version'] ?? 'midtrans_v1';
+      if ($flow !== 'midtrans_v1') throw new DomainException('Jadwal baru hanya mendukung Midtrans Sandbox + WhatsApp.');
       po_query($db, 'INSERT INTO po_slots(title,opens_at,closes_at,pickup_from,pickup_until,flow_version) VALUES(?,?,?,?,?,?)', [$title,$opens,$closes,$from,$until,$flow]);
       $id = (int)$db->lastInsertId();
     }
@@ -205,6 +206,7 @@ function po_toggle_slot(PDO $db, int $id, int $open): void {
   $db->beginTransaction();
   try {
     $slot = po_slot($db, $id, true);
+    if ($open && ($slot['flow_version'] ?? 'legacy') !== 'midtrans_v1') throw new DomainException('Jadwal demo dan transfer manual sudah dinonaktifkan.');
     if ($open && ($slot['flow_version'] ?? 'legacy') === 'manual_v1') {
       if(!po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan dalam konfigurasi privat staging.');
       po_manual_bank($db);

@@ -30,6 +30,15 @@ try{
  mt_denied(fn()=>po_mt_settings(['midtrans'=>['enabled'=>true,'environment'=>'production','server_key'=>'Mid-server-real']]),'production environment rejected');
  mt_denied(fn()=>po_mt_settings(['midtrans'=>['enabled'=>true,'server_key'=>"SB-Mid-server-x\r\nInjected"]]),'invalid keys rejected');
  foreach(['https://evil.test/snap/v4/redirection/test','https://user@app.sandbox.midtrans.com/snap/v4/redirection/test','https://app.sandbox.midtrans.com/snap/v4/redirection/test?leak=1']as$url)mt_check(!po_mt_url($url),'external/malformed Snap redirect rejected');
+ $schedule=['title'=>'Default Sandbox','opens_at'=>date('Y-m-d\TH:i',time()-3600),'closes_at'=>date('Y-m-d\TH:i',time()+3600),'pickup_from'=>date('Y-m-d\TH:i',time()+7200),'pickup_until'=>date('Y-m-d\TH:i',time()+10800)];
+ $defaultSlot=po_save_slot($db,$schedule);mt_check(po_slot($db,$defaultSlot)['flow_version']==='midtrans_v1','new schedule defaults to Midtrans without type selector');
+ foreach(['legacy','manual_v1'] as $retired){
+   mt_denied(fn()=>po_save_slot($db,$schedule+['flow_version'=>$retired]),'retired schedule cannot be created: '.$retired);
+   po_query($db,'UPDATE po_slots SET flow_version=? WHERE id=?',[$retired,$defaultSlot]);
+   mt_denied(fn()=>po_toggle_slot($db,$defaultSlot,1),'retired schedule cannot reopen: '.$retired);
+   mt_check(!po_mt_checkout_allowed($retired),'retired checkout rejected: '.$retired);
+ }
+ po_query($db,'UPDATE po_slots SET is_open=1 WHERE id=?',[$defaultSlot]);
  $sid=po_save_slot($db,['title'=>'Midtrans Test','flow_version'=>'midtrans_v1','opens_at'=>date('Y-m-d\TH:i',time()-3600),'closes_at'=>date('Y-m-d\TH:i',time()+3600),'pickup_from'=>date('Y-m-d\TH:i',time()+7200),'pickup_until'=>date('Y-m-d\TH:i',time()+10800)]);po_toggle_slot($db,$sid,1);
  $pid=po_save_product($db,['slot_id'=>$sid,'menu_uid'=>str_repeat('a',32),'price'=>25000,'quota'=>100,'active'=>1]);
  [$o,$p,$token,$input,$nonce,$hash]=mt_new($db,$sid,$pid,$secret);$id=(int)$o['id'];
@@ -90,7 +99,10 @@ try{
  [$code]=$http('/midtrans-notify.php',['signature_key'=>'invalid']);mt_check($code===403,'webhook refuses invalid payload over HTTP');
  [$code,$login]=$http('/admin/index.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$login,$loginMatch);
  [$code]=$http('/admin/index.php',['aksi'=>'login','csrf'=>$loginMatch[1],'u'=>'owner','p'=>'Demo-test-password']);mt_check($code===302,'owner login works with gateway release');
- [$code,$admin]=$http('/admin/po.php?view=jadwal&edit=new');mt_check($code===200&&str_contains($admin,'value="midtrans_v1"'),'admin can choose a separate Sandbox schedule');
+ [$code,$publicHtml]=$http('/pre-order/');mt_check($code===200&&!str_contains($publicHtml,'Default Sandbox'),'open retired schedule is excluded from public catalog');
+ [$code,$admin]=$http('/admin/po.php?view=jadwal');mt_check($code===200&&!str_contains($admin,'Default Sandbox'),'retired schedule is excluded from admin list');
+ [$code]=$http('/admin/po.php?view=jadwal&edit=1&slot='.$defaultSlot);mt_check($code===404,'direct editing of retired schedule returns 404');
+ [$code,$admin]=$http('/admin/po.php?view=jadwal&edit=new');mt_check($code===200&&str_contains($admin,'Midtrans Sandbox')&&!str_contains($admin,'name="flow_version"')&&!str_contains($admin,'view=rekening'),'admin has one Midtrans flow without type selector or bank tab');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$f['id']);mt_check($code===200&&str_contains($admin,'Periksa Midtrans Sandbox')&&!str_contains($admin,'name="decision"'),'gateway admin detail has status check without manual approval form');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$id);mt_check($code===200&&str_contains($admin,'value="manual-fulfill"'),'paid gateway admin detail exposes fulfillment action');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$e['id']);mt_check($code===200&&str_contains($admin,'Jangan proses pesanan otomatis'),'late payment is visible to owner');

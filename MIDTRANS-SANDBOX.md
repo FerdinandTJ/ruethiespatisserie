@@ -114,3 +114,10 @@ Pengujian lokal memakai database terisolasi dan mock provider, termasuk paralel 
 Tutup jadwal Sandbox dan set `midtrans.enabled` ke false untuk menghentikan pengajuan baru. Jangan menghapus tabel baru atau memulihkan database lama ketika masih ada transaksi tertunda. Biarkan key/cron/webhook tersedia untuk menyelesaikan pemeriksaan transaksi yang sudah tercatat. Jika kode perlu dikembalikan ke commit sebelumnya, catat bahwa kode lama tidak memahami pesanan midtrans_v1: jadwal harus tetap ditutup dan rekonsiliasi memerlukan rilis ini. Backup tidak dipulihkan secara otomatis ke akun/metadata keamanan lama.
 
 Referensi resmi: [Snap Redirect](https://docs.midtrans.com/docs/snap-snap-integration-guide), [webhook](https://docs.midtrans.com/docs/https-notification-webhooks), [expiry Snap](https://docs.midtrans.com/reference/expire-a-snap-session), [pengujian Sandbox](https://docs.midtrans.com/docs/testing-payment-on-sandbox).
+
+## Penyederhanaan PO staging (11 November 2026)
+
+- Jadwal baru otomatis Midtrans Sandbox + Fonnte; tidak ada pilihan demo/manual atau tab rekening.
+- Jadwal dan pesanan demo/manual lama tidak ditampilkan pada halaman aktif. Pembuatan dan pembukaan ulang jadwal lama serta checkout lama ditolak.
+- Data historis tetap disimpan; tidak ada penghapusan SQL. Modul internal manual tetap diperlukan untuk reservasi kuota, pemenuhan, dan kompatibilitas antrean lama.
+- Setelah update melalui `tools/update-staging.sh`, tidak perlu migrasi tambahan. Konfigurasi Midtrans/Fonnte dan cron tetap digunakan. Buat jadwal Midtrans baru jika sebelumnya hanya memiliki jadwal demo/manual.
