@@ -3,6 +3,7 @@ defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 require_once __DIR__ . '/po-manual.php';
 require_once __DIR__ . '/po-whatsapp.php';
 require_once __DIR__ . '/po-manual-checkout.php';
+require_once __DIR__ . '/po-midtrans.php';
 
 const PO_STATUSES = [
   'pending' => 'Menunggu konfirmasi', 'confirmed' => 'Dikonfirmasi',
@@ -192,7 +193,7 @@ function po_save_slot(PDO $db, array $input): int {
       po_query($db, 'UPDATE po_slots SET title=?,opens_at=?,closes_at=?,pickup_from=?,pickup_until=? WHERE id=?', [$title,$opens,$closes,$from,$until,$id]);
     } else {
       $flow = $input['flow_version'] ?? 'legacy';
-      if (!in_array($flow, ['legacy','manual_v1'], true)) throw new DomainException('Alur jadwal tidak valid.');
+      if (!in_array($flow, ['legacy','manual_v1','midtrans_v1'], true)) throw new DomainException('Alur jadwal tidak valid.');
       po_query($db, 'INSERT INTO po_slots(title,opens_at,closes_at,pickup_from,pickup_until,flow_version) VALUES(?,?,?,?,?,?)', [$title,$opens,$closes,$from,$until,$flow]);
       $id = (int)$db->lastInsertId();
     }
@@ -208,6 +209,7 @@ function po_toggle_slot(PDO $db, int $id, int $open): void {
       if(!po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan dalam konfigurasi privat staging.');
       po_manual_bank($db);
     }
+    if($open && ($slot['flow_version']??'legacy')==='midtrans_v1' && !po_mt_enabled())throw new DomainException('Midtrans Sandbox belum aktif atau kunci belum valid.');
     po_query($db, 'UPDATE po_slots SET is_open=? WHERE id=?', [$open,$id]);
     $db->commit();
   } catch (Throwable $e) { $db->rollBack(); throw $e; }
@@ -302,6 +304,7 @@ function po_rate(PDO $db, string $key, int $limit): void {
 function po_submit(PDO $db, array $input, string $nonce, string $quoteHash, string $secret): string {
   $existing=po_query($db,'SELECT flow_version FROM po_orders WHERE request_hash=?',[hash('sha256',$nonce)])->fetch();
   $slot = po_slot($db, po_int($input['slot_id'] ?? 0, 1, PHP_INT_MAX));
+  if (($slot['flow_version']??'legacy')==='midtrans_v1' || ($existing['flow_version']??'')==='midtrans_v1') return po_manual_submit($db,$input,$nonce,$quoteHash,$secret,'midtrans_v1');
   if (($slot['flow_version'] ?? 'legacy') === 'manual_v1' || ($existing['flow_version'] ?? '') === 'manual_v1') return po_manual_submit($db, $input, $nonce, $quoteHash, $secret);
   if (function_exists('content_lock')) content_lock();
   if (!preg_match('/\A[a-f0-9]{64}\z/', $nonce) || strlen($secret) < 64) throw new DomainException('Sesi pengajuan tidak valid.');

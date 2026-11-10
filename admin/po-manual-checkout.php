@@ -1,6 +1,6 @@
 <?php
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
-const PO_PAYMENT_LABELS=['unpaid'=>'Menunggu transfer','under_review'=>'Transfer dilaporkan · menunggu pemeriksaan','paid'=>'Lunas · diverifikasi pemilik','untracked'=>'Demo tanpa pembayaran','rejected'=>'Laporan ditolak pemilik'];
+const PO_PAYMENT_LABELS=['unpaid'=>'Menunggu transfer','under_review'=>'Transfer dilaporkan · menunggu pemeriksaan','paid'=>'Lunas','paid_review'=>'Pembayaran perlu ditinjau pemilik','untracked'=>'Demo tanpa pembayaran','rejected'=>'Laporan ditolak pemilik'];
 function po_manual_enabled(): bool {
   if(!function_exists('ruethies_data_dir'))return false;
   try{return (po_config()['manual_checkout_enabled']??false)===true;}catch(RuntimeException $e){return false;}
@@ -69,7 +69,7 @@ function po_manual_fulfill(PDO $db,int $id,string $expected,string $target,array
   $sid=po_query($db,'SELECT slot_id FROM po_orders WHERE id=?',[$id])->fetchColumn();if(!$sid)throw new DomainException('Pesanan tidak ditemukan.');
   po_manual_transaction($db,static function()use($db,$sid,$id,$expected,$target,$actor){
     po_slot($db,(int)$sid,true);$o=po_query($db,'SELECT * FROM po_orders WHERE id=? FOR UPDATE',[$id])->fetch();
-    if($o['flow_version']!=='manual_v1'||$o['payment_status']!=='paid'||$o['reservation_status']!=='committed'||$o['status']!==$expected)throw new DomainException('Status sudah berubah atau pembayaran belum diverifikasi.');
+    if(!in_array($o['flow_version'],['manual_v1','midtrans_v1'],true)||$o['payment_status']!=='paid'||$o['reservation_status']!=='committed'||$o['status']!==$expected)throw new DomainException('Status sudah berubah atau pembayaran belum diverifikasi.');
     po_query($db,'UPDATE po_orders SET status=?,fulfillment_status=? WHERE id=?',[$target,$target,$id]);
     po_query($db,'INSERT INTO po_history(order_id,status,actor,created_at) VALUES(?,?,?,?)',[$id,$target,$actor['name'],time()]);
     po_manual_event($db,$id,$target,$actor['name'],'Pemenuhan pesanan.',$o);po_wa_enqueue($db,$id,$target,$target);

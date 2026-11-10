@@ -61,8 +61,8 @@ function po_manual_fingerprint(array $input): string {
   ksort($selected,SORT_NUMERIC);
   return hash('sha256',json_encode([po_int($input['slot_id'] ?? 0,1,PHP_INT_MAX),$customer,$selected],JSON_THROW_ON_ERROR));
 }
-function po_manual_retry(array $order, string $fingerprint): void {
-  if ($order['flow_version']!=='manual_v1' || !is_string($order['request_fingerprint']) || !hash_equals($order['request_fingerprint'],$fingerprint)) {
+function po_manual_retry(array $order, string $fingerprint, string $flow='manual_v1'): void {
+  if ($order['flow_version']!==$flow || !is_string($order['request_fingerprint']) || !hash_equals($order['request_fingerprint'],$fingerprint)) {
     throw new DomainException('Kunci checkout sudah digunakan untuk data lain. Periksa ringkasan dan buat pengajuan baru.');
   }
 }
@@ -74,17 +74,18 @@ function po_manual_event(PDO $db, int $id, string $event, string $actor, string 
   po_query($db,'INSERT INTO po_order_events(order_id,event,actor,reason,before_state,after_state,created_at) VALUES(?,?,?,?,?,?,?)',
     [$id,$event,$actor,$reason,$before===null ? null : json_encode(po_manual_state($before),JSON_THROW_ON_ERROR),json_encode($after,JSON_THROW_ON_ERROR),time()]);
 }
-function po_manual_submit(PDO $db, array $input, string $nonce, string $quoteHash, string $secret): string {
+function po_manual_submit(PDO $db, array $input, string $nonce, string $quoteHash, string $secret, string $flow='manual_v1'): string {
+  if(!in_array($flow,['manual_v1','midtrans_v1'],true))throw new LogicException('Invalid checkout flow.');
   if (!preg_match('/\A[a-f0-9]{64}\z/',$nonce) || strlen($secret)<64) throw new DomainException('Sesi pengajuan tidak valid.');
   [$name,$phone,$note]=po_customer($input);
   $fingerprint=po_manual_fingerprint($input); $requestHash=hash('sha256',$nonce);
   $token=hash_hmac('sha256','status:'.$nonce,$secret);
   $existing=po_query($db,'SELECT flow_version,request_fingerprint FROM po_orders WHERE request_hash=?',[$requestHash])->fetch();
-  if ($existing) { po_manual_retry($existing,$fingerprint); return $token; }
+  if ($existing) { po_manual_retry($existing,$fingerprint,$flow); return $token; }
   // Kunci konten dipakai hanya untuk konsistensi pembacaan katalog; tidak ada I/O jaringan.
   if (function_exists('content_lock')) content_lock();
   po_rate($db,'phone:'.hash_hmac('sha256',$phone,$secret),5);
-  return po_manual_transaction($db, function () use ($db,$input,$phone,$name,$note,$fingerprint,$requestHash,$token,$quoteHash,$secret) {
+  return po_manual_transaction($db, function () use ($db,$input,$phone,$name,$note,$fingerprint,$requestHash,$token,$quoteHash,$secret,$flow) {
     // Urutan global: mutex nomor -> rekening -> jadwal -> order -> produk berurutan.
     po_query($db,'INSERT INTO po_rate(bucket_key,attempts,expires_at) VALUES(?,0,?) ON DUPLICATE KEY UPDATE expires_at=?',
       [hash_hmac('sha256','submit-lock:'.$phone,$secret),time()+1800,time()+1800]);
@@ -92,8 +93,8 @@ function po_manual_submit(PDO $db, array $input, string $nonce, string $quoteHas
     po_query($db,'SELECT id FROM po_payment_settings WHERE id=1 FOR UPDATE')->fetch();
     $slot=po_slot($db,po_int($input['slot_id'] ?? 0,1,PHP_INT_MAX),true);
     $existing=po_query($db,'SELECT flow_version,request_fingerprint FROM po_orders WHERE request_hash=? FOR UPDATE',[$requestHash])->fetch();
-    if ($existing) { po_manual_retry($existing,$fingerprint); return $token; }
-    if (($slot['flow_version'] ?? '')!=='manual_v1') throw new DomainException('Gunakan jadwal pembayaran manual yang terpisah dari demo.');
+    if ($existing) { po_manual_retry($existing,$fingerprint,$flow); return $token; }
+    if (($slot['flow_version'] ?? '')!==$flow) throw new DomainException('Gunakan jadwal pembayaran manual yang terpisah dari demo.');
     po_query($db,'SELECT id FROM po_products WHERE slot_id=? ORDER BY id FOR UPDATE',[$slot['id']])->fetchAll();
     $q=po_quote($db,$input);
     if (!hash_equals(po_quote_hash($q),$quoteHash)) throw new DomainException('Produk, harga, jadwal, atau rekening berubah. Periksa ringkasan baru.');
@@ -105,12 +106,13 @@ function po_manual_submit(PDO $db, array $input, string $nonce, string $quoteHas
       if ($changed->rowCount()!==1) throw new DomainException('Kuota produk tidak mencukupi. Periksa pilihan kembali.');
     }
     $code='PO-'.date('ymd').'-'.strtoupper(bin2hex(random_bytes(4)));
-    po_query($db,"INSERT INTO po_orders(slot_id,code,token_hash,request_hash,customer_name,phone,note,total,created_at,expires_at,flow_version,payment_status,fulfillment_status,reservation_status,bank_snapshot,request_fingerprint) VALUES(?,?,?,?,?,?,?,?,?,?,'manual_v1','unpaid','awaiting_transfer','held',?,?)",
-      [$slot['id'],$code,hash('sha256',$token),$requestHash,$name,$phone,$note,$q['total'],$now,$now+900,json_encode($q['bank_snapshot'],JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE),$fingerprint]);
+    po_query($db,"INSERT INTO po_orders(slot_id,code,token_hash,request_hash,customer_name,phone,note,total,created_at,expires_at,flow_version,payment_status,fulfillment_status,reservation_status,bank_snapshot,request_fingerprint) VALUES(?,?,?,?,?,?,?,?,?,?,?,'unpaid',?,'held',?,?)",
+      [$slot['id'],$code,hash('sha256',$token),$requestHash,$name,$phone,$note,$q['total'],$now,$now+900,$flow,$flow==='midtrans_v1'?'awaiting_payment':'awaiting_transfer',isset($q['bank_snapshot'])?json_encode($q['bank_snapshot'],JSON_THROW_ON_ERROR|JSON_UNESCAPED_UNICODE):null,$fingerprint]);
     $id=(int)$db->lastInsertId();
     foreach ($q['lines'] as $line) po_query($db,'INSERT INTO po_lines(order_id,product_id,name,price,qty) VALUES(?,?,?,?,?)',[$id,$line['product_id'],$line['name'],$line['price'],$line['qty']]);
     po_query($db,'INSERT INTO po_history(order_id,status,actor,created_at) VALUES(?,?,?,?)',[$id,'pending','Pelanggan manual',$now]);
     po_manual_event($db,$id,'checkout','Pelanggan','Reservasi pembayaran 15 menit.',null);
+    if($flow==='midtrans_v1')po_mt_seed($db,$id);
     po_wa_seed($db,$id,$token,$secret);
     return $token;
   });

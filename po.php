@@ -5,11 +5,12 @@ require __DIR__ . '/admin/lib.php';
 require __DIR__ . '/admin/po-lib.php';
 po_require_staging();
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
+$returnRequested = in_array($requestPath,['/pre-order/return','/pre-order/return/'],true);
 $statusRequested = in_array($requestPath, ['/pre-order/status','/pre-order/status/'], true) || array_key_exists('t', $_GET);
 $canonicalPath = $statusRequested ? '/pre-order/status/' : '/pre-order/';
 // Tautan lama tetap berlaku. Jangan redirect POST: formulir/tab lama harus
 // tetap diproses dengan body dan sesi aslinya, lalu mengikuti alur PRG normal.
-if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET','HEAD'], true) && $requestPath !== $canonicalPath) {
+if (in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET','HEAD'], true) && !$returnRequested && $requestPath !== $canonicalPath) {
   $query = http_build_query($_GET, '', '&', PHP_QUERY_RFC3986);
   header('Location: ' . $canonicalPath . ($query !== '' ? '?' . $query : ''), true, 302);
   exit;
@@ -20,6 +21,10 @@ session_name('RUETHIESPODEMO');
 session_cache_limiter('');
 session_set_cookie_params(['lifetime'=>0,'path'=>'/','secure'=>!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off','httponly'=>true,'samesite'=>'Lax']);
 session_start();
+if($returnRequested){
+  $last=$_SESSION['po_last_token']??'';
+  header('Location: '.(is_string($last)&&preg_match('/\A[a-f0-9]{64}\z/',$last)?'/pre-order/status/?t='.$last:'/pre-order/'),true,303);exit;
+}
 if (empty($_SESSION['po_csrf'])) $_SESSION['po_csrf'] = bin2hex(random_bytes(32));
 $csrf = $_SESSION['po_csrf'];
 $error = ''; $unavailable = false; $slots = []; $products = []; $slot = null; $review = null; $order = null;
@@ -35,12 +40,20 @@ try {
     if (($_POST['website'] ?? '') !== '') throw new DomainException('Pengajuan tidak dapat diproses.');
     $key = hash_hmac('sha256', $_SERVER['REMOTE_ADDR'] ?? 'unknown', po_config()['secret']);
     po_rate($db, 'ip:' . $key, 20);
-    if (($_POST['action'] ?? '') === 'report-transfer') {
+    if(in_array($_POST['action']??'', ['midtrans-pay','midtrans-check'],true)){
+      $mtOrder=po_order($db,$token);if(!$mtOrder||$mtOrder['flow_version']!=='midtrans_v1')throw new DomainException('Invoice Sandbox tidak ditemukan.');
+      $settings=po_mt_settings(po_config());
+      if($_POST['action']==='midtrans-pay'){
+        $url=po_mt_create($db,(int)$mtOrder['id'],$settings);
+        if($url){$_SESSION['po_last_token']=$token;session_write_close();header('Location: '.$url,true,303);exit;}
+      }else {try{po_mt_reconcile($db,(int)$mtOrder['id'],$settings);}catch(RuntimeException $e){throw new DomainException('Status Midtrans belum dapat dipastikan. Coba lagi nanti; jangan membayar ulang.');}}
+      header('Location: /pre-order/status/?t='.$token,true,303);exit;
+    } elseif (($_POST['action'] ?? '') === 'report-transfer') {
       po_manual_report($db,$token,$_POST);
       header('Location: /pre-order/status/?t='.$token,true,303);exit;
     } elseif (($_POST['action'] ?? '') === 'review') {
       $values = $_POST;
-      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy' && !po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan.');
+      if (!po_mt_checkout_allowed(po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy')) throw new DomainException('Checkout untuk jadwal ini belum diaktifkan.');
       po_customer($values);
       $review = po_quote($db, $values);
       $nonce = bin2hex(random_bytes(32));
@@ -51,8 +64,9 @@ try {
       $draft = $_SESSION['po_drafts'][$nonce] ?? null;
       if (!$draft) throw new DomainException('Ringkasan kedaluwarsa. Isi formulir kembali.');
       $values = $draft['input'];
-      if ((po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy') !== 'legacy' && !po_manual_enabled()) throw new DomainException('Checkout manual belum diaktifkan.');
+      if (!po_mt_checkout_allowed(po_slot($db,po_int($values['slot_id'] ?? 0,1,PHP_INT_MAX))['flow_version'] ?? 'legacy')) throw new DomainException('Checkout untuk jadwal ini belum diaktifkan.');
       $access = po_submit($db, $values, $nonce, $draft['hash'], po_config()['secret']);
+      $_SESSION['po_last_token']=$access;
       header('Location: /pre-order/status/?t=' . $access, true, 303); exit;
     } else throw new DomainException('Tindakan tidak valid.');
   }
@@ -68,7 +82,7 @@ if($statusRequested && !$order && !$unavailable && $db && preg_match('/\A[a-f0-9
 }
 if (!$unavailable && !$statusRequested && !$review) {
   try {
-    $slots = po_query($db, "SELECT * FROM po_slots WHERE (flow_version='legacy' OR (flow_version='manual_v1' AND ?=1)) AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [po_manual_enabled()?1:0,time(),time()])->fetchAll();
+    $slots = po_query($db, "SELECT * FROM po_slots WHERE (flow_version='legacy' OR (flow_version='manual_v1' AND ?=1) OR (flow_version='midtrans_v1' AND ?=1)) AND is_open=1 AND opens_at<=? AND closes_at>? ORDER BY pickup_from", [po_manual_enabled()?1:0,po_mt_enabled()?1:0,time(),time()])->fetchAll();
     $sid = $values['slot_id'] ?? ($_GET['slot'] ?? 0);
     foreach ($slots as $s) if ((string)$s['id'] === (string)(is_scalar($sid) ? $sid : 0)) $slot = $s;
     if (!$slot && count($slots) === 1) $slot = $slots[0];
@@ -90,7 +104,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <p class="intro">Pilih sajian favorit, ajukan pre-order, lalu ambil di toko setelah dikonfirmasi oleh tim Ruethies.</p>
 <?php if ($error): ?><div class="alert error" role="alert"><?= h($error) ?></div><?php endif; ?>
 
-<?php if ($order && ($order['flow_version']??'legacy')==='manual_v1'): require __DIR__.'/admin/po-manual-status.php'; elseif ($order): ?>
+<?php if($order&&($order['flow_version']??'legacy')==='midtrans_v1'): require __DIR__.'/admin/po-midtrans-status.php'; elseif ($order && ($order['flow_version']??'legacy')==='manual_v1'): require __DIR__.'/admin/po-manual-status.php'; elseif ($order): ?>
 <section class="panel"><p class="eyebrow">NOMOR PENGAJUAN</p><h2><?= h($order['code']) ?></h2>
 <p class="status"><?= h(PO_STATUSES[$order['status']]) ?></p>
 <?php if ($order['status'] === 'pending'): ?><p>Pengajuan tercatat, tetapi <strong>belum diterima atau mengunci kuota</strong>. Tim kami akan memeriksa ketersediaan. Pengajuan yang belum dikonfirmasi sampai <?= h(po_date((int)$order['expires_at'])) ?> akan kedaluwarsa.</p>
@@ -117,7 +131,7 @@ function po_value(array $values, string $key): string { return is_string($values
 <p class="total"><span>Total pengajuan</span><strong><?= h(po_money($review['total'])) ?></strong></p>
 <p><strong><?= h(po_value($values,'name')) ?></strong><br>WhatsApp: <?= h(po_value($values,'phone')) ?></p>
 <?php if (po_value($values,'note') !== ''): ?><p class="customer-note">Catatan: <?= h(po_value($values,'note')) ?></p><?php endif; ?>
-<?php if(($review['slot']['flow_version']??'legacy')==='manual_v1'): ?><div class="alert">Setelah dikirim, kuota ditahan 15 menit. Invoice dan rekening transfer akan muncul di halaman pesanan. WhatsApp adalah notifikasi tambahan; simpan tautan di website.</div><?php else: ?><div class="alert">Belum ada pembayaran. Pengajuan baru diterima setelah admin mengonfirmasi ketersediaan.</div><?php endif; ?>
+<?php if(($review['slot']['flow_version']??'legacy')==='midtrans_v1'): ?><div class="alert">Uji Midtrans Sandbox: kuota ditahan 15 menit. Simpan tautan invoice dan gunakan pembayaran simulasi, bukan uang sungguhan.</div><?php elseif(($review['slot']['flow_version']??'legacy')==='manual_v1'): ?><div class="alert">Setelah dikirim, kuota ditahan 15 menit. Invoice dan rekening transfer akan muncul di halaman pesanan. WhatsApp adalah notifikasi tambahan; simpan tautan di website.</div><?php else: ?><div class="alert">Belum ada pembayaran. Pengajuan baru diterima setelah admin mengonfirmasi ketersediaan.</div><?php endif; ?>
 <form method="post" action="/pre-order/"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="submit"><input type="hidden" name="nonce" value="<?= h($nonce) ?>">
 <button type="submit">Kirim pengajuan PO</button> <a class="text-link" href="/pre-order/?edit=<?= h($nonce) ?>">Ubah pilihan</a></form>
 </section>

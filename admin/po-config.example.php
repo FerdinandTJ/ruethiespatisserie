@@ -9,6 +9,11 @@ return [
   'secret' => 'GANTI_DENGAN_64_KARAKTER_HEKSADESIMAL_ACAK',
   // Aktifkan sesudah migrasi dan pemeriksaan staging. Jangan mengganti secret lama.
   'manual_checkout_enabled' => false,
+  'midtrans' => [
+    'enabled' => false,
+    'environment' => 'sandbox', // Production is rejected by this release.
+    'server_key' => '', // SB-Mid-server-...; private backend only.
+  ],
   'fonnte' => [
     'enabled' => false,
     'token' => '', // Token device Fonnte; bukan Bearer. Hanya di file privat ini.

@@ -26,7 +26,7 @@ RewriteCond %{HTTPS} off
 RewriteCond %{HTTP_HOST} ^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^ https://staging.ruethiespatisserie.com%{REQUEST_URI} [R=301,L]
 # PO stays on its own controller, including POST bodies and magic-link queries.
-RewriteRule ^pre-order(?:/status)?/?$ po.php [END]
+RewriteRule ^pre-order(?:/(?:status|return))?/?$ po.php [END]
 RewriteRule ^(?:index\.html|sitemap\.xml|llms\.txt|snack-box-cikarang/?|menu(?:/.*)?)$ index.php [END]
 RewriteRule ^$ index.php [END]
 </IfModule>
@@ -66,7 +66,7 @@ Header set X-Frame-Options "SAMEORIGIN"
 # HSTS 6 bulan (aktifkan setelah HTTPS stabil; tanpa preload)
 Header set Strict-Transport-Security "max-age=15552000"
 # CSP: hanya sumber yang dipakai web ini
-Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self'; frame-src https://www.google.com; form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; upgrade-insecure-requests"
+Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self'; frame-src https://www.google.com; form-action 'self' https://app.sandbox.midtrans.com; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; upgrade-insecure-requests"
 </IfModule>
 
 # Aset CSS/JS memakai versi URL; JSON admin tetap wajib revalidasi.
@@ -104,3 +104,8 @@ ErrorDocument 404 /404.html
 <FilesMatch "^\.">
 Require all denied
 </FilesMatch>
+
+# Only the signed Sandbox notification endpoint bypasses staging Basic Auth.
+<Files "midtrans-notify.php">
+Require all granted
+</Files>

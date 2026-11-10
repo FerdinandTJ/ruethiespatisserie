@@ -49,24 +49,30 @@ function po_wa_claim(PDO $db): ?array {
 }
 function po_wa_message(PDO $db,array $job,string $secret): ?array {
   $o=po_query($db,'SELECT o.*,s.title,s.pickup_from,s.pickup_until FROM po_orders o JOIN po_slots s ON s.id=o.slot_id WHERE o.id=?',[$job['order_id']])->fetch();
-  if(!$o||$o['flow_version']!=='manual_v1')return null;
+  if(!$o||!in_array($o['flow_version'],['manual_v1','midtrans_v1'],true))return null;
   if($job['kind']==='invoice'&&(int)$o['payment_report_count']>0)return null;
   if(in_array($job['kind'],['reported','correction'],true)&&$job['event_key']!==$job['kind'].':'.$o['payment_report_count'])return null;
-  if(in_array($job['kind'],['invoice','correction'],true)&&($o['fulfillment_status']!=='awaiting_transfer'||(int)$o['expires_at']<=time()+45))return null;
+  if(in_array($job['kind'],['invoice','correction'],true)&&(!in_array($o['fulfillment_status'],['awaiting_transfer','awaiting_payment'],true)||(int)$o['expires_at']<=time()+45))return null;
   if($job['kind']==='closed'&&$o['status']!=='rejected')return null;
   if($job['kind']==='reported'&&$o['payment_status']!=='under_review')return null;
   if(in_array($job['kind'],['paid','ready','completed'],true)&&$o['payment_status']!=='paid')return null;
+  if($job['kind']==='late_paid'&&$o['payment_status']!=='paid_review')return null;
   if($job['kind']==='ready'&&$o['status']!=='ready')return null;
   $token=po_wa_decrypt($o['notification_access']??'',$secret);
   if(!hash_equals($o['token_hash'],hash('sha256',$token)))throw new RuntimeException('Tautan tidak cocok.');
   $link='https://staging.ruethiespatisserie.com/pre-order/status/?t='.$token;
   $head="[UJI STAGING] Ruethies Patisserie\nPesanan ".$o['code']."\nPelanggan: ".preg_replace('/[\r\n\t]+/',' ',$o['customer_name'])."\n";
   $messages=['invoice'=>'Pesanan tercatat. Selesaikan transfer dan laporkan melalui tautan sebelum batas waktu.', 'reported'=>'Pelanggan melaporkan transfer. Pemilik perlu memeriksa mutasi bank; belum dinyatakan lunas.', 'paid'=>'Pembayaran telah diverifikasi pemilik. Pesanan sedang diproses.', 'ready'=>'Pesanan siap diambil di toko. Tunjukkan kode pesanan.', 'completed'=>'Pesanan selesai diambil. Terima kasih.', 'correction'=>'Pemilik meminta perbaikan laporan transfer. Periksa catatan dan tenggat baru di halaman pesanan. Jangan transfer ulang.', 'closed'=>'Laporan transfer ditutup pemilik setelah pemeriksaan. Jika sudah transfer, hubungi toko dengan kode pesanan; jangan transfer ulang.'];
+  $messages['late_paid']='Pembayaran Sandbox perlu ditinjau pemilik. Jangan proses atau membayar ulang; hubungi toko dengan kode pesanan.';
+  if($o['flow_version']==='midtrans_v1'){
+    $messages['invoice']='Invoice uji tersedia. Buka tautan pesanan untuk membayar melalui Midtrans Sandbox. Gunakan simulator, bukan uang sungguhan.';
+    $messages['paid']='Pembayaran telah diverifikasi melalui Midtrans Sandbox. Pesanan sedang diproses.';
+  }
   if(!isset($messages[$job['kind']]))throw new RuntimeException('Jenis notifikasi tidak valid.');
   $body=$head.$messages[$job['kind']]."\nTotal: ".po_money((int)$o['total'])."\n";
   if($job['kind']==='invoice'&&(int)$o['payment_report_count']>0)return null;
   if(in_array($job['kind'],['reported','correction'],true)&&$job['event_key']!==$job['kind'].':'.$o['payment_report_count'])return null;
-  if(in_array($job['kind'],['invoice','correction'],true)){
+  if(in_array($job['kind'],['invoice','correction'],true)&&$o['flow_version']==='manual_v1'){
     $bank=json_decode($o['bank_snapshot'],true,512,JSON_THROW_ON_ERROR);
     $body.=$bank['bank_name'].' '.$bank['account_number'].' a.n. '.$bank['account_name']."\n".$bank['instructions']."\nBatas: ".po_date((int)$o['expires_at'])."\n";
     foreach(po_query($db,'SELECT name,qty FROM po_lines WHERE order_id=? ORDER BY id',[$o['id']])->fetchAll()as$l)$body.=(int)$l['qty'].' x '.$l['name']."\n";

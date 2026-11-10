@@ -18,7 +18,7 @@ $page = max(1, min(10000, (int)filter_var($_GET['page'] ?? 1, FILTER_VALIDATE_IN
 $view=is_string($_GET['view']??null)?$_GET['view']:'';
 if(!in_array($view,['pesanan','jadwal','produk','rekening','notifikasi'],true)) $view=$sid?(isset($_GET['edit'])?'jadwal':'produk'):'pesanan';
 $action=is_string($_POST['action']??null)?$_POST['action']:'';
-$actionViews=['save-payment'=>'rekening','save-slot'=>'jadwal','toggle-slot'=>'jadwal','save-product'=>'produk','wa-retry'=>'notifikasi','transition'=>'pesanan','manual-fulfill'=>'pesanan','manual-payment'=>'pesanan','manual-cancel'=>'pesanan'];
+$actionViews=['save-payment'=>'rekening','save-slot'=>'jadwal','toggle-slot'=>'jadwal','save-product'=>'produk','wa-retry'=>'notifikasi','midtrans-check'=>'pesanan','transition'=>'pesanan','manual-fulfill'=>'pesanan','manual-payment'=>'pesanan','manual-cancel'=>'pesanan'];
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'&&isset($actionViews[$action]))$view=$actionViews[$action];
 if(!is_owner($me)&&in_array($view,['rekening','notifikasi'],true)){http_response_code(403);$view='pesanan';$error='Bagian ini hanya tersedia untuk pemilik.';}
 $orderId=max(0,(int)filter_var($_GET['order']??($_POST['order_id']??0),FILTER_VALIDATE_INT));
@@ -38,7 +38,12 @@ try {
   if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!ruethies_csrf_ok()) throw new DomainException('Sesi formulir tidak valid. Muat ulang halaman.');
     $action = $_POST['action'] ?? '';
-    if ($action === 'transition') {
+    if($action==='midtrans-check'){
+      if(!is_owner($me))throw new DomainException('Hanya pemilik yang dapat memeriksa pembayaran.');
+      po_rate($db,'midtrans-admin:'.$me['name'],10);
+      try{po_mt_reconcile($db,po_int($_POST['order_id']??0,1,PHP_INT_MAX),po_mt_settings(po_config()));}catch(RuntimeException $e){throw new DomainException('Midtrans belum merespons. Status dan kuota tetap menunggu verifikasi.');}
+      $_SESSION['po_notice']='Status diperiksa melalui Midtrans Sandbox.';
+    } elseif ($action === 'transition') {
       po_transition($db, po_int($_POST['order_id'] ?? 0,1,PHP_INT_MAX), po_text($_POST['expected'] ?? '', 'Status',1,16), po_text($_POST['target'] ?? '', 'Status tujuan',1,16), $me['name']);
       $_SESSION['po_notice'] = 'Status pesanan diperbarui.';
     } elseif ($action==='manual-fulfill') {
@@ -61,9 +66,9 @@ try {
       }
       elseif ($action === 'save-slot') {
         $sid = po_save_slot($db, $_POST);
-        $_SESSION['po_notice'] = (po_slot($db,$sid)['flow_version'] ?? 'legacy') === 'manual_v1'
+        $_SESSION['po_notice'] = (po_slot($db,$sid)['flow_version'] ?? 'legacy') === 'midtrans_v1' ? 'Jadwal Midtrans Sandbox disimpan. Lengkapi produk dan aktifkan konfigurasi Sandbox sebelum membuka jadwal.' : ((po_slot($db,$sid)['flow_version'] ?? 'legacy') === 'manual_v1'
           ? 'Jadwal manual disimpan. Lengkapi produk dan aktifkan checkout pada konfigurasi privat sebelum membuka jadwal.'
-          : 'Jadwal disimpan. Lengkapi produk, lalu buka PO.';
+          : 'Jadwal disimpan. Lengkapi produk, lalu buka PO.');
       }
       elseif ($action === 'toggle-slot') {
         $sid = po_int($_POST['slot_id'] ?? 0,1,PHP_INT_MAX);
