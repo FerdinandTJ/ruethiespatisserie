@@ -27,4 +27,19 @@ try{
  fs.writeFileSync(path.join(site,'unrelated.php'),'local code');git(['add','unrelated.php'],site);
  const rejected=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});assert.notEqual(rejected.status,0);assert.equal(fs.readFileSync(path.join(site,'menu.json'),'utf8'),original);
  console.log('PASS: deployment refuses staged changes without changing hosting content');
+ git(['reset','--','unrelated.php'],site);fs.unlinkSync(path.join(site,'unrelated.php'));
+ fs.writeFileSync(path.join(site,'.htaccess'),'# local rules without authentication\n');
+ fs.writeFileSync(path.join(remote,'index.html'),'next SEO template');commit('next release');
+ const noAuth=run('bash',[script],site);
+ assert(noAuth.includes('Staging tanpa password protection'));
+ assert.equal(fs.readFileSync(path.join(site,'menu.json'),'utf8'),original);
+ assert.equal(fs.readFileSync(path.join(site,'index.html'),'utf8'),'next SEO template');
+ assert(!/AuthType|Require valid-user/.test(fs.readFileSync(path.join(site,'.htaccess'),'utf8')));
+ console.log('PASS: staging without Basic Auth updates successfully without adding authentication or replacing hosting JSON');
+ fs.appendFileSync(path.join(site,'.htaccess'),'AuthType Basic\nRequire valid-user\n');
+ const unknown=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});
+ assert.notEqual(unknown.status,0);assert((unknown.stdout+unknown.stderr).includes('tanpa penanda hPanel'));
+ assert(fs.readFileSync(path.join(site,'.htaccess'),'utf8').includes('AuthType Basic'));
+ console.log('PASS: unrecognized authentication rules are rejected and retained');
+
 }finally{fs.rmSync(root,{recursive:true,force:true});}

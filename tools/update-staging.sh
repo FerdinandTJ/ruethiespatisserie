@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run from public_html/staging. Preserve hosting JSON and hPanel Basic Auth.
+# Run from public_html/staging. Preserve hosting JSON and optional hPanel Basic Auth.
 set -euo pipefail
 if [ "$(basename "$PWD")" != staging ] || [ "$(basename "$(dirname "$PWD")")" != public_html ]; then
   echo 'STOP: jalankan dari public_html/staging.' >&2; exit 1
@@ -18,7 +18,12 @@ tar --exclude=.git -czf "$STAGING_BACKUP_DIR/staging.tgz" -C .. staging
 if [ -d ../../ruethies-data-staging ]; then tar -czf "$STAGING_BACKUP_DIR/private.tgz" -C ../.. ruethies-data-staging; fi
 php -r '
 $s=file_get_contents(".htaccess");$i=strpos($s,"# DO NOT REMOVE THIS LINE AND THE LINES BELOW PWPROTECTID:");
-if($i===false){fwrite(STDERR,"STOP: blok password protection hPanel tidak ditemukan.\n");exit(1);}
+if($i===false){
+  if(preg_match("/^\\s*(?:AuthType|AuthName|AuthUserFile|Require\\s+valid-user)\\b/im",$s)){fwrite(STDERR,"STOP: aturan autentikasi tanpa penanda hPanel perlu ditinjau.\n");exit(1);}
+  if(file_put_contents($argv[1],"")===false)exit(1);
+  echo "Staging tanpa password protection; pengaturan ini dipertahankan.\n";
+  exit(0);
+}
 $b=substr($s,$i);
 if(!preg_match("/AuthType\\s+Basic/i",$b)||!preg_match("/AuthUserFile\\s+\\S+/",$b)||!preg_match("/Require\\s+valid-user/i",$b)){fwrite(STDERR,"STOP: blok password protection belum lengkap.\n");exit(1);}
 if(file_put_contents($argv[1],$b)===false)exit(1);

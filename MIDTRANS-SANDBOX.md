@@ -121,3 +121,5 @@ Referensi resmi: [Snap Redirect](https://docs.midtrans.com/docs/snap-snap-integr
 - Jadwal dan pesanan demo/manual lama tidak ditampilkan pada halaman aktif. Pembuatan dan pembukaan ulang jadwal lama serta checkout lama ditolak.
 - Data historis tetap disimpan; tidak ada penghapusan SQL. Modul internal manual tetap diperlukan untuk reservasi kuota, pemenuhan, dan kompatibilitas antrean lama.
 - Setelah update melalui `tools/update-staging.sh`, tidak perlu migrasi tambahan. Konfigurasi Midtrans/Fonnte dan cron tetap digunakan. Buat jadwal Midtrans baru jika sebelumnya hanya memiliki jadwal demo/manual.
+
+Script update mendukung staging tanpa Basic Auth bila proteksi sudah dihapus oleh pemilik. Jika blok proteksi hPanel masih ada, blok itu tetap dipertahankan; aturan autentikasi tidak lengkap/tidak dikenali tetap menghentikan update. Login admin, noindex, dan validasi webhook tetap berlaku.
