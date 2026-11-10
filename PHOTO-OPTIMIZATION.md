@@ -19,3 +19,9 @@ Backup konten hosting seperti panduan SEO-DEPLOYMENT.md, lalu pull main dengan u
 - Tes penghapusan varian, referensi bersama, validasi gambar dan regresi HTTP/admin.
 - Browser lokal pada viewport 390 px, DPR 3: tidak ada permintaan foto -detail/-full saat pemuatan awal, baru meminta foto produk yang dibuka. Halaman produk menawarkan srcset resolusi tinggi.
 - Pengujian browser menggunakan Chrome terisolasi, belum Safari perangkat nyata.
+
+## Galeri Suasana — 11 November 2026
+
+Detail Suasana memakai panel beige, foto utuh, tombol tutup dan navigasi yang sama dengan detail produk. Foto sementara adalah 01_Utama dari Hasil Sortir: Snackbox IMG_2061, Platter IMG_1821, dan Marble Cake IMG_1678. Galeri memakai thumbnail dan varian -full.webp yang sudah tersedia; versi penuh hanya dimuat ketika detail dibuka. Caption ID/EN dan foto tetap dapat diubah melalui admin Galeri.
+
+Saat menerapkan penggantian tiga foto ini di hosting, backup atmosphere.json hosting sebelum pull. Jika prosedur deployment memulihkan seluruh JSON hosting, terapkan atmosphere.json dari commit baru sesudahnya (git show HEAD:atmosphere.json > atmosphere.json). Penggantian ini hanya untuk galeri yang diminta; jangan menimpa menu.json atau faq.json hosting.
