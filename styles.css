@@ -367,7 +367,7 @@ footer a{color:var(--beige)}
 #lb-description{font-size:.82rem;line-height:1.5;text-align:center;color:var(--beige);max-width:48ch;margin:6px auto 0}
 
 /* SEO pages reuse the existing wine/beige typography and catalogue components. */
-.hero-snack{margin:14px 0 0;font-size:.82rem}.hero-snack a{color:var(--wine);text-underline-offset:4px}
+.hero-snack{margin:14px 0 24px;font-size:.82rem}.hero-snack a{color:var(--wine);text-underline-offset:4px}
 .menu-title-link{display:inline;color:inherit}
 .product-page{padding-top:28px;padding-bottom:64px}.breadcrumbs{font-size:.78rem;color:var(--muted);margin-bottom:36px;line-height:1.8}.breadcrumbs a{color:var(--wine)}
 .product-intro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}.product-intro h1{margin:12px 0 20px}.product-summary{font-size:1rem;color:var(--muted);line-height:1.7}.product-context,#product-detail p{margin:16px 0;line-height:1.7}.product-note{font-size:.8rem;line-height:1.7;margin-top:16px}
