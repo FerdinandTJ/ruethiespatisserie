@@ -59,7 +59,7 @@ Settings → Configuration:
 - **Unfinished Redirect URL:** `https://staging.ruethiespatisserie.com/pre-order/return/`
 - **Error Redirect URL:** `https://staging.ruethiespatisserie.com/pre-order/return/`
 
-Simpan pengaturan. Nama/posisi menu dashboard dapat berubah; gunakan field yang sama. Endpoint notification harus dapat diakses Midtrans tanpa password. Aturan Files yang baru mengecualikan **hanya** midtrans-notify.php dari Basic Auth; halaman staging lainnya tetap dilindungi. Jangan menghapus seluruh blok PWPROTECTID hPanel.
+Simpan pengaturan. Nama/posisi menu dashboard dapat berubah; gunakan field yang sama. Endpoint notification harus dapat diakses Midtrans tanpa password. Aturan Files yang baru mengecualikan **hanya** midtrans-notify.php dari Basic Auth, dengan Order/Allow/Satisfy khusus LiteSpeed dan Require all granted untuk Apache; halaman staging lainnya tetap dilindungi. Jangan menghapus seluruh blok PWPROTECTID hPanel.
 
 Periksa dari Terminal Mac tanpa kredensial Basic Auth:
 

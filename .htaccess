@@ -107,5 +107,11 @@ Require all denied
 
 # Only the signed Sandbox notification endpoint bypasses staging Basic Auth.
 <Files "midtrans-notify.php">
+<IfModule LiteSpeed>
+# LiteSpeed/hPanel also needs the legacy authentication exception.
+Order allow,deny
+Allow from all
+Satisfy any
+</IfModule>
 Require all granted
 </Files>

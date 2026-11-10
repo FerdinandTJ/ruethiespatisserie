@@ -23,6 +23,8 @@ try {
   openssl_pkey_export($key,$keyText);openssl_x509_export($cert,$certText);
   file_put_contents($tmp.'/key.pem',$keyText);file_put_contents($tmp.'/cert.pem',$certText);
   $htaccess=file_get_contents(dirname(__DIR__).'/.htaccess');
+  // Exercise the LiteSpeed compatibility branch with Apache access_compat.
+  $htaccess=str_replace('<IfModule LiteSpeed>','<IfModule mod_access_compat.c>',$htaccess);
   file_put_contents($tmp.'/public/.htaccess',$htaccess);
   file_put_contents($tmp.'/public/404.html','Not found');
   mkdir($tmp.'/public/.git');file_put_contents($tmp.'/public/.git/HEAD','PRIVATE TEST');
@@ -32,7 +34,7 @@ try {
   $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
   $port=substr($address,strrpos($address,':')+1);
   $config="ServerRoot \"$tmp\"\nPidFile \"$tmp/httpd.pid\"\nListen $address\nServerName localhost\n";
-  foreach(['mpm_prefork','unixd','authn_core','authn_file','authz_core','authz_user','auth_basic','mime','dir','cgi','rewrite','headers','setenvif','ssl'] as $module) $config.="LoadModule {$module}_module \"$modules/mod_$module.so\"\n";
+  foreach(['access_compat','mpm_prefork','unixd','authn_core','authn_file','authz_core','authz_user','auth_basic','mime','dir','cgi','rewrite','headers','setenvif','ssl'] as $module) $config.="LoadModule {$module}_module \"$modules/mod_$module.so\"\n";
   $config.="ErrorLog \"$tmp/error.log\"\nLogLevel warn\nTypesConfig /dev/null\nDocumentRoot \"$tmp/public\"\nSSLEngine on\nSSLCertificateFile \"$tmp/cert.pem\"\nSSLCertificateKeyFile \"$tmp/key.pem\"\n<Directory \"$tmp/public\">\nAllowOverride All\nRequire all granted\nOptions +ExecCGI\nAddHandler cgi-script .php\n</Directory>\n";
   file_put_contents($tmp.'/httpd.conf',$config);
   // Apache dapat mengirim sinyal ke process group saat berhenti; pisahkan dari runner.
