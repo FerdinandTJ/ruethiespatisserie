@@ -195,7 +195,7 @@ try {
   // HTTP integration: fixture dengan layout Hostinger, akun contoh, dan database terpisah.
   $public=$root.'/public_html/staging'; $private=$root.'/ruethies-data-staging';
   mkdir($public.'/admin',0700,true);mkdir($public.'/public-lib',0700);mkdir($private,0700,true);
-  foreach (['index.php','index.html','styles.css','app.js','product.js','404.html','llms.txt','public-lib/seo.php','po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/catalog.php','admin/po-lib.php','admin/po-manual.php','admin/po-view-pesanan.php','admin/po-view-jadwal.php','admin/po-view-produk.php','admin/po-view-rekening.php','admin/po-view-notifikasi.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
+  foreach (['index.php','index.html','styles.css','app.js','product.js','404.html','llms.txt','public-lib/seo.php','po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/catalog.php','admin/po-lib.php','admin/po-midtrans.php','admin/po-midtrans-status.php','admin/po-midtrans-admin.php','admin/po-manual.php','admin/po-view-pesanan.php','admin/po-view-jadwal.php','admin/po-view-produk.php','admin/po-view-rekening.php','admin/po-view-notifikasi.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
   copy(RUETHIES_PUBLIC.'/menu.json',$public.'/menu.json');
   $cfg=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret];
   file_put_contents($private.'/po-config.php','<?php return '.var_export($cfg,true).';');
@@ -303,7 +303,7 @@ try {
   [$code,$html]=http_request('/pre-order/?slot='.$manualSid);
   verify(!str_contains($html,'Manual hidden fixture'), 'manual schedule stays hidden from customer even if is_open is set directly');
   [$code,$html]=http_request('/pre-order/',input_for($manualSid,$pid2,1,'081234567899')+['action'=>'review','csrf'=>$csrf]);
-  verify(str_contains($html,'Checkout manual belum diaktifkan') && (int)po_query($db,'SELECT COUNT(*) FROM po_orders WHERE slot_id=?',[$manualSid])->fetchColumn()===0, 'forged customer POST cannot enter unfinished manual checkout');
+  verify(str_contains($html,'Checkout untuk jadwal ini belum diaktifkan') && (int)po_query($db,'SELECT COUNT(*) FROM po_orders WHERE slot_id=?',[$manualSid])->fetchColumn()===0, 'forged customer POST cannot enter unfinished manual checkout');
   $webOrder=po_query($db,'SELECT id FROM po_orders WHERE request_hash=?',[hash('sha256',$webNonce)])->fetchColumn();
   [$code,$html]=http_request('/admin/po.php',['csrf'=>'wrong','action'=>'transition','order_id'=>$webOrder,'expected'=>'pending','target'=>'confirmed']);
   verify(str_contains($html,'Sesi formulir tidak valid'),'admin CSRF rejected');

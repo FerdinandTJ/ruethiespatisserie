@@ -28,6 +28,7 @@ try {
   mkdir($tmp.'/public/.git');file_put_contents($tmp.'/public/.git/HEAD','PRIVATE TEST');
   file_put_contents($tmp.'/public/po.php','#!'.PHP_BINARY."\n".'<?php echo "Content-Type: application/json\r\n\r\n"; echo json_encode(["method"=>getenv("REQUEST_METHOD"),"query"=>getenv("QUERY_STRING"),"body"=>file_get_contents("php://stdin")]);');
   chmod($tmp.'/public/po.php',0700);
+  file_put_contents($tmp.'/public/midtrans-notify.php','#!'.PHP_BINARY."\n".'<?php echo "Content-Type: text/plain\r\n\r\nwebhook";');chmod($tmp.'/public/midtrans-notify.php',0700);
   $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
   $port=substr($address,strrpos($address,':')+1);
   $config="ServerRoot \"$tmp\"\nPidFile \"$tmp/httpd.pid\"\nListen $address\nServerName localhost\n";
@@ -58,6 +59,7 @@ try {
   file_put_contents($tmp.'/passwords','demo:'.password_hash('Demo-routing-only',PASSWORD_BCRYPT)."\n");
   file_put_contents($tmp.'/public/.htaccess',$htaccess."\nAuthType Basic\nAuthName \"Staging test\"\nAuthUserFile \"$tmp/passwords\"\nRequire valid-user\n");
   [$status]=$get('/pre-order/');routing_check($status===401,'password protection still challenges clean URL');
+  [$status,$text]=$get('/midtrans-notify.php');routing_check($status===200&&$text==='webhook','only webhook bypasses hPanel Basic Auth');
   curl_setopt($ch,CURLOPT_USERPWD,'demo:Demo-routing-only');
   [$status,$text]=$get('/pre-order/status/?t=private-token');
   routing_check($status===200 && (json_decode($text,true)['query']??'')==='t=private-token','authenticated clean status route works');
