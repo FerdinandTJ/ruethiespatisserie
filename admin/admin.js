@@ -31,7 +31,8 @@
     input.addEventListener('change', function () {
       var f = input.files && input.files[0];
       if (!f) return;
-      if (f.size > 8 * 1024 * 1024) { alert('Foto maksimal 8 MB.'); input.value = ''; return; }
+      var maxMB = input.name === 'gfoto' ? 8 : 5;
+      if (f.size > maxMB * 1024 * 1024) { alert('Foto maksimal ' + maxMB + ' MB.'); input.value = ''; return; }
       var r = new FileReader();
       r.onload = function () {
         box.innerHTML = '';
@@ -51,39 +52,56 @@
   // bahkan untuk file kecil — jalur base64 tidak cocok pola aturan itu.
   // Tanpa JS: form terkirim multipart seperti biasa (server tetap menerima).
   document.querySelectorAll('form[enctype="multipart/form-data"]').forEach(function (form) {
-    form.addEventListener('submit', function (e) {
-      var input = form.querySelector('input[type="file"]');
-      var f = input && input.files && input.files[0];
-      if (!f || !/^image\/(jpeg|png|webp)$/i.test(f.type || '')) return; // biar server yang menolak tipe lain
+    form.addEventListener('submit', async function (e) {
+      var inputs = Array.from(form.querySelectorAll('input[type="file"]')).filter(function (input) { return input.files && input.files[0]; });
+      if (!inputs.length) return;
       e.preventDefault();
+      if (form.dataset.sending) return;
+      if (inputs.some(function (input) { return !/^image\/(jpeg|png|webp)$/i.test(input.files[0].type || '') || input.files[0].size > (input.name === 'gfoto' ? 8 : 5)*1024*1024; })) {
+        alert('Gunakan JPG, PNG, atau WebP, maksimal 5 MB per foto menu (8 MB untuk galeri).'); return;
+      }
+      form.dataset.sending = '1';
       var btn = form.querySelector('.stickybar button');
-      if (btn) { btn.disabled = true; btn.innerHTML = 'Menyiapkan foto…'; }
-      var finish = function (dataUrl) {
-        if (dataUrl) {
-          var hid = document.createElement('input');
-          hid.type = 'hidden'; hid.name = input.name + '_b64'; hid.value = dataUrl;
-          form.appendChild(hid);
-          input.value = '';
-          form.enctype = 'application/x-www-form-urlencoded';
+      var original = btn && btn.innerHTML;
+      if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan foto…'; }
+      try {
+        var results = [];
+        // Proses berurutan agar tiga foto tidak didekode bersamaan di HP.
+        for (var input of inputs) {
+          var file = input.files[0];
+          var dataUrl = await new Promise(function (resolve, reject) {
+            var image = new Image(), reader = new FileReader();
+            image.onload = function () {
+              try {
+                var scale = Math.min(1, 1600 / Math.max(image.width, image.height));
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.max(2, Math.round(image.width*scale)); canvas.height = Math.max(2, Math.round(image.height*scale));
+                canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', 0.82));
+              } catch (err) { reject(err); }
+            };
+            image.onerror = function () { reject(new Error('Foto tidak dapat dibaca.')); };
+            // CSP hosting mengizinkan data:, bukan blob:. Gunakan jalur yang sama dengan preview.
+            reader.onload = function () { image.src = reader.result; };
+            reader.onerror = function () { reject(new Error('File foto tidak dapat dibaca.')); };
+            reader.onabort = function () { reject(new Error('Pembacaan foto dibatalkan.')); };
+            reader.readAsDataURL(file);
+          });
+          results.push([input, dataUrl]);
         }
-        form.submit(); // tombol sengaja tetap nonaktif: cegah klik ganda saat pindah halaman
-      };
-      var img = new Image();
-      img.onload = function () {
-        try {
-          var MAX = 1600, w = img.width, h = img.height;
-          var sc = Math.min(1, MAX / Math.max(w, h));
-          var cw = Math.max(1, Math.round(w * sc)), ch = Math.max(1, Math.round(h * sc));
-          var cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
-          cv.getContext('2d').drawImage(img, 0, 0, cw, ch);
-          finish(cv.toDataURL('image/jpeg', 0.82));
-        } catch (err) { finish(null); }
-        URL.revokeObjectURL(img.src);
-      };
-      img.onerror = function () { finish(null); };
-      img.src = URL.createObjectURL(f);
+        results.forEach(function (result) {
+          var hid = document.createElement('input'); hid.type = 'hidden'; hid.name = result[0].name + '_b64'; hid.value = result[1]; form.appendChild(hid);
+          result[0].value = '';
+        });
+        form.enctype = 'application/x-www-form-urlencoded'; form.submit();
+      } catch (err) {
+        delete form.dataset.sending;
+        if (btn) { btn.disabled = false; btn.innerHTML = original; }
+        alert('Gagal membaca atau memproses foto. Pilih ulang file dan coba lagi. Foto belum dikirim.');
+      }
     });
   });
+
   // Penghitung karakter untuk input maxlength.
   document.querySelectorAll('[maxlength][data-count]').forEach(function (el) {
     var out = document.getElementById(el.getAttribute('data-count'));

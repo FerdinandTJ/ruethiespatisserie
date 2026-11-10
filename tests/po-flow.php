@@ -194,14 +194,14 @@ try {
 
   // HTTP integration: fixture dengan layout Hostinger, akun contoh, dan database terpisah.
   $public=$root.'/public_html/staging'; $private=$root.'/ruethies-data-staging';
-  mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
-  foreach (['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/po-lib.php','admin/po-manual.php','admin/po-view-pesanan.php','admin/po-view-jadwal.php','admin/po-view-produk.php','admin/po-view-rekening.php','admin/po-view-notifikasi.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
+  mkdir($public.'/admin',0700,true);mkdir($public.'/public-lib',0700);mkdir($private,0700,true);
+  foreach (['index.php','index.html','styles.css','app.js','product.js','404.html','llms.txt','public-lib/seo.php','po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','admin/config.php','admin/lib.php','admin/security.php','admin/security-resources.php','admin/catalog.php','admin/po-lib.php','admin/po-manual.php','admin/po-view-pesanan.php','admin/po-view-jadwal.php','admin/po-view-produk.php','admin/po-view-rekening.php','admin/po-view-notifikasi.php','admin/po-whatsapp.php','admin/po-manual-checkout.php','admin/po-manual-status.php','admin/po-manual-admin.php','admin/po-owner-confirm.php','admin/po-whatsapp-admin.php','admin/po.php','admin/index.php','admin/admin.css','admin/admin.js','admin/po-admin.css','admin/po-install.php','admin/po-schema.sql'] as $file) copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
   copy(RUETHIES_PUBLIC.'/menu.json',$public.'/menu.json');
   $cfg=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret];
   file_put_contents($private.'/po-config.php','<?php return '.var_export($cfg,true).';');
   file_put_contents($private.'/users.json',json_encode([
-    ['name'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'role'=>'owner','totp'=>''],
-    ['name'=>'staff','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'role'=>'staff','totp'=>''],
+    ['name'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'role'=>'owner','totp'=>'','auth_version'=>str_repeat('a',64),'last_totp_counter'=>-1],
+    ['name'=>'staff','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'role'=>'staff','totp'=>'','auth_version'=>str_repeat('b',64),'last_totp_counter'=>-1],
   ]));
   $before=(int)$db->query('SELECT COUNT(*) FROM po_orders')->fetchColumn();
   $installPipes=[];$install=proc_open([PHP_BINARY,$public.'/admin/po-install.php','--seed-demo'],[1=>['pipe','w'],2=>['pipe','w']],$installPipes);
@@ -257,16 +257,19 @@ try {
   verify((bool)array_filter($responseHeaders,fn($h)=>str_contains(strtolower($h),'cache-control: private, no-store')),'private order responses are not cacheable');
   [$code,$html]=http_request('/pre-order/status/?t=not-a-token');verify($code===404,'unknown status token returns 404');
   verify(!str_contains($html,'id="po-status-link"'), 'invalid token does not render a private link field');
+  [$code,$homeHtml]=http_request('/');verify($code===200&&str_contains($homeHtml,'Snack Box &amp; Kue')&&str_contains($homeHtml,'href="/pre-order/"')&&str_contains($homeHtml,'id="catalog-data"'),'staging homepage keeps SEO renderer and PO navigation together');
   [$code,$html,$redirect]=http_request('/admin/po.php');verify($code===302 && str_contains($redirect,'login'),'admin requires login');
   [$code]=http_request('/admin/po-install.php');verify($code===404,'installer unavailable over HTTP');
-  [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);verify($code===302,'staff login works');
+  [$code,$loginHtml]=http_request('/admin/index.php');
+  [$code]=http_request('/admin/index.php',['csrf'=>csrf_from($loginHtml),'aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);verify($code===302,'staff login works');
+  [$code,$menuHtml]=http_request('/admin/index.php');verify($code===200&&str_contains($menuHtml,'href="po.php"'),'CMS navigation retains access to PO');
   [$code,$html]=http_request('/admin/po.php');$adminCsrf=csrf_from($html);
   verify(!str_contains($html,'id="payment"') && !str_contains($html,'00123456'), 'staff cannot view bank configuration');
   [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'save-payment']+$payment);
   verify(str_contains($html,'hanya untuk pemilik') && (int)po_payment_settings($db)['version']===3, 'staff bank POST is rejected without mutation');
   [$code,$html]=http_request('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'toggle-slot','slot_id'=>$sid2,'is_open'=>0]);
   verify(str_contains($html,'hanya untuk pemilik') && (int)po_slot($db,$sid2)['is_open']===1,'staff cannot change schedule');
-  [$code]=http_request('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);verify($code===302,'owner login works');
+  [$code]=http_request('/admin/index.php',['csrf'=>$adminCsrf,'aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);verify($code===302,'owner login works');
   [$code,$html]=http_request('/admin/po.php?view=rekening');$adminCsrf=csrf_from($html);
   verify(str_contains($html,'id="payment"') && str_contains($html,'value="00123456"'), 'owner sees saved bank configuration');
   $bankPost=array_replace($payment,['version'=>'3','bank_name'=>'Bank <Contoh>','instructions'=>'<script>alert(1)</script>']);

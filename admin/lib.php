@@ -1,8 +1,11 @@
 <?php
 // Ruethies Patisserie — pustaka keamanan + penyimpanan admin (tanpa dependensi luar).
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
+require_once __DIR__ . '/security.php';
+require_once __DIR__ . '/security-resources.php';
+require_once __DIR__ . '/catalog.php';
 
-const RUETHIES_CATS = ['cakery' => 'Cakery', 'coffee' => 'Coffee & Drinks', 'savoury' => 'Savoury Patisserie'];
+const RUETHIES_CATS = ['cakery' => 'Kue & Jajanan', 'savoury' => 'Camilan Gurih', 'packages' => 'Paket & Sajian'];
 
 /* ---------- util ---------- */
 function h($s): string { return htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8'); }
@@ -23,61 +26,6 @@ function jwrite(string $f, $data): bool {
 }
 
 /* ---------- log aktivitas ---------- */
-function ruethies_log(string $actor, string $aksi, string $detail = ''): void {
-  $f = ruethies_data_dir() . '/log.jsonl';
-  $line = json_encode(['t' => date('c'), 'ip' => ruethies_ip(), 'oleh' => $actor, 'aksi' => $aksi, 'detail' => $detail], JSON_UNESCAPED_UNICODE);
-  $fh = @fopen($f, 'a');
-  if ($fh) { flock($fh, LOCK_EX); fwrite($fh, $line . "\n"); flock($fh, LOCK_UN); fclose($fh); }
-}
-function ruethies_logs(int $n = 100): array {
-  $f = ruethies_data_dir() . '/log.jsonl';
-  if (!is_file($f)) return [];
-  $lines = array_filter(explode("\n", @file_get_contents($f) ?: ''));
-  $out = [];
-  foreach (array_slice($lines, -$n) as $l) { $d = json_decode($l, true); if ($d) $out[] = $d; }
-  return array_reverse($out);
-}
-
-/* ---------- rate limit login: maks 5 gagal / 15 mnt / IP ---------- */
-function ruethies_ratelimit_hit(): bool {
-  $f = ruethies_data_dir() . '/ratelimit.json';
-  $d = jread($f, []);
-  $ip = ruethies_ip(); $now = time();
-  $d[$ip] = array_values(array_filter($d[$ip] ?? [], fn($t) => $now - $t < 900));
-  if (count($d[$ip]) >= 5) return true;
-  $d[$ip][] = $now; jwrite($f, $d);
-  return false;
-}
-function ruethies_ratelimit_ok(): bool {
-  $f = ruethies_data_dir() . '/ratelimit.json';
-  $d = jread($f, []);
-  $ip = ruethies_ip(); $now = time();
-  $hits = array_filter($d[$ip] ?? [], fn($t) => $now - $t < 900);
-  return count($hits) < 5;
-}
-function ruethies_ratelimit_reset(): void {
-  $f = ruethies_data_dir() . '/ratelimit.json';
-  $d = jread($f, []); unset($d[ruethies_ip()]); jwrite($f, $d);
-}
-
-/* ---------- CSRF ---------- */
-function ruethies_csrf(): string {
-  if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(32));
-  return $_SESSION['csrf'];
-}
-function ruethies_csrf_ok(): bool {
-  return isset($_POST['csrf']) && isset($_SESSION['csrf']) && hash_equals($_SESSION['csrf'], (string)$_POST['csrf']);
-}
-
-/* ---------- pengguna ---------- */
-function users_file(): string { return ruethies_data_dir() . '/users.json'; }
-function users_all(): array { return jread(users_file(), []); }
-function users_save(array $u): bool { return jwrite(users_file(), $u); }
-function user_get(string $name): ?array {
-  foreach (users_all() as $u) if (hash_equals(strtolower($u['name']), strtolower($name))) return $u;
-  return null;
-}
-
 /* ---------- TOTP RFC 6238 (2FA tanpa layanan luar) ---------- */
 function b32enc(string $bin): string {
   $map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'; $bits = '';
@@ -102,38 +50,6 @@ function totp_at(string $secret, int $counter): string {
   $code = ((ord($hash[$off]) & 0x7f) << 24 | ord($hash[$off + 1]) << 16 | ord($hash[$off + 2]) << 8 | ord($hash[$off + 3])) % 1000000;
   return str_pad((string)$code, 6, '0', STR_PAD_LEFT);
 }
-function totp_verify(string $secret, string $code): bool {
-  if (!ctype_digit($code) || strlen($code) !== 6) return false;
-  $c = (int)floor(time() / 30);
-  foreach ([-1, 0, 1] as $w) if (hash_equals(totp_at($secret, $c + $w), $code)) return true;
-  return false;
-}
-
-/* ---------- session auth ---------- */
-function current_user(): ?array {
-  if (empty($_SESSION['uid'])) return null;
-  $u = user_get($_SESSION['uid']);
-  if (!$u) { ruethies_logout(); return null; }
-  // UA binding ringan: sesi tidak bisa dibajak mentah ke browser lain.
-  if (($_SESSION['ua'] ?? '') !== md5($_SERVER['HTTP_USER_AGENT'] ?? '')) { ruethies_logout(); return null; }
-  return $u;
-}
-function is_owner(?array $u): bool { return $u && ($u['role'] ?? '') === 'owner'; }
-function ruethies_login(array $u): void {
-  session_regenerate_id(true);
-  $_SESSION['uid'] = $u['name'];
-  $_SESSION['ua'] = md5($_SERVER['HTTP_USER_AGENT'] ?? '');
-  $_SESSION['born'] = time(); $_SESSION['last'] = time();
-}
-function ruethies_logout(): void {
-  $_SESSION = [];
-  if (ini_get('session.use_cookies')) {
-    $p = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000, $p['path'], '', $p['secure'], $p['httponly']);
-  }
-  if (session_status() === PHP_SESSION_ACTIVE) session_destroy();
-}
-
 /* ---------- menu ---------- */
 // Semua mutasi konten admin memakai lock ini sampai request selesai. Dengan begitu,
 // pemeriksaan referensi + unlink tidak bersaing dengan penyimpanan menu/galeri lain.
@@ -157,19 +73,20 @@ function content_lock(): void {
 function menu_photo_delete_unused(string $image): string {
   if ($image === '') return 'none';
   if (!preg_match('~\Aimages/menu/([a-z0-9]+(?:-[a-z0-9]+)*)\.(?:jpg|webp)\z~D', $image, $m)) return 'kept';
-  $names = [$m[1] . '.jpg', $m[1] . '.webp'];
-  if (defined('RUETHIES_STAGING') && RUETHIES_STAGING && is_file(ruethies_data_dir() . '/po-config.php')) {
-    try {
-      require_once __DIR__ . '/po-lib.php';
-      // PO menyimpan referensi foto katalog. Jika DB/migrasi belum siap, jangan hapus.
-      foreach (po_query(po_db(), 'SELECT image FROM po_products WHERE image<>?', [''])->fetchAll() as $product) {
-        foreach ($names as $name) if (str_contains($product['image'], $name)) return 'kept';
-      }
-    } catch (Throwable $e) { return 'failed'; }
-  }
+  $names = [$m[1] . '.jpg', $m[1] . '.webp', $m[1] . '-detail.webp', $m[1] . '-full.webp'];
   $public = realpath(RUETHIES_PUBLIC);
   $dir = $public . '/images/menu';
   if (!$public || is_link($public . '/images') || is_link($dir) || realpath($dir) !== $dir) return 'failed';
+
+  // PO snapshots can still reference photos removed from the current catalogue.
+  if (defined('RUETHIES_STAGING') && RUETHIES_STAGING && is_file(ruethies_data_dir().'/po-config.php')) {
+    try {
+      require_once __DIR__.'/po-lib.php';
+      foreach (po_query(po_db(),'SELECT image FROM po_products WHERE image<>?',[''])->fetchAll() as $product) {
+        foreach ($names as $name) if (str_contains($product['image'],$name)) return 'kept';
+      }
+    } catch (Throwable $e) { return 'failed'; }
+  }
 
   // Gagal membaca data = jangan hapus. Cek juga HTML/fallback JS dan konten lain:
   // gambar yang masih dipakai halaman publik harus tetap tersedia.
@@ -199,29 +116,27 @@ function menu_photo_delete_unused(string $image): string {
 }
 
 function menu_load(): array {
-  $d = jread(RUETHIES_MENU, []);
-  return is_array($d) ? array_values(array_filter($d, fn($m) => is_array($m))) : [];
+  $d = catalog_read_json(RUETHIES_MENU);
+  catalog_validate($d,false);
+  return $d;
 }
 function menu_save(array $items): bool {
-  $items = menu_with_ids($items);
   // Backup 5 versi terakhir sebelum tulis.
   $dir = ruethies_data_dir() . '/backups';
   if (!is_dir($dir)) @mkdir($dir, 0700, true);
-  if (is_file(RUETHIES_MENU)) @copy(RUETHIES_MENU, $dir . '/menu-' . date('Ymd-His') . '.json');
-  foreach (glob($dir . '/menu-*.json') ?: [] as $i => $f) if ($i >= 4) @unlink($f);
-  return jwrite(RUETHIES_MENU, array_values($items));
-}
-// UID berbeda dari field `id` yang berisi terjemahan Indonesia.
-function menu_with_ids(array $items): array {
-  $seen = [];
-  foreach ($items as &$item) {
-    $uid = $item['uid'] ?? '';
-    if (!is_string($uid) || !preg_match('/\A[a-f0-9]{32}\z/', $uid) || isset($seen[$uid])) $uid = bin2hex(random_bytes(16));
-    $item['uid'] = $uid; $seen[$uid] = true;
+  if (is_file(RUETHIES_MENU)) {
+    $stamp=(new DateTimeImmutable('now',new DateTimeZone('UTC')))->format('Ymd-His-u');
+    if (!@copy(RUETHIES_MENU,$dir.'/menu-'.$stamp.'.json')) return false;
   }
-  unset($item);
-  return $items;
+  // Routine retention must never remove the separate pre-SEO deployment backup.
+  $versions=glob($dir.'/menu-[0-9]*.json') ?: []; rsort($versions,SORT_STRING);
+  foreach(array_slice($versions,5) as $version) @unlink($version);
+  $items = catalog_metadata($items, time());
+  return catalog_atomic_write(RUETHIES_MENU,$items);
 }
+// Compatibility for the PO installer; existing catalogue UIDs remain unchanged.
+function menu_with_ids(array $items): array { return catalog_metadata($items,time()); }
+
 function menu_validate(array $in): ?array {
   $cat = $in['cat'] ?? '';
   if (!isset(RUETHIES_CATS[$cat])) return null;
@@ -230,13 +145,20 @@ function menu_validate(array $in): ?array {
   $ne = trim(strip_tags($in['ne'] ?? '')); if (mb_strlen($ne) > 60) return null;
   $de = trim(strip_tags($in['de'] ?? '')); if (mb_strlen($de) > 160) return null;
   $badge = trim(strip_tags($in['badge'] ?? '')); if (mb_strlen($badge) > 24) return null;
+  $details = $in['detail_images'] ?? [];
+  if (!is_array($details) || count($details) > 2) return null;
+  foreach ($details as $image) if (!is_string($image) || ($image !== '' && !preg_match('~\Aimages/menu/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:jpg|webp)\z~D', $image))) return null;
+  $detail = trim(strip_tags($in['detail'] ?? ''));
+  $detaile = trim(strip_tags($in['detaile'] ?? ''));
+  if (mb_strlen($detail)>4000 || mb_strlen($detaile)>4000) return null;
   return [
+    'detail_images' => array_values($details),
     'cat' => $cat, 'badge' => $badge, 'signature' => !empty($in['signature']),
     'available' => !isset($in['available']) || !empty($in['available']),
     'tag' => ['id' => trim(strip_tags($in['tag'] ?? '')), 'en' => ''],
     'img' => $in['img'] ?? '',
-    'id' => ['n' => $n, 'd' => $d],
-    'en' => ['n' => $ne !== '' ? $ne : $n, 'd' => $de !== '' ? $de : $d],
+    'id' => ['n' => $n, 'd' => $d, 'detail' => $detail],
+    'en' => ['n' => $ne !== '' ? $ne : $n, 'd' => $de !== '' ? $de : $d, 'detail' => $detaile],
   ];
 }
 
@@ -262,15 +184,16 @@ function atmos_save(array $items): bool {
 }
 // Upload galeri: satu sumber → thumb 640x480 + versi lightbox 1200x900.
 function galeri_upload(array $file, string $caption): array {
+  security_upload_input([$file]);
   if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return [null, null, null];
   if (($file['error'] ?? 1) !== UPLOAD_ERR_OK) return [null, null, 'Upload gagal, coba lagi.'];
   if (($file['size'] ?? 0) > 8 * 1024 * 1024) return [null, null, 'Foto maksimal 8 MB.'];
   $finfo = new finfo(FILEINFO_MIME_TYPE);
   $mime = $finfo->file($file['tmp_name']);
   if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) return [null, null, 'File harus JPG, PNG, atau WebP.'];
-  $raw = @file_get_contents($file['tmp_name']);
-  $src = @imagecreatefromstring($raw ?: '');
-  if (!$src) return [null, null, 'File gambar tidak valid.'];
+  $raw = @file_get_contents($file['tmp_name'],false,null,0,8*1024*1024+1);
+  [$src,$error] = security_image_decode($raw ?: '',8*1024*1024);
+  if ($error) return [null, null, $error];
   if (!is_dir(RUETHIES_PUBLIC . '/images')) @mkdir(RUETHIES_PUBLIC . '/images', 0755, true);
   $base = 'suasana-' . photo_slug($caption); $try = $base; $i = 2;
   while (is_file(RUETHIES_PUBLIC . "/images/$try.jpg")) { $try = "$base-$i"; $i++; }
@@ -281,16 +204,16 @@ function galeri_upload(array $file, string $caption): array {
     if (!$c) return null;
     $dst = imagecreatetruecolor($tw, $th);
     imagecopyresampled($dst, $c, 0, 0, 0, 0, $tw, $th, imagesx($c), imagesy($c));
-    imagedestroy($c);
+    unset($c);
     return $dst;
   };
   $t1 = $mk(640, 480); $t2 = $mk(1200, 900);
-  if (!$t1 || !$t2) { imagedestroy($src); return [null, null, 'Gagal memproses foto.']; }
-  imagedestroy($src);
+  if (!$t1 || !$t2) { unset($src); return [null, null, 'Gagal memproses foto.']; }
+  unset($src);
   $j1 = RUETHIES_PUBLIC . "/images/$try.jpg"; $j2 = RUETHIES_PUBLIC . "/images/$try-xl.jpg";
   $ok = @imagejpeg($t1, $j1, 68) && @imagejpeg($t2, $j2, 70);
   if (function_exists('imagewebp')) { @imagewebp($t1, RUETHIES_PUBLIC . "/images/$try.webp", 66); @imagewebp($t2, RUETHIES_PUBLIC . "/images/$try-xl.webp", 68); }
-  imagedestroy($t1); imagedestroy($t2);
+  unset($t1); unset($t2);
   if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
   return ["images/$try.jpg", "images/$try-xl.jpg", null];
 }
@@ -327,33 +250,17 @@ function icon(string $n, int $s = 18): string {
   ];
   return '<svg width="' . $s . '" height="' . $s . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . ($p[$n] ?? '') . '</svg>';
 }
-/* ---------- upload foto menu: re-encode (buang EXIF) + normalkan 640x480 ---------- */
-function photo_upload(array $file, string $name): array {
+/* ---------- upload foto menu: thumb 640x480 + detail responsif tanpa crop ---------- */
+function photo_upload(array $file, string $name, bool $detail = false): array {
+  security_upload_input([$file]);
   if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) return [null, null];
   if (($file['error'] ?? 1) !== UPLOAD_ERR_OK) return [null, 'Upload gagal, coba lagi.'];
   if (($file['size'] ?? 0) > 5 * 1024 * 1024) return [null, 'Foto maksimal 5 MB.'];
   $finfo = new finfo(FILEINFO_MIME_TYPE);
   $mime = $finfo->file($file['tmp_name']);
   if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) return [null, 'File harus JPG, PNG, atau WebP.'];
-  $raw = @file_get_contents($file['tmp_name']);
-  $im = @imagecreatefromstring($raw ?: '');
-  if (!$im) return [null, 'File gambar tidak valid.'];
-  // Center-crop 4:3 lalu resize 640x480.
-  $w = imagesx($im); $hh = imagesy($im); $tr = 640 / 480; $sr = $w / $hh;
-  if ($sr > $tr) { $nw = (int)($hh * $tr); $x = (int)(($w - $nw) / 2); $crop = imagecrop($im, ['x' => $x, 'y' => 0, 'width' => $nw, 'height' => $hh]); }
-  else { $nh = (int)($w / $tr); $y = (int)(($hh - $nh) / 2); $crop = imagecrop($im, ['x' => 0, 'y' => $y, 'width' => $w, 'height' => $nh]); }
-  if ($crop) { imagedestroy($im); $im = $crop; }
-  $dst = imagecreatetruecolor(640, 480);
-  imagecopyresampled($dst, $im, 0, 0, 0, 0, 640, 480, imagesx($im), imagesy($im));
-  imagedestroy($im);
-  if (!is_dir(RUETHIES_IMGDIR)) @mkdir(RUETHIES_IMGDIR, 0755, true);
-  $base = photo_slug($name); $try = $base; $i = 2;
-  while (is_file(RUETHIES_IMGDIR . "/$try.jpg")) { $try = "$base-$i"; $i++; }
-  $jpg = RUETHIES_IMGDIR . "/$try.jpg";
-  if (!@imagejpeg($dst, $jpg, 68)) { imagedestroy($dst); return [null, 'Gagal menyimpan foto.']; }
-  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", 66);
-  imagedestroy($dst);
-  return ["images/menu/$try.jpg", null];
+  $raw = @file_get_contents($file['tmp_name'],false,null,0,5*1024*1024+1);
+  return photo_upload_raw($raw ?: '', $name, $detail, 5*1024*1024);
 }
 
 /* ---------- FAQ: sumber faq.json, tulis ulang blok statis index.html + llms.txt ---------- */
@@ -390,7 +297,7 @@ function faq_render_schema(array $items): string {
   foreach ($items as $f) $q[] = ['@type' => 'Question', 'name' => $f['q'],
     'acceptedAnswer' => ['@type' => 'Answer', 'text' => faq_plain($f['a'])]];
   return json_encode(['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $q],
-    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR);
 }
 function faq_render_llms(array $items): string {
   $out = [];
@@ -428,13 +335,8 @@ function faq_apply(array $items): array {
   // Verifikasi sebelum tulis: schema valid + jumlah cocok + details cocok.
   if (!str_contains($html, '"@type":"FAQPage"')) return [false, 'Verifikasi gagal — TIDAK ada yang diubah.'];
   if (substr_count($html, '<details><summary>') < count($items)) return [false, 'Verifikasi gagal — TIDAK ada yang diubah.'];
-  $fh = @fopen($idx, 'c+');
-  if (!$fh) return [false, 'index.html tidak bisa ditulis.'];
-  flock($fh, LOCK_EX); ftruncate($fh, 0);
-  $ok = fwrite($fh, $html);
-  fflush($fh); flock($fh, LOCK_UN); fclose($fh);
-  if ($ok === false) return [false, 'Gagal menulis index.html.'];
-  if (@file_put_contents($llmsf, $llms, LOCK_EX) === false) return [false, 'index.html updated, TAPI llms.txt gagal — hubungi pengembang.'];
+  if (!catalog_atomic_text($idx,$html)) return [false, 'Gagal menulis index.html.'];
+  if (!catalog_atomic_text($llmsf,$llms)) return [false, 'index.html updated, TAPI llms.txt gagal — hubungi pengembang.'];
   return [true, ''];
 }
 
@@ -448,7 +350,7 @@ function img_crop_resize($src, int $tw, int $th) {
   if (!$c) return null;
   $dst = imagecreatetruecolor($tw, $th);
   imagecopyresampled($dst, $c, 0, 0, 0, 0, $tw, $th, imagesx($c), imagesy($c));
-  imagedestroy($c);
+  unset($c);
   return $dst;
 }
 function img_unique(string $dir, string $slug): string {
@@ -466,35 +368,48 @@ function b64_image(string $field, int $maxBytes): array {
   $raw = base64_decode(substr($v, strpos($v, ',') + 1), true);
   if ($raw === false || strlen($raw) === 0) return [null, 'Foto rusak, coba lagi.'];
   if (strlen($raw) > $maxBytes) return [null, 'Foto terlalu besar.'];
-  $im = @imagecreatefromstring($raw);
-  if (!$im) return [null, 'File gambar tidak valid.'];
-  imagedestroy($im);
+  if ($error=security_image_metadata($raw,$maxBytes)) return [null,$error];
   return [$raw, null];
 }
-function photo_upload_raw(string $raw, string $name): array {
-  $src = @imagecreatefromstring($raw);
-  if (!$src) return [null, 'File gambar tidak valid.'];
-  $dst = img_crop_resize($src, 640, 480); imagedestroy($src);
-  if (!$dst) return [null, 'Gagal memproses foto.'];
+function photo_upload_raw(string $raw, string $name, bool $detail = false, int $maxBytes = 3145728): array {
+  [$src,$error] = security_image_decode($raw,$maxBytes);
+  if ($error) return [null,$error];
+  if ($detail) {
+    $scale = min(1, 1600 / max(imagesx($src), imagesy($src)));
+    $dst = imagescale($src, max(2, (int)round(imagesx($src)*$scale)), max(2, (int)round(imagesy($src)*$scale)));
+  } else $dst = img_crop_resize($src, 640, 480);
+  if (!$dst) { unset($src); return [null, 'Gagal memproses foto.']; }
   $try = img_unique(RUETHIES_IMGDIR, photo_slug($name));
-  if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", 68)) { imagedestroy($dst); return [null, 'Gagal menyimpan foto.']; }
-  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", 66);
-  imagedestroy($dst);
+  if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", $detail ? 85 : 68)) { unset($dst,$src); return [null, 'Gagal menyimpan foto.']; }
+  if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", $detail ? 82 : 66);
+  unset($dst);
+  $written = [RUETHIES_IMGDIR . "/$try.jpg", RUETHIES_IMGDIR . "/$try.webp"];
+  foreach (['detail'=>800, 'full'=>1600] as $suffix=>$limit) {
+    $scale = min(1, $limit / max(imagesx($src), imagesy($src)));
+    $large = imagescale($src, max(2,(int)round(imagesx($src)*$scale)), max(2,(int)round(imagesy($src)*$scale)));
+    $file = RUETHIES_IMGDIR . "/$try-$suffix.webp";
+    if (!$large || !function_exists('imagewebp') || !@imagewebp($large,$file,82)) {
+      foreach (array_merge($written,[$file]) as $cleanup) if (is_file($cleanup)) @unlink($cleanup);
+      unset($src,$large); return [null, 'Gagal menyimpan foto detail.'];
+    }
+    $written[]=$file; unset($large);
+  }
+  unset($src);
   return ["images/menu/$try.jpg", null];
 }
 function galeri_upload_raw(string $raw, string $caption): array {
-  $src = @imagecreatefromstring($raw);
-  if (!$src) return [null, null, 'File gambar tidak valid.'];
+  [$src,$error] = security_image_decode($raw,3*1024*1024);
+  if ($error) return [null,null,$error];
   if (!is_dir(RUETHIES_PUBLIC . '/images')) @mkdir(RUETHIES_PUBLIC . '/images', 0755, true);
   $base = 'suasana-' . photo_slug($caption); $try = $base; $i = 2;
   while (is_file(RUETHIES_PUBLIC . "/images/$try.jpg")) { $try = "$base-$i"; $i++; }
   $t1 = img_crop_resize($src, 640, 480);
   $t2 = img_crop_resize($src, 1200, 900);
-  imagedestroy($src);
-  if (!$t1 || !$t2) { if ($t1) imagedestroy($t1); if ($t2) imagedestroy($t2); return [null, null, 'Gagal memproses foto.']; }
+  unset($src);
+  if (!$t1 || !$t2) { if ($t1) unset($t1); if ($t2) unset($t2); return [null, null, 'Gagal memproses foto.']; }
   $ok = @imagejpeg($t1, RUETHIES_PUBLIC . "/images/$try.jpg", 68) && @imagejpeg($t2, RUETHIES_PUBLIC . "/images/$try-xl.jpg", 70);
   if (function_exists('imagewebp')) { @imagewebp($t1, RUETHIES_PUBLIC . "/images/$try.webp", 66); @imagewebp($t2, RUETHIES_PUBLIC . "/images/$try-xl.webp", 68); }
-  imagedestroy($t1); imagedestroy($t2);
+  unset($t1); unset($t2);
   if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
   return ["images/$try.jpg", "images/$try-xl.jpg", null];
 }
@@ -504,7 +419,7 @@ function upload_lock() {
   $fh = @fopen(ruethies_data_dir() . '/upload.lock', 'c');
   if ($fh && flock($fh, LOCK_EX)) return $fh;
   if ($fh) fclose($fh);
-  return null; // gagal kunci = lanjut tanpa kunci (lebih baik daripada mati total)
+  throw new RuntimeException('Unggahan tidak bisa dikunci.');
 }
 function upload_unlock($fh): void {
   if (!$fh) return;

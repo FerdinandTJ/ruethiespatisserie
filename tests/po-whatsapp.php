@@ -18,15 +18,15 @@ function wa_remove(string $p):void{if(!is_dir($p)||is_link($p)){unlink($p);retur
 function wa_order(PDO $db,int $sid,int $pid):array{global $secret;static $phone=6281290000000;$phone++;$in=['slot_id'=>$sid,'qty'=>[$pid=>1],'name'=>'Pelanggan Contoh','phone'=>(string)$phone,'note'=>'','consent'=>'yes'];$nonce=bin2hex(random_bytes(32));$hash=po_quote_hash(po_quote($db,$in));$token=po_submit($db,$in,$nonce,$hash,$secret);$o=po_order($db,$token);return [$o,$token,$in,$nonce,$hash];}
 function wa_parallel(array $jobs):array{global $testDsn,$user,$pass,$options;$children=[];foreach($jobs as$job){$code='define("RUETHIES_ADMIN",true);require '.var_export(dirname(__DIR__).'/admin/po-lib.php',true).';$db=new PDO('.var_export($testDsn,true).','.var_export($user,true).','.var_export($pass,true).','.var_export($options,true).');'.$job;$p=proc_open([PHP_BINARY,'-r',$code],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$children[]=[$p,$pipes];}$out=[];foreach($children as[$p,$pipes]){$out[]=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);wa_check(proc_close($p)===0&&$err==='','parallel worker completes');}sort($out);return $out;}
 try{
- mkdir($public.'/admin',0700,true);mkdir($private,0700,true);
+ mkdir($public.'/admin',0700,true);mkdir($private,0700,true);mkdir($root.'/sessions',0700);
  foreach(array_merge(glob(dirname(__DIR__).'/admin/*.php'),glob(dirname(__DIR__).'/admin/*.css'),glob(dirname(__DIR__).'/admin/*.js'))as$file)copy($file,$public.'/admin/'.basename($file));
  foreach(['po.php','po.css','po.js','menu.json','atmosphere.json','faq.json','index.html','llms.txt']as$file)copy(dirname(__DIR__).'/'.$file,$public.'/'.$file);
- file_put_contents($public.'/menu.json',json_encode([['uid'=>str_repeat('a',32),'cat'=>'cakery','id'=>['n'=>'Croissant Contoh','d'=>'Test'],'available'=>true,'img'=>'']]));
+ file_put_contents($public.'/menu.json',json_encode([['uid'=>str_repeat('a',32),'cat'=>'cakery','id'=>['n'=>'Croissant Contoh','d'=>'Test'],'available'=>true,'img'=>'images/menu/example.jpg']]));
  $config=['dsn'=>$testDsn,'user'=>$user,'password'=>$pass,'secret'=>$secret,'manual_checkout_enabled'=>true,'fonnte'=>['enabled'=>false]];
  file_put_contents($private.'/po-config.php','<?php return '.var_export($config,true).';');
  foreach(explode(';',file_get_contents(dirname(__DIR__).'/admin/po-schema.sql'))as$sql)if(trim($sql)!=='')$db->exec($sql);po_migrate_manual($db);po_migrate_manual($db);
  $owner=['name'=>'owner','role'=>'owner'];$staff=['name'=>'staff','role'=>'staff'];
- file_put_contents($private.'/users.json',json_encode([['name'=>'owner','role'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>''],['name'=>'staff','role'=>'staff','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>'']]));
+ file_put_contents($private.'/users.json',json_encode([['name'=>'owner','role'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>'','auth_version'=>bin2hex(random_bytes(32)),'last_totp_counter'=>-1],['name'=>'staff','role'=>'staff','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'totp'=>'','auth_version'=>bin2hex(random_bytes(32)),'last_totp_counter'=>-1]]));
  po_payment_save($db,['enabled'=>1,'version'=>0,'bank_name'=>'Bank Contoh','account_number'=>'00123456','account_name'=>'Pemilik Contoh','instructions'=>'Uji tanpa transfer nyata.'],$owner);
  $sid=po_save_slot($db,['title'=>'Manual WhatsApp Test','flow_version'=>'manual_v1','opens_at'=>date('Y-m-d\TH:i',time()-3600),'closes_at'=>date('Y-m-d\TH:i',time()+3600),'pickup_from'=>date('Y-m-d\TH:i',time()+7200),'pickup_until'=>date('Y-m-d\TH:i',time()+10800)]);po_toggle_slot($db,$sid,1);
  $pid=po_save_product($db,['slot_id'=>$sid,'menu_uid'=>str_repeat('a',32),'price'=>25000,'quota'=>200,'active'=>1]);
@@ -74,7 +74,7 @@ try{
  po_wa_run($db,$enabled,1,static function()use(&$rejectCalls){$rejectCalls++;return ['outcome'=>'accepted'];});wa_check($rejectCalls===5&&po_query($db,'SELECT status FROM po_whatsapp_outbox WHERE order_id=?',[$bounded['id']])->fetchColumn()==='failed','provider rejection stops automatically after five attempts');
  // HTTP end-to-end with API disabled in private fixture config.
  $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
- $process=proc_open([PHP_BINARY,'-d','opcache.enable=0','-S',$address,'-t',$public,dirname(__DIR__).'/tests/po-router.php'],[0=>['pipe','r'],1=>['file',$root.'/http.log','a'],2=>['file',$root.'/http.log','a']],$pipes);
+ $process=proc_open([PHP_BINARY,'-d','opcache.enable=0','-d','session.save_path='.$root.'/sessions','-S',$address,'-t',$public,dirname(__DIR__).'/tests/po-router.php'],[0=>['pipe','r'],1=>['file',$root.'/http.log','a'],2=>['file',$root.'/http.log','a']],$pipes);
  $curl=curl_init();curl_setopt_array($curl,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_COOKIEFILE=>'',CURLOPT_TIMEOUT=>10]);
  $http=static function(string $path,?array $data=null)use($curl,$address):array{curl_setopt_array($curl,[CURLOPT_URL=>'http://'.$address.$path,CURLOPT_POST=>$data!==null]);if($data!==null)curl_setopt($curl,CURLOPT_POSTFIELDS,http_build_query($data));$body=curl_exec($curl);return [(int)curl_getinfo($curl,CURLINFO_RESPONSE_CODE),(string)$body,(string)curl_getinfo($curl,CURLINFO_REDIRECT_URL)];};
  $csrf=static function(string $body):string{if(!preg_match('/name="csrf" value="([a-f0-9]+)"/',$body,$m))throw new RuntimeException('Missing CSRF');return $m[1];};
@@ -86,11 +86,11 @@ try{
  [$code,$html]=$http($statusPath,$report+['action'=>'report-transfer','csrf'=>'wrong']);wa_check(str_contains($html,'Sesi formulir berakhir'),'transfer report requires CSRF');
  [$code]=$http($statusPath,$report+['action'=>'report-transfer','csrf'=>$customerCsrf]);wa_check($code===303,'transfer report persists over HTTP');[$code,$html]=$http($statusPath);wa_check(str_contains($html,'sedang diperiksa')&&!str_contains($html,'name="transfer_reference"'),'invoice shows under-review state without requesting a second transfer');
  [$code]=$http('/admin/po-cron.php');wa_check($code===404,'notification worker is CLI-only');
- [$code,$html]=$http('/admin/index.php');[$code]=$http('/admin/index.php',['aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);wa_check($code===302,'staff fixture login works');[$code,$html]=$http('/admin/index.php');$adminCsrf=$csrf($html);
+ [$code,$html]=$http('/admin/index.php');[$code]=$http('/admin/index.php',['csrf'=>$csrf($html),'aksi'=>'login','u'=>'staff','p'=>'Demo-test-password']);wa_check($code===302,'staff fixture login works');[$code,$html]=$http('/admin/index.php');$adminCsrf=$csrf($html);
  $webToken=substr($statusPath,strpos($statusPath,'t=')+2);$webOrder=po_order($db,$webToken);
  [$code,$html]=$http('/admin/po.php',['csrf'=>$adminCsrf,'action'=>'manual-payment','order_id'=>$webOrder['id'],'decision'=>'paid','verified_amount'=>25000,'expected_report'=>1,'admin_reference'=>'Demo','current_password'=>'Demo-test-password']);wa_check(po_order($db,$webToken)['payment_status']==='under_review','HTTP staff cannot approve payment');
  foreach(['rekening','notifikasi']as$restricted){[$code,$restrictedHtml]=$http('/admin/po.php?view='.$restricted);wa_check($code===403&&!str_contains($restrictedHtml,'name="bank_name"')&&!str_contains($restrictedHtml,'name="job_id"'),'staff cannot open owner-only PO page: '.$restricted);}
- [$code]=$http('/admin/index.php',['aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);[$code,$html]=$http('/admin/po.php?view=notifikasi');$adminCsrf=$csrf($html);wa_check(str_contains($html,'Notifikasi WhatsApp'),'owner sees notification queue dashboard');
+ [$code]=$http('/admin/index.php',['csrf'=>$adminCsrf,'aksi'=>'login','u'=>'owner','p'=>'Demo-test-password']);[$code,$html]=$http('/admin/po.php?view=notifikasi');$adminCsrf=$csrf($html);wa_check(str_contains($html,'Notifikasi WhatsApp'),'owner sees notification queue dashboard');
  // UI routes use the same lightweight admin shell and isolate editors from lists.
  $previewPages=[];
  foreach(['pesanan','jadwal','produk','rekening','notifikasi']as$view){
@@ -111,7 +111,10 @@ try{
  if(getenv('PO_UI_KEEP_FIXTURE'))foreach($previewPages as$name=>$body)file_put_contents($public.'/admin/preview-'.$name.'.html',$body);
  $paymentPost=['action'=>'manual-payment','order_id'=>$webOrder['id'],'decision'=>'paid','verified_amount'=>25000,'expected_report'=>1,'admin_reference'=>'Mutasi web test','current_password'=>'Demo-test-password'];
  [$code,$html]=$http('/admin/po.php',$paymentPost+['csrf'=>'wrong']);wa_check(po_order($db,$webToken)['payment_status']==='under_review','payment approval requires CSRF');
- [$code,$html]=$http('/admin/po.php',array_replace($paymentPost,['current_password'=>'wrong','csrf'=>$adminCsrf]));wa_check(po_order($db,$webToken)['payment_status']==='under_review','payment approval requires current owner identity');
+ foreach(glob($root.'/sessions/sess_*') as $sessionFile){$session=file_get_contents($sessionFile);if(str_contains($session,'uid|s:5:"owner"'))file_put_contents($sessionFile,preg_replace('/reauth_at\|i:[0-9]+;/','reauth_at|i:1;',$session));}
+ [$code,$html,$redirect]=$http('/admin/po.php',$paymentPost+['csrf'=>$adminCsrf]);wa_check($code===303&&str_contains($redirect,'p=verifikasi')&&po_order($db,$webToken)['payment_status']==='under_review','expired reauthentication redirects without approving or storing payment payload');
+ [$code,$html]=$http('/admin/index.php?p=verifikasi',['aksi'=>'reauth','csrf'=>$adminCsrf,'current_password'=>'wrong']);wa_check($code===200&&str_contains($html,'Verifikasi gagal'),'incorrect owner reauthentication remains rejected');
+ [$code]=$http('/admin/index.php?p=verifikasi',['aksi'=>'reauth','csrf'=>$adminCsrf,'current_password'=>'Demo-test-password']);wa_check($code===302,'owner can reauthenticate before returning to PO');
  [$code]=$http('/admin/po.php',$paymentPost+['csrf'=>$adminCsrf]);wa_check($code===303&&po_order($db,$webToken)['payment_status']==='paid','verified owner approves transfer through HTTP');
  wa_check(!preg_match('/PHP (Warning|Fatal)|Uncaught/',file_get_contents($root.'/http.log')),'new HTTP flows produce no PHP warnings or fatal errors');
  $worker=proc_open([PHP_BINARY,$public.'/admin/po-cron.php','--run'],[1=>['pipe','w'],2=>['pipe','w']],$wp);$stdout=stream_get_contents($wp[1]);$stderr=stream_get_contents($wp[2]);fclose($wp[1]);fclose($wp[2]);wa_check(proc_close($worker)===0&&$stderr===''&&is_file($private.'/po-wa-heartbeat.json')&&json_decode($stdout,true)['disabled']===true,'cron performs expiry and heartbeat with API disabled');

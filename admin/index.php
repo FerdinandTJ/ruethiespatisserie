@@ -3,15 +3,29 @@
 define('RUETHIES_ADMIN', true);
 require __DIR__ . '/config.php';
 require __DIR__ . '/lib.php';
+foreach ($_GET as $value) if (!is_string($value) || str_contains($value,"\0") || !mb_check_encoding($value,'UTF-8')) { http_response_code(400); die('Format parameter tidak valid.'); }
 ruethies_session_start();
 header('X-Robots-Tag: noindex, nofollow', true);
 
-$me = current_user();
-$err = ''; $ok = $_GET['ok'] ?? '';
+$err = ''; $ok = is_string($_GET['ok'] ?? null) ? $_GET['ok'] : '';
+try { $me = current_user(); } catch (RuntimeException $e) { $me=null; http_response_code(503); $err='Penyimpanan keamanan belum siap. Hubungi pengelola.'; }
 
 /* ---------- aksi POST ---------- */
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
-  $aksi = $_POST['aksi'] ?? '';
+ try {
+  foreach ($_POST as $value) if (!is_string($value) || str_contains($value,"\0") || !mb_check_encoding($value,'UTF-8')) throw new DomainException('Format isian tidak valid.');
+  $aksi = security_input($_POST, 'aksi', 40);
+  if ($aksi !== '' && !ruethies_csrf_ok()) { http_response_code(403); die('Aksi ditolak. Muat ulang formulir.'); }
+  if (in_array($aksi,['pw','2fa-aktif','2fa-mati','user-tambah','user-hapus'],true)) {
+    if (!$me) { http_response_code(403); die('Aksi ditolak.'); }
+    security_require_reauth();
+  }
+  security_upload_input($_FILES);
+  if ($me && in_array($aksi,['save','galeri-save'],true)) {
+    foreach ($aksi==='save' ? ['foto','detail1','detail2'] : ['gfoto'] as $field) {
+      if (!empty($_FILES[$field]['name']) || !empty($_POST[$field.'_b64'])) security_rate_take('upload',$me['name'],20,false);
+    }
+  }
   if ($me && ruethies_csrf_ok() && in_array($aksi, [
     'save', 'toggle', 'hapus', 'galeri-save', 'galeri-gerak', 'galeri-hapus',
     'faq-save', 'faq-gerak', 'faq-hapus',
@@ -21,52 +35,33 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   if ($aksi === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
     $err = 'Foto terlalu besar untuk server (batas ±8 MB). Kecilkan dulu (mis. screenshot/kompres di HP), lalu coba lagi.';
   } else
-  // Login: username + password (rate-limit + CSRF tidak dipakai di form login pertama agar tidak bocor oracle;
-  // proteksi = rate-limit per IP + sesi baru).
   if ($aksi === 'login') {
-    $name = trim((string)($_POST['u'] ?? ''));
-    $pass = (string)($_POST['p'] ?? '');
-    if (!ruethies_ratelimit_ok()) { $err = 'Terlalu banyak percobaan. Tunggu 15 menit.'; }
-    else {
-      $u = user_get($name);
-      if ($u && password_verify($pass, $u['hash'])) {
-        if (password_needs_rehash($u['hash'], PASSWORD_DEFAULT)) {
-          $all = users_all();
-          foreach ($all as &$x) if ($x['name'] === $u['name']) $x['hash'] = password_hash($pass, PASSWORD_DEFAULT);
-          users_save($all);
-        }
-        ruethies_ratelimit_reset();
-        if (($u['role'] ?? '') === 'owner' && !empty($u['totp'])) {
-          $_SESSION['pending'] = $u['name']; $_SESSION['pending_t'] = time();
-          header('Location: ?p=kode'); exit;
-        }
-        ruethies_login($u);
-        ruethies_log($u['name'], 'login', 'berhasil');
-        header('Location: ?'); exit;
-      }
-      ruethies_ratelimit_hit();
-      ruethies_log($name !== '' ? $name : '(kosong)', 'login-gagal', '');
-      usleep(random_int(200000, 500000)); // samarkan timing
-      $err = 'Nama atau kata sandi salah.';
+    $name=trim(security_input($_POST,'u',256));$pass=security_input($_POST,'p',1024);
+    if (security_password_login($name,$pass)) {
+      if (isset($_SESSION['pending'])) { header('Location: ?p=kode'); exit; }
+      ruethies_log($_SESSION['uid'],'login','berhasil'); header('Location: ?'); exit;
     }
+    ruethies_log($name!=='' ? $name : '(kosong)','login-gagal','');
+    $err='Nama atau kata sandi salah.';
   }
-  // Verifikasi kode 2FA pemilik.
   elseif ($aksi === 'kode') {
-    $name = $_SESSION['pending'] ?? '';
-    if ($name === '' || time() - ($_SESSION['pending_t'] ?? 0) > 300) { unset($_SESSION['pending']); $err = 'Sesi kode kedaluwarsa, login ulang.'; }
-    else {
-      $u = user_get($name);
-      if ($u && !empty($u['totp']) && totp_verify($u['totp'], trim((string)($_POST['c'] ?? '')))) {
-        unset($_SESSION['pending']);
-        ruethies_login($u);
-        ruethies_log($u['name'], 'login-2fa', 'berhasil');
-        header('Location: ?'); exit;
-      }
-      ruethies_log($name, 'login-2fa-gagal', '');
-      $err = 'Kode salah, coba lagi.';
+    $name=$_SESSION['pending']['name'] ?? '(tanpa challenge)';
+    if (security_challenge_login(trim(security_input($_POST,'c',6)))) {
+      ruethies_log($_SESSION['uid'],'login-2fa','berhasil');header('Location: ?');exit;
     }
+    ruethies_log($name,'login-2fa-gagal','');$err='Kode salah atau sudah digunakan. Gunakan kode terbaru.';
   }
-  elseif ($aksi === 'logout') { $n = $me['name'] ?? '?'; ruethies_log($n, 'logout', ''); ruethies_logout(); header('Location: ?p=login'); exit; }
+  elseif ($aksi === 'reauth') {
+    if (!$me) { http_response_code(403);die('Aksi ditolak.'); }
+    if (security_reauth($me,security_input($_POST,'current_password',1024),trim(security_input($_POST,'c',6)))) {
+      header('Location: ?p=pengaturan&ok=verified');exit;
+    }
+    ruethies_log($me['name'],'verifikasi-gagal','');$err='Verifikasi gagal. Periksa kata sandi dan kode terbaru.';
+  }
+  elseif ($aksi === 'logout') {
+    if ($me) ruethies_log($me['name'],'logout','');
+    ruethies_logout();header('Location: ?p=login');exit;
+  }
 
   // Semua aksi di bawah wajib login + CSRF.
   elseif (!$me || !ruethies_csrf_ok()) { http_response_code(403); die('Aksi ditolak.');
@@ -74,6 +69,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   elseif ($aksi === 'toggle') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
+      $items[$i]['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
       $items[$i]['available'] = empty($items[$i]['available']) || $items[$i]['available'] === false ? true : false;
       if (menu_save($items)) { ruethies_log($me['name'], 'toggle', ($items[$i]['id']['n'] ?? '') . ' => ' . ($items[$i]['available'] ? 'tampil' : 'sembunyi')); header('Location: ?ok=tampil#item-' . $i); exit; }
       $err = 'Gagal menyimpan.';
@@ -83,36 +79,54 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
     $img = $old['img'] ?? '';
+    $details = array_pad(array_slice($old['detail_images'] ?? [], 0, 2), 2, '');
+    $created = [];
     $ulock = upload_lock();
-    if (!empty($_FILES['foto']['name'] ?? '')) {
-      [$path, $perr] = photo_upload($_FILES['foto'], $_POST['n'] ?? 'menu');
-      if ($perr) $err = $perr; else $img = $path;
-    } elseif (!empty($_POST['foto_b64'] ?? '')) {
-      [$braw, $berr] = b64_image('foto_b64', 3 * 1024 * 1024);
-      if ($berr) $err = $berr;
-      else { [$path, $perr] = photo_upload_raw($braw, $_POST['n'] ?? 'menu'); if ($perr) $err = $perr; else $img = $path; }
-    }
-    upload_unlock($ulock);
+    try {
+      foreach (['foto','detail1','detail2'] as $slot => $field) {
+        if ($slot > 0 && !empty($_POST[$field.'_remove'])) $details[$slot-1] = '';
+        $path = null; $perr = null;
+        if (!empty($_FILES[$field]['name'] ?? '')) {
+          [$path, $perr] = photo_upload($_FILES[$field], ($_POST['n'] ?? 'menu').($slot ? '-detail-'.$slot : ''), $slot > 0);
+        } elseif (!empty($_POST[$field.'_b64'] ?? '')) {
+          [$raw, $perr] = b64_image($field.'_b64', 3 * 1024 * 1024);
+          if (!$perr) [$path, $perr] = photo_upload_raw($raw, ($_POST['n'] ?? 'menu').($slot ? '-detail-'.$slot : ''), $slot > 0);
+        }
+        if ($perr) { $err = $perr; break; }
+        if ($path) { $created[] = $path; if ($slot === 0) $img = $path; else $details[$slot-1] = $path; }
+      }
+    } finally { upload_unlock($ulock); }
+    if ($err === '' && $img === '') $err = 'Foto utama wajib diunggah.';
     if ($err === '') {
-      $row = menu_validate(array_merge($_POST, ['img' => $img]));
+      $row = menu_validate(array_merge(['detail'=>$old['id']['detail'] ?? '', 'detaile'=>$old['en']['detail'] ?? ''], $_POST, ['img' => $img, 'detail_images' => $details, 'available'=>!empty($_POST['available'])]));
       if (!$row) $err = 'Periksa isian: nama wajib, kategori valid.';
       else {
-        if ($old) { $row['img'] = $img; $row['uid'] = $old['uid'] ?? ''; $items[$i] = $row; }
-        else $items[] = $row;
-        if (menu_save($items)) { ruethies_log($me['name'], $old ? 'ubah' : 'tambah', $row['id']['n']); header('Location: ?ok=simpan'); exit; }
+        if ($old) {
+          $row = array_replace($old, $row); // Preserve IDs, stable slug and unknown future metadata.
+          $row['id'] = array_replace($old['id'], $row['id']);
+          $row['en'] = array_replace($old['en'] ?? [], $row['en']);
+        }
+        $row['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
+        if ($old) $items[$i] = $row; else $items[] = $row;
+        if (menu_save($items)) {
+          foreach (array_merge([$old['img'] ?? ''], $old['detail_images'] ?? []) as $previous) menu_photo_delete_unused($previous);
+          ruethies_log($me['name'], $old ? 'ubah' : 'tambah', $row['id']['n']); header('Location: ?ok=simpan'); exit;
+        }
         $err = 'Gagal menyimpan.';
       }
     }
+    foreach ($created as $unused) menu_photo_delete_unused($unused);
   }
   elseif ($aksi === 'hapus') {
     if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
       $nm = $items[$i]['id']['n'] ?? '';
-      $image = (string)($items[$i]['img'] ?? '');
+      $images = array_merge([(string)($items[$i]['img'] ?? '')], $items[$i]['detail_images'] ?? []);
       array_splice($items, $i, 1);
       if (menu_save($items)) {
-        $photo = menu_photo_delete_unused($image);
+        $results = array_map('menu_photo_delete_unused', $images);
+        $photo = in_array('failed',$results,true) ? 'failed' : (in_array('kept',$results,true) ? 'kept' : 'deleted');
         ruethies_log($me['name'], 'hapus', $nm . ' | foto: ' . $photo);
         header('Location: ?ok=hapus&photo=' . $photo); exit;
       }
@@ -120,42 +134,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
   }
   elseif ($aksi === 'pw') {
-    $all = users_all(); $p1 = (string)($_POST['p1'] ?? ''); $p2 = (string)($_POST['p2'] ?? '');
-    if (mb_strlen($p1) < 12 || $p1 !== $p2) $err = 'Kata sandi minimal 12 karakter dan konfirmasi harus sama.';
-    else {
-      foreach ($all as &$x) if ($x['name'] === $me['name']) $x['hash'] = password_hash($p1, PASSWORD_DEFAULT);
-      if (users_save($all)) { ruethies_log($me['name'], 'ganti-password', 'sendiri'); header('Location: ?p=pengaturan&ok=pw'); exit; }
-      $err = 'Gagal menyimpan.';
-    }
+    security_change_password($me,security_input($_POST,'p1',1024),security_input($_POST,'p2',1024));
+    ruethies_log($me['name'],'ganti-password','Semua sesi dicabut.');ruethies_logout();header('Location: ?p=login&ok=security');exit;
   }
   elseif ($aksi === '2fa-aktif') {
-    if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
-    $sec = $_SESSION['totp_baru'] ?? '';
-    if ($sec !== '' && totp_verify($sec, trim((string)($_POST['c'] ?? '')))) {
-      $all = users_all();
-      foreach ($all as &$x) if ($x['name'] === $me['name']) $x['totp'] = $sec;
-      unset($_SESSION['totp_baru']);
-      if (users_save($all)) { ruethies_log($me['name'], '2fa-aktif', ''); header('Location: ?p=pengaturan&ok=2fa'); exit; }
-      $err = 'Gagal menyimpan.';
-    } else $err = 'Kode salah, coba lagi.';
+    if (!is_owner($me)) { http_response_code(403);die('Khusus pemilik.'); }
+    security_rate_take('enrollment',$me['name']);
+    $sec=security_input($_SESSION,'totp_baru',64);
+    if ($sec==='')throw new DomainException('Sesi pengaturan OTP kedaluwarsa.');
+    security_set_totp($me,$sec,trim(security_input($_POST,'c',6)));
+    ruethies_log($me['name'],'2fa-aktif','Semua sesi dicabut.');ruethies_logout();header('Location: ?p=login&ok=security');exit;
   }
   elseif ($aksi === '2fa-mati') {
-    if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
-    $all = users_all();
-    foreach ($all as &$x) if ($x['name'] === $me['name']) $x['totp'] = '';
-    if (users_save($all)) { ruethies_log($me['name'], '2fa-mati', ''); header('Location: ?p=pengaturan&ok=2fa-mati'); exit; }
-    $err = 'Gagal menyimpan.';
+    security_disable_totp($me);ruethies_log($me['name'],'2fa-mati','Semua sesi dicabut.');ruethies_logout();header('Location: ?p=login&ok=security');exit;
   }
   elseif ($aksi === 'user-tambah') {
-    if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
-    $nm = trim(preg_replace('/[^a-zA-Z0-9_.-]/', '', (string)($_POST['nu'] ?? '')));
-    $pw = (string)($_POST['np'] ?? '');
-    if ($nm === '' || user_get($nm) || mb_strlen($pw) < 12) $err = 'Nama sudah dipakai/kosong, atau sandi < 12 karakter.';
-    else {
-      $all = users_all(); $all[] = ['name' => $nm, 'hash' => password_hash($pw, PASSWORD_DEFAULT), 'role' => 'staff', 'totp' => ''];
-      if (users_save($all)) { ruethies_log($me['name'], 'user-tambah', $nm); header('Location: ?p=pengaturan&ok=user'); exit; }
-      $err = 'Gagal menyimpan.';
-    }
+    security_add_staff($me,trim(security_input($_POST,'nu',80)),security_input($_POST,'np',1024));
+    ruethies_log($me['name'],'user-tambah',security_input($_POST,'nu',80));header('Location: ?p=pengaturan&ok=user');exit;
   }
   elseif ($aksi === 'galeri-save') {
     $items = atmos_load(); $i = (int)($_POST['gi'] ?? -1);
@@ -178,6 +173,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
       else {
         $row = ['img' => $img, 'imgFull' => $full !== '' ? $full : $img,
           'id' => ['cap' => $cap], 'en' => ['cap' => $cape !== '' ? $cape : $cap]];
+        if ($old) {
+          $row = array_replace($old, $row); // Preserve IDs, stable slug and unknown future metadata.
+          $row['id'] = array_replace($old['id'], $row['id']);
+          $row['en'] = array_replace($old['en'] ?? [], $row['en']);
+        }
+        $row['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
         if ($old) $items[$i] = $row; else $items[] = $row;
         if (atmos_save($items)) { ruethies_log($me['name'], $old ? 'galeri-ubah' : 'galeri-tambah', $cap); header('Location: ?p=galeri&ok=simpan#galeri'); exit; }
         $err = 'Gagal menyimpan.';
@@ -240,29 +241,31 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     }
   }
   elseif ($aksi === 'user-hapus') {
-    if (!is_owner($me)) { http_response_code(403); die('Khusus pemilik.'); }
-    $nm = (string)($_POST['nu'] ?? '');
-    if ($nm === $me['name']) $err = 'Tidak bisa menghapus akun sendiri.';
-    else {
-      $all = array_values(array_filter(users_all(), fn($x) => $x['name'] !== $nm));
-      if (users_save($all)) { ruethies_log($me['name'], 'user-hapus', $nm); header('Location: ?p=pengaturan&ok=user'); exit; }
-      $err = 'Gagal menyimpan.';
-    }
+    security_remove_staff($me,security_input($_POST,'nu',256),security_input($_POST,'target_version',64));
+    ruethies_log($me['name'],'user-hapus',security_input($_POST,'nu',256));header('Location: ?p=pengaturan&ok=user');exit;
   }
-  $me = current_user();
+  $me=current_user();
+ } catch (RuethiesReauthRequired $e) { header('Location: ?p=verifikasi',true,303);exit; }
+ catch (RuethiesRateLimit $e) { http_response_code(429);header('Retry-After: 900');$err=$e->getMessage(); }
+ catch (DomainException $e) { $err=$e->getMessage(); }
+ catch (RuntimeException $e) { http_response_code(503);$err='Penyimpanan keamanan belum siap atau sedang sibuk. Hubungi pengelola.';error_log('Ruethies admin: security storage unavailable'); }
 }
 
 /* ---------- tampilan ---------- */
 $p = is_string($_GET['p'] ?? null) ? $_GET['p'] : '';
 if (!$me && $p !== 'kode') $p = 'login';
 if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
-$area = str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : ($p === 'pengaturan' ? 'pengaturan' : 'menu'));
+$area = str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu'));
 $labels = ['menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
 $intro = ['menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
 // Baca setiap sumber sekali untuk tampilan. Indeks asli dipertahankan saat memfilter.
-$_menu = $me ? menu_load() : [];
+try { $_menu = $me ? menu_load() : []; } catch (RuntimeException $e) { http_response_code(503);$_menu=[];$err='Data menu tidak dapat dibaca. Pulihkan file menu sebelum menyimpan perubahan.'; }
 $_gallery = $me ? atmos_load() : [];
 $_faqs = $me ? faq_load() : [];
+$_logs=[];
+if ($p==='pengaturan' && is_owner($me)) {
+  try { $_logs=ruethies_logs(); } catch (RuntimeException $e) { http_response_code(503); $err='Log aktivitas belum dapat dibaca. Coba lagi.'; }
+}
 $q = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']),0,80) : '';
 $category = is_string($_GET['cat'] ?? null) && isset(RUETHIES_CATS[$_GET['cat']]) ? $_GET['cat'] : '';
 $availability = in_array($_GET['show'] ?? '', ['visible','hidden'], true) ? $_GET['show'] : '';
@@ -282,8 +285,8 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <meta name="robots" content="noindex, nofollow" />
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
-<script src="admin.js?v=20261105-ui" defer></script>
-<link rel="stylesheet" href="admin.css?v=20261105-ui" />
+<script src="admin.js?v=20261109-upload-csp" defer></script>
+<link rel="stylesheet" href="admin.css?v=20261109-details" />
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
@@ -308,22 +311,24 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>
 </nav>
 <div class="who"><div class="who-id"><?= icon('user', 16) ?><div><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></div>
-<form method="post"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
 <p class="sidefoot">Perubahan langsung tampil di web.<br />Ruethies Patisserie</p>
 </aside>
 <div class="maincol">
-<header class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span><a class="ticon" href="../" target="_blank" rel="noopener" aria-label="Lihat website"><?= icon('web',18) ?></a><form method="post"><input type="hidden" name="aksi" value="logout"><button class="ticon" aria-label="Keluar dari admin"><?= icon('out',18) ?></button></form></header>
+<header class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span><a class="ticon" href="../" target="_blank" rel="noopener" aria-label="Lihat website"><?= icon('web',18) ?></a><form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="logout"><button class="ticon" aria-label="Keluar dari admin"><?= icon('out',18) ?></button></form></header>
 <main class="main" id="admin-main">
 <div class="mnav">
 <a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu', 16) ?> Menu</a>
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img', 16) ?> Galeri</a>
 <a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check', 16) ?> FAQ</a>
-<?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag', 16) ?> PO demo</a><?php endif; ?>
+<?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag', 16) ?> Pre-order</a><?php endif; ?>
 <?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
 <?php endif; ?>
 <?php if ($err): ?><p class="err" role="alert"><?= h($err) ?></p><?php endif; ?>
+<?php if ($ok === 'security'): ?><p class="okmsg" role="status">Keamanan akun diperbarui. Semua sesi sudah dicabut. Silakan masuk kembali.</p><?php endif; ?>
+<?php if ($ok === 'verified'): ?><p class="okmsg" role="status">Verifikasi berhasil. Tindakan keamanan tersedia selama 5 menit.</p><?php endif; ?>
 <?php if ($ok === 'simpan'): ?><p class="okmsg" role="status">Tersimpan dan langsung tampil di web.</p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg" role="status">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
 <?php if ($ok === 'hapus'): ?><p class="okmsg" role="status">Item dihapus permanen.</p><?php endif; ?>
@@ -340,7 +345,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <h2><?= icon('lock') ?> Selamat datang</h2>
 <p class="sub">Masuk untuk mengelola menu dan galeri.</p>
 <form method="post" autocomplete="off">
-<input type="hidden" name="aksi" value="login" />
+<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="login" />
 <label>Nama pengguna<input name="u" required autocomplete="username" /></label>
 <label>Kata sandi
 <span class="pwrow"><input id="pw-login" name="p" type="password" required autocomplete="current-password" /><button type="button" class="ghost" data-pw-toggle="pw-login">Lihat</button></span></label>
@@ -352,7 +357,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <h2><?= icon("shield") ?> Kode keamanan</h2>
 <p class="sub"><b>Pemilik:</b> buka aplikasi Authenticator di HP, masukkan 6 digit kode yang tampil.</p>
 <form method="post" autocomplete="off">
-<input type="hidden" name="aksi" value="kode" />
+<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="kode" />
 <label>Kode OTP<input name="c" class="otp" inputmode="numeric" maxlength="6" required autocomplete="one-time-code" /></label>
 <button class="w100">Verifikasi</button>
 </form>
@@ -379,7 +384,17 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <?php if (!$filtered): ?><div class="empty"><b><?= $_menu ? 'Tidak ada menu yang cocok.' : 'Belum ada menu.' ?></b><p><?= $_menu ? 'Coba kata kunci lain atau reset filter.' : 'Tambahkan sajian pertama untuk ditampilkan di website.' ?></p></div><?php endif; ?>
 <?php endif; ?>
 
-<?php if ($p === 'pengaturan' && is_owner($me)): ?>
+<?php if ($p === 'verifikasi'): ?>
+<div class="card editor"><h2><?= icon('shield') ?> Verifikasi keamanan</h2><p class="sub">Konfirmasi identitas Anda untuk mengubah pengaturan keamanan. Verifikasi berlaku 5 menit.</p>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="reauth">
+<label>Kata sandi saat ini<input name="current_password" type="password" autocomplete="current-password" required></label>
+<?php if (is_owner($me) && !empty($me['totp'])): ?><label>Kode terbaru dari Authenticator<input name="c" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label><?php endif; ?>
+<button>Verifikasi</button> <a class="linkbtn" href="?p=pengaturan">Kembali</a></form></div>
+<?php endif; ?>
+<?php if ($p === 'pengaturan' && is_owner($me)):
+  $fresh=is_int($_SESSION['reauth_at'] ?? null) && $_SESSION['reauth_at']<=time() && time()-$_SESSION['reauth_at']<300; ?>
+<?php if (!$fresh): ?><p class="warn">Untuk mengubah keamanan atau akun staf, lakukan verifikasi ulang terlebih dahulu.</p><a class="btn" href="?p=verifikasi">Verifikasi keamanan</a><?php endif; ?>
+<fieldset class="security-fields" <?= $fresh ? '' : 'disabled' ?>>
 <div class="card">
 <h2><?= icon("shield") ?> Kode OTP pemilik</h2>
 <?php if (!empty($me['totp'])): ?>
@@ -413,7 +428,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <h2><?= icon("user") ?> Akun staf</h2>
 <?php foreach (users_all() as $x): if (($x['role'] ?? '') !== 'staff') continue; ?>
 <form method="post" data-confirm="Cabut akses staf ini?"><div class="item"><span class="grow"><?= h($x['name']) ?></span>
-<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="user-hapus" /><input type="hidden" name="nu" value="<?= h($x['name']) ?>" />
+<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="user-hapus" /><input type="hidden" name="nu" value="<?= h($x['name']) ?>" /><input type="hidden" name="target_version" value="<?= h($x['auth_version'] ?? '') ?>">
 <button class="danger">Cabut</button></div></form>
 <?php endforeach; ?>
 <form method="post" autocomplete="off">
@@ -424,9 +439,10 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 </form>
 <small>Staf bisa tambah/ubah/tampilkan menu + upload foto. Hapus permanen & pengaturan khusus pemilik.</small>
 </div>
+</fieldset>
 <div class="card">
 <h2><?= icon("clock") ?> Log aktivitas</h2>
-<div class="table-scroll" tabindex="0" role="region" aria-label="Log aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach (ruethies_logs() as $l): ?>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Log aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach ($_logs as $l): ?>
 <tr><td><?= h(date('d M Y, H:i', strtotime($l['t']) ?: time())) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
 <?php endforeach; ?></table></div>
 </div>
@@ -450,15 +466,25 @@ if ($p === 'tambah' || $edit):
 <option value="<?= $k ?>" <?= (($edit['cat'] ?? '') === $k) ? 'selected' : '' ?>><?= h($v) ?></option><?php endforeach; ?></select></label>
 <label>Nama (Indonesia)<span class="count" id="c-n"></span><input name="n" maxlength="60" required data-count="c-n" value="<?= h($edit['id']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Indonesia)<span class="count" id="c-d"></span><input name="d" maxlength="160" data-count="c-d" value="<?= h($edit['id']['d'] ?? '') ?>" /></label>
+<label>Deskripsi detail (opsional)<small class="hint">Informasi produk yang sudah pasti, bukan harga atau ketentuan yang belum dikonfirmasi. Tampil pada halaman detail.</small><textarea name="detail" maxlength="4000" rows="5"><?= h($edit['id']['detail'] ?? '') ?></textarea></label>
 <details class="optional-fields"><summary>Terjemahan Inggris <span>Opsional</span></summary><label>Nama (Inggris, opsional)<span class="count" id="c-ne"></span><input name="ne" maxlength="60" data-count="c-ne" value="<?= h($edit['en']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Inggris, opsional)<span class="count" id="c-de"></span><input name="de" maxlength="160" data-count="c-de" value="<?= h($edit['en']['d'] ?? '') ?>" /></label>
+<label>Deskripsi detail Inggris (opsional)<textarea name="detaile" maxlength="4000" rows="5"><?= h($edit['en']['detail'] ?? '') ?></textarea></label>
 </details>
 <label>Label <small class="hint">(mis. Best Seller — kosongkan bila tidak ada)</small><input name="badge" maxlength="24" value="<?= h($edit['badge'] ?? '') ?>" /></label>
 <label>Tag <small class="hint">(mis. Manis • Lembut)</small><input name="tag" maxlength="40" value="<?= h($edit['tag']['id'] ?? '') ?>" /></label>
 <label><input type="checkbox" name="signature" value="1" <?= !empty($edit['signature']) ? 'checked' : '' ?> /> Tampilkan di Signature <small class="hint">(maks 3)</small></label>
 <label><input type="checkbox" name="available" value="1" <?= !isset($edit) || !empty($edit['available']) ? 'checked' : '' ?> /> Tampilkan di web</label>
-<label>Foto <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
+<label>Foto display utama <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
 <div class="preview" id="prev-foto"><?php if ($edit && !empty($edit['img'])): ?><img class="thumb-sm" src="../<?= h($edit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
+<fieldset class="photo-details"><legend>Foto detail (opsional, maksimal 2)</legend>
+<p class="sub">Ditampilkan saat pengunjung mengeklik foto menu. Kosongkan untuk mempertahankan foto lama. Foto pengganti akan menggantikan slot yang sama.</p>
+<?php for ($slot=1; $slot<=2; $slot++): $detail=$edit['detail_images'][$slot-1] ?? ''; ?>
+<label>Foto detail <?= $slot ?> <small class="hint">(JPG/PNG/WebP, maks 5 MB)</small><input type="file" name="detail<?= $slot ?>" accept="image/jpeg,image/png,image/webp" data-preview="prev-detail<?= $slot ?>"></label>
+<div class="preview" id="prev-detail<?= $slot ?>"><?php if ($detail): ?><img class="thumb-sm" src="../<?= h($detail) ?>" alt="Foto detail <?= $slot ?> saat ini"><?php endif; ?></div>
+<?php if ($detail): ?><label><input type="checkbox" name="detail<?= $slot ?>_remove" value="1"> Hapus foto detail <?= $slot ?></label><?php endif; ?>
+<?php endfor; ?>
+</fieldset>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan menu</button></div>
 <p class="center"><a class="linkbtn" href="?"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>

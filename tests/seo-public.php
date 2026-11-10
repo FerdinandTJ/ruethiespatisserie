@@ -1,0 +1,70 @@
+<?php
+// Isolated CMS, upgrade and public HTTP regression. Never uses hosting/private accounts.
+if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
+set_error_handler(static function($severity,$message,$file,$line){if(error_reporting()&$severity)throw new ErrorException($message,0,$severity,$file,$line);return false;});
+$source=dirname(__DIR__);$root=sys_get_temp_dir().'/ruethies-seo-'.bin2hex(random_bytes(5));$public=$root.'/public_html';$private=$root.'/ruethies-data';$process=null;$curl=null;
+function seo_test(bool $ok,string $label):void{if(!$ok)throw new RuntimeException($label);echo "PASS: $label\n";}
+function seo_test_remove(string $path):void{if(!is_dir($path)||is_link($path)){unlink($path);return;}foreach(scandir($path)as$n)if($n!=='.'&&$n!=='..')seo_test_remove($path.'/'.$n);rmdir($path);}
+function seo_test_copy(string $from,string $to):void{if(!is_dir($from)){copy($from,$to);return;}if(!is_dir($to))mkdir($to,0700,true);foreach(scandir($from)as$n)if($n!=='.'&&$n!=='..')seo_test_copy($from.'/'.$n,$to.'/'.$n);}
+function seo_test_xpath(string $html):DOMXPath{$d=new DOMDocument();libxml_use_internal_errors(true);$d->loadHTML($html);libxml_clear_errors();return new DOMXPath($d);}
+try{
+ mkdir($public.'/admin',0700,true);mkdir($public.'/public-lib',0700);mkdir($private,0700);mkdir($root.'/sessions',0700);
+ foreach(['index.php','index.html','styles.css','app.js','product.js','404.html','llms.txt','menu.json','faq.json','atmosphere.json','public-lib/seo.php','admin/config.php','admin/lib.php','admin/catalog.php','admin/security.php','admin/security-resources.php','admin/seo-upgrade.php','admin/index.php','admin/admin.js','admin/admin.css','logo-wine.png','logo-white.png']as$file)copy($source.'/'.$file,$public.'/'.$file);
+ seo_test_copy($source.'/images',$public.'/images');
+ $users=[['name'=>'owner','role'=>'owner','hash'=>password_hash('Local-SEO-test-password',PASSWORD_DEFAULT),'totp'=>'','auth_version'=>str_repeat('a',64),'last_totp_counter'=>-1]];file_put_contents($private.'/users.json',json_encode($users));
+ $run=function(string $mode)use($public):array{$p=proc_open([PHP_BINARY,$public.'/admin/seo-upgrade.php',$mode],[1=>['pipe','w'],2=>['pipe','w']],$pipes);$out=stream_get_contents($pipes[1]);$err=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);return[proc_close($p),$out,$err];};
+ $before=file_get_contents($public.'/menu.json');$beforeUsers=file_get_contents($private.'/users.json');$privateBefore=scandir($private);
+ [$exit,$out,$err]=$run('--check');seo_test($exit===0&&$err===''&&json_decode($out,true)['changes_needed']&&file_get_contents($public.'/menu.json')===$before&&scandir($private)===$privateBefore,'upgrade check is read-only and detects missing metadata');
+ [$exit,$out,$err]=$run('--apply');$metadata=json_decode(file_get_contents($public.'/menu.json'),true);seo_test($exit===0&&$err===''&&count($metadata)===10&&count(array_unique(array_column($metadata,'uid')))===10,'upgrade adds unique identities to the ten hosting products');
+ $after=file_get_contents($public.'/menu.json');$backups=glob($private.'/backups/menu-before-seo-*');[$exit]=$run('--apply');seo_test($exit===0&&file_get_contents($public.'/menu.json')===$after&&count(glob($private.'/backups/menu-before-seo-*'))===count($backups)&&file_get_contents($private.'/users.json')===$beforeUsers,'repeated upgrade preserves identities, backups and account metadata');
+ preg_match('/Header set Content-Security-Policy "([^"]+)"/',file_get_contents($source.'/.htaccess'),$csp);
+ file_put_contents($root.'/router.php','<?php header('.var_export('Content-Security-Policy: '.$csp[1],true).');$p=parse_url($_SERVER["REQUEST_URI"],PHP_URL_PATH);if(in_array($p,["/","/index.php","/index.html","/sitemap.xml","/llms.txt"],true)||str_starts_with($p,"/menu")||str_starts_with($p,"/snack-box-cikarang")){require '.var_export($public.'/index.php',true).';return true;}return false;');
+ $socket=stream_socket_server('tcp://127.0.0.1:0');$address=stream_socket_get_name($socket,false);fclose($socket);
+ $process=proc_open([PHP_BINARY,'-d','session.save_path='.$root.'/sessions','-S',$address,'-t',$public,$root.'/router.php'],[0=>['pipe','r'],1=>['file',$root.'/server.log','a'],2=>['file',$root.'/server.log','a']],$pipes);
+ $curl=curl_init();$headers=[];curl_setopt_array($curl,[CURLOPT_PATH_AS_IS=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_COOKIEFILE=>'',CURLOPT_TIMEOUT=>10,CURLOPT_HEADERFUNCTION=>function($ch,$line)use(&$headers){$parts=explode(':',$line,2);if(count($parts)===2)$headers[strtolower(trim($parts[0]))]=trim($parts[1]);return strlen($line);}]);
+ $get=function(string $path,?array $post=null,array $extra=[])use($curl,$address,&$headers):array{$headers=[];curl_setopt_array($curl,[CURLOPT_URL=>'http://'.$address.$path,CURLOPT_POST=>$post!==null,CURLOPT_HTTPHEADER=>$extra]);if($post!==null)curl_setopt($curl,CURLOPT_POSTFIELDS,http_build_query($post));$body=curl_exec($curl);return[(int)curl_getinfo($curl,CURLINFO_RESPONSE_CODE),(string)$body,$headers];};
+ for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=$get('/');if($code)break;}
+ $x=seo_test_xpath($html);seo_test($code===200&&$x->query('//*[@id="menugrid"]/article')->length===10,'all ten products are available in initial HTML without JavaScript');
+ seo_test($x->query('//*[@id="menugrid"]//a[@href="/snack-box-cikarang/"]')->length===3&&$x->query('//*[@id="signature"]//a[@href]')->length===3,'catalogue and featured photos have crawlable canonical links');
+ seo_test($x->query('//h1')->length===1&&str_contains($x->query('//title')->item(0)->textContent,'Snack Box & Kue di Cikarang'),'home metadata and main heading focus on snack boxes and local cakes');
+ $schemas=[];foreach($x->query('//script[@type="application/ld+json"]')as$s)$schemas[]=json_decode($s->textContent,true,64,JSON_THROW_ON_ERROR);
+ seo_test($schemas[0]['@type']==='Bakery'&&!str_contains(json_encode($schemas),'aggregateRating')&&!str_contains(json_encode($schemas),'"offers"'),'business schema is Bakery without fictional ratings, prices or stock');
+ [$code,$body,$headers]=$get('/');$etag=$headers['etag'];seo_test(str_contains($headers['cache-control'],'must-revalidate')&&isset($headers['last-modified']),'HTML revalidates with ETag and Last-Modified');
+ [$code,$body]=$get('/',null,['If-None-Match: '.$etag]);seo_test($code===304&&$body==='','unchanged HTML returns a bodyless 304');
+ [$code,$xml]=$get('/sitemap.xml');$map=simplexml_load_string($xml);$map->registerXPathNamespace('s','http://www.sitemaps.org/schemas/sitemap/0.9');$locations=array_map('strval',$map->xpath('//s:loc'));seo_test($code===200&&count($locations)===11&&count(array_unique($locations))===11&&in_array('https://ruethiespatisserie.com/snack-box-cikarang/',$locations,true),'dynamic sitemap includes home and ten unique canonical products');
+ foreach($metadata as$item){$path=$item['slug']==='snackbox'?'/snack-box-cikarang/':'/menu/'.$item['slug'].'/';[$code,$body]=$get($path);$d=seo_test_xpath($body);seo_test($code===200&&$d->query('//h1')->length===1&&$d->query('//link[@rel="canonical"]')->item(0)->getAttribute('href')==='https://ruethiespatisserie.com'.$path,'product renders canonical HTML: '.$item['slug']);foreach($d->query('//script[@type="application/ld+json"]')as$s)json_decode($s->textContent,true,64,JSON_THROW_ON_ERROR);}
+ foreach(['/index.html'=>'/','/index.php'=>'/','/menu/snackbox/'=>'/snack-box-cikarang/','/menu/snackbox'=>'/snack-box-cikarang/','/snack-box-cikarang'=>'/snack-box-cikarang/','/menu/pastel'=>'/menu/pastel/']as$from=>$to){[$code,$body,$h]=$get($from);seo_test($code===301&&$h['location']===$to,'single canonical redirect: '.$from);}
+ foreach(['/menu/unknown/','/menu/../admin/config.php','/menu/%2e%2e/','/menu/a%2fb/']as$path){[$code]=$get($path);seo_test($code===404,'invalid/unknown product path rejected: '.$path);}
+ [$code,$errorPage]=$get('/menu/not-a-product/');$errorDom=seo_test_xpath($errorPage);seo_test($code===404&&$errorDom->query('//link[@rel="stylesheet" and starts-with(@href,"/styles.css")]')->length===1&&$errorDom->query('//*[@style]')->length===0&&!str_contains($errorPage,'croissant'),'404 uses root-relative CSS and current catalogue copy without CSP-blocked inline styles');
+ [$code,$body]=$get('/snack-box-cikarang/?q=anything&lang=en');$d=seo_test_xpath($body);seo_test($code===200&&$d->query('//link[@rel="canonical"]')->item(0)->getAttribute('href')==='https://ruethiespatisserie.com/snack-box-cikarang/','query parameters do not create new canonicals or English index URLs');
+ // Exercise actual CMS mutation, not only fixture file edits.
+ [$code,$login]=$get('/admin/');$csrf=seo_test_xpath($login)->query('//input[@name="csrf"]')->item(0)->getAttribute('value');[$code]=$get('/admin/',['aksi'=>'login','csrf'=>$csrf,'u'=>'owner','p'=>'Local-SEO-test-password']);seo_test($code===302,'owner can log in for CMS synchronization checks');
+ [$code,$editor]=$get('/admin/?p=ubah&i=0');$csrf=seo_test_xpath($editor)->query('//input[@name="csrf"]')->item(0)->getAttribute('value');
+ $hostile='Foto </script><div id="injected">x</div> & "quoted" $1';
+ [$code]=$get('/admin/',['aksi'=>'save','csrf'=>$csrf,'i'=>'0','cat'=>'cakery','n'=>'Bolu Nama Baru','d'=>'Deskripsi baru','detail'=>$hostile,'detaile'=>'English detail','available'=>'1','slug'=>'hijacked','uid'=>str_repeat('f',32)]);
+ $updated=json_decode(file_get_contents($public.'/menu.json'),true);seo_test($code===302&&$updated[0]['uid']===$metadata[0]['uid']&&$updated[0]['slug']===$metadata[0]['slug']&&$updated[0]['en']['detail']==='English detail','CMS rename preserves identity and slug while ignoring injected identity fields');
+ [$code,$body]=$get('/menu/'.$metadata[0]['slug'].'/');$d=seo_test_xpath($body);seo_test($code===200&&str_contains($body,'Bolu Nama Baru')&&$d->query('//*[@id="injected"]')->length===0&&str_contains($body,'$1'),'public detail updates immediately and special text stays data');
+ [$code,$body,$h]=$get('/',null,['If-None-Match: '.$etag]);seo_test($code===200&&$h['etag']!==$etag&&str_contains($body,'Bolu Nama Baru'),'CMS edit invalidates old home ETag even within the same second');
+ [$code]=$get('/admin/',['aksi'=>'toggle','csrf'=>$csrf,'i'=>'0']);[$code]=$get('/menu/'.$metadata[0]['slug'].'/');seo_test($code===404,'hidden product returns 404');[$code,$xml]=$get('/sitemap.xml');seo_test(!str_contains($xml,'/menu/'.$metadata[0]['slug'].'/'),'hidden product is absent from sitemap');
+ [$code]=$get('/admin/',['aksi'=>'hapus','csrf'=>$csrf,'i'=>'0']);[$code]=$get('/menu/'.$metadata[0]['slug'].'/');seo_test($code===404,'deleted product stays 404 instead of redirecting to home');
+ [$code]=$get('/admin/',['aksi'=>'save','csrf'=>$csrf,'i'=>'-1','cat'=>'cakery','n'=>'Produk Baru','d'=>'Baru','available'=>'1','foto_b64'=>'data:image/jpeg;base64,'.base64_encode(file_get_contents($source.'/images/menu/pastel.jpg'))]);$new=json_decode(file_get_contents($public.'/menu.json'),true);$last=end($new);seo_test($code===302&&isset($last['uid'],$last['slug']),'new admin product receives identity and slug automatically');[$code,$body]=$get('/menu/'.$last['slug'].'/');seo_test($code===200&&str_contains($body,$last['img']),'new product and uploaded image appear immediately on canonical page');
+ seo_test(is_file($backups[0]),'routine menu backup retention preserves the pre-SEO deployment backup');
+ [$code,$body]=$get('/llms.txt');seo_test($code===200&&str_contains($body,$last['id']['n'])&&!str_contains($body,'Bolu Nama Baru'),'live text summary tracks current visible catalogue');
+ $savedCurrent=file_get_contents($public.'/menu.json');
+ foreach(['duplicate-id','duplicate-slug','invalid-slug']as$case){
+   $invalid=json_decode($savedCurrent,true);
+   if($case==='duplicate-id')$invalid[1]['uid']=$invalid[0]['uid'];
+   if($case==='duplicate-slug')$invalid[1]['slug']=$invalid[0]['slug'];
+   if($case==='invalid-slug')$invalid[0]['slug']='../admin';
+   $invalidBytes=json_encode($invalid);file_put_contents($public.'/menu.json',$invalidBytes);[$exit]=$run('--apply');seo_test($exit===1&&file_get_contents($public.'/menu.json')===$invalidBytes,'upgrade rejects identity corruption without rewriting data: '.$case);
+ }
+ file_put_contents($public.'/menu.json','[]');[$code,$emptyHome]=$get('/');seo_test($code===200&&seo_test_xpath($emptyHome)->query('//*[@id="menugrid"]/article')->length===0,'empty valid catalogue does not revive demo products');
+ file_put_contents($public.'/menu.json',$savedCurrent);
+ // A file may contain schema-breaking text even if a normal editor strips HTML.
+ $safeMenu=file_get_contents($public.'/menu.json');$hostileMenu=json_decode($safeMenu,true);$hostileMenu[0]['id']['d']=$hostile;file_put_contents($public.'/menu.json',json_encode($hostileMenu));[$code,$body]=$get('/');$d=seo_test_xpath($body);$safe=true;foreach($d->query('//script[@type="application/ld+json"]')as$s){json_decode($s->textContent,true,64,JSON_THROW_ON_ERROR);}seo_test($code===200&&$d->query('//*[@id="injected"]')->length===0,'HTML and JSON-LD safely encode script terminators from hosting content');
+ file_put_contents($public.'/menu.json','{broken');$bad=file_get_contents($public.'/menu.json');[$exit]=$run('--apply');seo_test($exit===1&&file_get_contents($public.'/menu.json')===$bad,'upgrade refuses corrupt input without replacing it');
+ foreach(['/','/snack-box-cikarang/','/sitemap.xml','/llms.txt']as$path){[$code,$body,$h]=$get($path);seo_test($code===503&&str_contains($h['cache-control'],'no-store')&&!str_contains($body,'Brownies Cokelat'),'corrupt menu fails closed without sample content: '.$path);}
+ file_put_contents($public.'/menu.json',$safeMenu);file_put_contents($public.'/faq.json','{}');[$code]=$get('/');seo_test($code===503,'invalid FAQ causes a retryable 503');
+ seo_test(!preg_match('/PHP (Warning|Fatal)|Uncaught/',file_get_contents($root.'/server.log')),'public and admin flows have no PHP warnings or fatal errors');
+ if(getenv('SEO_KEEP_FIXTURE'))echo 'Fixture: '.$root."\n";
+}finally{if($curl)$curl=null;if(is_resource($process)){proc_terminate($process);proc_close($process);}if(!getenv('SEO_KEEP_FIXTURE')&&is_dir($root))seo_test_remove($root);}

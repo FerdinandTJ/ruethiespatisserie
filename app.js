@@ -1,79 +1,63 @@
+document.documentElement.classList.add("enhanced");
+// Aktivasi font dari script eksternal: kompatibel dengan CSP script-src 'self'.
+const fontStyles = document.getElementById("site-fonts");
+if(fontStyles) fontStyles.media = "all";
+
 const WA_NUMBER = "6285139281257";
-const WA_DISPLAY = "0851-3928-1257";
 const IMG = (id) => {
   if(!id) return "";
   return id;
 };
 
-// Fallback bawaan (dipakai jika menu.json gagal dimuat, misal buka via file://).
-// Untuk ubah menu: edit menu.json saja, tidak perlu sentuh file ini.
-// Fallback mini (bukan sumber utama): hanya 3 item agar halaman tidak kosong
-// jika menu.json gagal dimuat (misal buka via file:// atau jaringan gagal).
-// Sumber utama SATU-SATUNYA adalah menu.json — edit di sana saja.
-let MENU = [
-  { cat:"cakery", badge:"Best Seller", signature:true, tag:{id:"Manis • Lembut",en:"Sweet • Delicate"}, img:"images/menu/opera-cake-noir.jpg",
-    id:{n:"Opera Cake Noir",d:"Lapisan almond, ganache dark chocolate, glaze mengilap."},
-    en:{n:"Noir Opera Cake",d:"Almond layers, dark ganache, mirror glaze."} },
-  { cat:"coffee", badge:"Signature", signature:true, tag:{id:"Hangat • Creamy",en:"Warm • Creamy"}, img:"images/menu/cafe-creme-brulee-latte.jpg",
-    id:{n:"Café Crème Brûlée Latte",d:"Espresso, susu creamy, gula brûlée di atas."},
-    en:{n:"Crème Brûlée Latte",d:"Espresso with creamy milk, torched sugar top."} },
-  { cat:"savoury", badge:"Best Seller", signature:true, tag:{id:"Gurih • Favorit",en:"Savoury • Crowd Favourite"}, img:"images/menu/risol-mayo-smoked-beef.jpg",
-    id:{n:"Risol Mayo Smoked Beef",d:"Smoked beef, mayo, dan telur dalam kulit tipis yang renyah."},
-    en:{n:"Smoked Beef Risol Mayo",d:"Smoked beef, mayo & egg in crisp thin skin."} },
-];
-
-function normMenu(items){
-  if(!Array.isArray(items)) return null;
-  const clean = items.filter(m => m && m.cat && (m.id || m.en)).map(m => ({ ...m, img: IMG(m.img || "") }));
-  return clean.length ? clean : null;
+// Snapshot HTML dan interaksi memakai data yang sama, tanpa katalog contoh ketika JSON rusak.
+const catalogueElement = document.getElementById("catalog-data");
+const catalogueSnapshot = catalogueElement ? JSON.parse(catalogueElement.textContent) : {menu:[],faq:null};
+let MENU = catalogueSnapshot.menu;
+// Older HTML may remain in a CDN during deployment. Read actual hosting data,
+// never a built-in catalogue; normal server-rendered pages do not make this request.
+if(!catalogueElement){
+  fetch("/menu.json",{cache:"reload"}).then(r=>{if(!r.ok)throw new Error("menu");return r.json();}).then(items=>{
+    if(!Array.isArray(items) || items.some(m=>!m || typeof m.id?.n!=="string" || typeof m.id?.d!=="string" || typeof m.img!=="string" || !["cakery","savoury","packages"].includes(m.cat)))throw new Error("menu");
+    MENU=items.map(m=>({...m,url:typeof m.slug==="string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(m.slug)?(m.slug==="snackbox"?"/snack-box-cikarang/":"/menu/"+m.slug+"/"):"/#menu"}));
+    renderMenus();
+  }).catch(()=>{MENU=[];renderMenus();});
 }
 
-fetch("menu.json", { cache: "reload" })
-  .then(r => { if(!r.ok) throw 0; return r.json(); })
-  .then(j => { const c = normMenu(j); if(c){ MENU = c; renderMenus(); } })
-  .catch(()=>{ /* fallback bawaan tetap dipakai */ });
-
 const I18N = {
-  id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"Hubungi via WhatsApp","nav.skip":"Langsung ke menu",
-    "nav.preorder":"Pre-order","hero.preorder":"Pre-order untuk Ambil di Toko",
-    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Dipanggang dengan <em>Kelembutan</em>',
-    "hero.french":"croissants · cakery · pastel — depuis Cikarang",
-    "hero.sub":"Croissant berlapis, kue lembut, serta pastel, kroket, dan risol favorit — lengkap dengan espresso pilihan. Elegan dan hangat. #MadeWithDelicacy.",
-    "hero.cta1":"Lihat Menu","hero.cta2":"Reservasi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Fresh dari oven setiap pagi","hero.p3":"Buka setiap hari",
-    "hero.b1":"Fresh Setiap Hari","hero.b2":"Croissant Andalan",
-    "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Tiga menu yang paling sering dipesan tamu saat pertama datang.",
+  id:{ "nav.preorder":"Pre-order","nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",
+    "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Snack Box &amp; Kue di <em>Cikarang</em>',
+    "hero.french":"kue klasik · camilan gurih · snackbox",
+    "hero.sub":"Kenali snack box, Bolu Jadoel, brownies, Lapis Surabaya, dan camilan gurih Ruethies Patisserie di Lippo Cikarang. Tanyakan pilihan dan pemesanan melalui WhatsApp. #MadeWithDelicacy.",
+    "hero.cta1":"Lihat Menu","hero.cta2":"Hubungi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Untuk dinikmati bersama","hero.p3":"Buka setiap hari",
+    "hero.snack":"Kenali snack box kami →","hero.b1":"Untuk Momen Anda","hero.b2":"Kue & Kudapan Pilihan",
+    "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Kenali pilihan kue, camilan gurih, dan paket untuk momen Anda.",
     "quote.text":'"Bagi kami, kue bukan sekadar hidangan — melainkan <em>momen lembut</em> untuk dinikmati."',
-    "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
-    "menu.note":"Pastel, kroket, dan risol digoreng dadakan — waktu tunggu sekitar 10 menit. Silakan tanya ketersediaan harian via WhatsApp.",
-    "menu.searchPh":"Cari croissant, kopi, risol…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
+    "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Kue & Jajanan","menu.t2":"Camilan Gurih","menu.t3":"Paket & Sajian",
+    "menu.note":"Tanyakan ketersediaan, varian isi, ukuran, harga, dan pilihan paket melalui WhatsApp.",
+    "menu.searchPh":"Cari brownies, pastel, snackbox…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
     "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
-    "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.res":"Reservasi Meja","visit.call":"Telepon",
+    "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.contact":"Hubungi via WhatsApp","visit.call":"Telepon",
+    "visit.map":"Tampilkan Peta Interaktif","visit.mapTitle":"Peta Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Informasi","faq.title":"Pertanyaan Umum",
-    "foot.visit":"Kunjungi","foot.contact":"Kontak",
-    "wa.title":"Reservasi Meja","wa.sub":"Isi detail berikut, akan kami teruskan ke WhatsApp.","wa.name":"Nama","wa.pax":"Tamu","wa.date":"Tanggal","wa.time":"Jam","wa.note":"Catatan","wa.send":"Kirim ke WhatsApp",
-    "wa.okt":"Siap dikirim!","wa.oks":"Detail reservasi sudah rapi. Silakan buka WhatsApp untuk mengirim.","wa.back":"Ubah detail",
-    "wa.ereq":"Wajib diisi.","wa.epax":"1–20 tamu.","wa.edate":"Pilih hari ini atau setelahnya.","wa.etime":"Jam 09.00–21.00.","wa.open":"Buka WhatsApp" },
-  en:{ "nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.contact":"Contact via WhatsApp","nav.skip":"Skip to menu",
-    "nav.preorder":"Pre-order","hero.preorder":"Pre-order for Store Pickup",
-    "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Baked with <em>Délicatesse</em>',
-    "hero.french":"croissants · cakery · pastel — depuis Cikarang",
-    "hero.sub":"Flaky croissants, delicate cakery and beloved savouries — pastel, kroket, risol — paired with fine espresso. Elegant, warm, #MadeWithDelicacy.",
-    "hero.cta1":"Explore Menu","hero.cta2":"Reserve via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Fresh from the oven daily","hero.p3":"Open daily",
-    "hero.b1":"Fresh Daily","hero.b2":"Signature Croissant",
-    "sig.eyebrow":"01 — Signature","sig.title":'Most <em>Missed</em> Favourites',"sig.sub":"Three must-tries on your first visit.",
+    "foot.visit":"Kunjungi","foot.contact":"Kontak" },
+  en:{ "nav.preorder":"Pre-order","nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Skip to menu",
+    "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Snack Boxes &amp; Cakes in <em>Cikarang</em>',
+    "hero.french":"classic cakes · savoury snacks · snackboxes",
+    "hero.sub":"Explore snack boxes, classic cakes, brownies and savoury snacks at Ruethies Patisserie in Lippo Cikarang. Ask about selections and ordering on WhatsApp. #MadeWithDelicacy.",
+    "hero.cta1":"Explore Menu","hero.cta2":"Contact via WhatsApp","hero.p1":"Ruko Neo Patio East N°51","hero.p2":"Made for sharing","hero.p3":"Open daily",
+    "hero.snack":"Explore our snack boxes →","hero.b1":"For Your Moments","hero.b2":"Cakes & Treats",
+    "sig.eyebrow":"01 — Signature","sig.title":'Most <em>Missed</em> Favourites',"sig.sub":"Discover cakes, savoury snacks and boxes for your next gathering.",
     "quote.text":'"We don\'t sell cake. We sell <em>tender moments</em> you can taste."',
-    "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakery","menu.t2":"Coffee & Drinks","menu.t3":"Savoury Patisserie",
-    "menu.note":"Pastel • Kroket • Risol are fried to order — approx. 10 min. Ask daily availability via WhatsApp.",
-    "menu.searchPh":"Search croissant, coffee, risol…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
+    "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakes & Desserts","menu.t2":"Savoury Snacks","menu.t3":"Boxes & Platters",
+    "menu.note":"Ask about availability, fillings, sizes, prices and package options via WhatsApp.",
+    "menu.searchPh":"Search brownies, pastel, snackbox…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
     "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
-    "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.res":"Reserve a Table","visit.call":"Call",
+    "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.contact":"Contact via WhatsApp","visit.call":"Call",
+    "visit.map":"Show Interactive Map","visit.mapTitle":"Map of Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Information","faq.title":"Frequently Asked Questions",
-    "foot.visit":"Visit","foot.contact":"Contact",
-    "wa.title":"Table Reservation","wa.sub":"Fill in, we'll forward to WhatsApp.","wa.name":"Name","wa.pax":"Guests","wa.date":"Date","wa.time":"Time","wa.note":"Notes","wa.send":"Send to WhatsApp",
-    "wa.okt":"Ready to send!","wa.oks":"Details look good. Open WhatsApp to send.","wa.back":"Edit details",
-    "wa.ereq":"Required.","wa.epax":"1–20 guests.","wa.edate":"Pick today or later.","wa.etime":"9 AM – 9 PM only.","wa.open":"Open WhatsApp" }
+    "foot.visit":"Visit","foot.contact":"Contact" }
 };
 
 let lang = localStorage.getItem("ruethies-lang") || new URLSearchParams(location.search).get("lang") || "id";
@@ -81,10 +65,22 @@ let activeCat = "cakery";
 
 function t(k){ return (I18N[lang] && I18N[lang][k]) || I18N.id[k] || k; }
 
+function whatsappURL(message){ return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(message)}`; }
+function contactMessage(){
+  return lang === "en"
+    ? "Hello Ruethies Patisserie! I would like to ask about your menu and placing an order."
+    : "Halo Ruethies Patisserie! Saya ingin bertanya tentang menu dan pemesanan.";
+}
+function productMessage(name){
+  return lang === "en"
+    ? `Hello Ruethies Patisserie! Is "${name}" available? I would like to ask about prices and ordering.`
+    : `Halo Ruethies Patisserie! Apakah "${name}" tersedia? Saya ingin bertanya tentang harga dan pemesanan.`;
+}
+
 // Escape teks data sebelum masuk HTML (anti-XSS abadi untuk era Sheets/admin)
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-let FAQ = null;
+let FAQ = catalogueSnapshot.faq;
 const faqMarkup = text => esc(text).replace(
   /\[([^\[\]]{1,80})\]\((https?:\/\/[^\s()<>"]{1,300})\)/g,
   (_, label, url) => `<a href="${url}" target="_blank" rel="noopener">${label}</a>`
@@ -107,7 +103,11 @@ function renderFAQ(){
   rows.slice(FAQ.length).forEach(row=>row.remove());
 }
 
-fetch("faq.json", { cache: "reload" })
+let faqLoading = false;
+function loadFAQ(){
+  if(faqLoading || FAQ) return;
+  faqLoading = true;
+  fetch("faq.json", { cache: "reload" })
   .then(r => { if(!r.ok) throw 0; return r.json(); })
   .then(items => {
     if(!Array.isArray(items) || !items.length || !items.every(item =>
@@ -118,33 +118,49 @@ fetch("faq.json", { cache: "reload" })
     FAQ = items;
     renderFAQ();
   })
-  .catch(()=>{ /* FAQ statis tetap tampil jika data gagal dimuat. */ });
+  .catch(()=>{ /* FAQ statis tetap tampil jika data gagal dimuat. */ })
+  .finally(()=>{ faqLoading = false; });
+}
 
-// WebP bila tersedia, fallback JPEG. Semua foto lokal dinormalkan 640x480 (hero 880x1100, lightbox 1200x900).
+// List thumbnails stay small; responsive product detail sources load only on opening.
 const webp = src => (typeof src === "string" && src.endsWith(".jpg")) ? src.slice(0, -4) + ".webp" : src;
 const pic = (src, alt, w, h, eager) =>
   `<picture><source type="image/webp" srcset="${esc(webp(src))}" /><img ${eager ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"'} src="${esc(src)}" width="${w}" height="${h}" alt="${esc(alt)}" /></picture>`;
 
-// Tugas non-kritis (galeri bawah, efek tilt) dikerjakan saat browser idle agar tidak menahan render awal.
-const onIdle = fn => { if("requestIdleCallback" in window) requestIdleCallback(fn, { timeout: 2500 }); else setTimeout(fn, 1); };
+// Data bawah halaman dimuat menjelang terlihat, bukan bersamaan dengan hero.
+function onceNear(id, load){
+  const element = document.getElementById(id);
+  if(!element) return;
+  const observer = new IntersectionObserver(entries=>{
+    if(entries.some(entry=>entry.isIntersecting)){ observer.disconnect(); load(); }
+  }, {rootMargin:"600px 0px"});
+  observer.observe(element);
+}
 
 function applyLang(){
   document.documentElement.lang = lang;
+  document.querySelectorAll("[data-contact-wa]").forEach(link=>{ link.href = whatsappURL(contactMessage()); });
   document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll("[data-i18n-html]").forEach(el=>{ el.innerHTML = t(el.dataset.i18nHtml); });
   document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
   document.getElementById("btn-id").classList.toggle("on", lang==="id");
   document.getElementById("btn-en").classList.toggle("on", lang==="en");
-  if(!document.getElementById("lightbox").hidden && ATMOS[lbIdx]) lbCap.textContent = atmosCap(ATMOS[lbIdx]);
+  if(!document.getElementById("lightbox").hidden) showLB(lbIdx);
   renderMenus();
   renderAtmos();
   renderFAQ();
+  if(lang === "en") loadFAQ(); // EN tersimpan/tombol bahasa tidak perlu menunggu scroll.
+  const map = document.getElementById("visit-map");
+  if(map) map.title = t("visit.mapTitle");
 }
 
+function productIndex(m){ return MENU.indexOf(m); }
+function productURL(m){ return m.url; }
+function productPhotoLabel(name){ return (lang === "en" ? "View photos: " : "Lihat foto: ") + name; }
 function cardHTML(m, i){
   const v = m[lang] || m.id;
   const no = String(i+1).padStart(2,"0");
-  return `<article class="card rv"><div class="ph">${pic(m.img, v.n, 640, 480)}</div>
+  return `<article class="card rv"><a href="${esc(productURL(m))}" class="ph product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, v.n, 640, 480)}</a>
     <div class="bd"><span class="signo" aria-hidden="true">N°${no}</span>${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}<h3>${esc(v.n)}</h3><p>${esc(v.d)}</p></div></article>`;
 }
 
@@ -152,13 +168,12 @@ function rowHTML(m, i){
   const v = m[lang] || m.id;
   const tag = m.tag ? (m.tag[lang] || m.tag.id) : "";
   const num = String(i+1).padStart(2,"0");
-  const idx = MENU.indexOf(m);
   return `<article class="mrow rv">
     <span class="mnum">${num}</span>
-    <div class="mbody"><h3>${esc(v.n)}</h3><p>${esc(v.d)}</p>
-      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<button class="askbtn" data-ask="${idx}">${t("menu.ask")} →</button></div></div>
+    <div class="mbody"><h3><a href="${esc(productURL(m))}" class="menu-title-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${esc(v.n)}</a></h3><p>${esc(v.d)}</p>
+      <div class="mtags">${m.badge?`<span class="chip">${esc(m.badge)}</span>`:""}${tag?`<span class="tagline">${esc(tag)}</span>`:""}<span class="menu-actions"><a href="${esc(productURL(m))}" class="detail-link" data-product="${productIndex(m)}" aria-haspopup="dialog">${lang === "en" ? "View details" : "Lihat detail"}<span aria-hidden="true"> ↗</span></a><a class="askbtn" href="${esc(whatsappURL(productMessage(v.n)))}" target="_blank" rel="noopener">${t("menu.ask")} →</a></span></div></div>
     <span class="mdots" aria-hidden="true"></span>
-    <span class="mpeek">${pic(m.img, "", 640, 480)}</span>
+    <a href="${esc(productURL(m))}" class="mpeek product-photo" data-product="${productIndex(m)}" aria-haspopup="dialog" aria-label="${esc(productPhotoLabel(v.n))}">${pic(m.img, "", 640, 480)}</a>
   </article>`;
 }
 
@@ -172,7 +187,7 @@ function matchQ(m){
 function renderMenus(){
   const vis = MENU.filter(m=>m.available !== false);
   const flagged = vis.filter(m=>m.signature);
-  const sig = flagged.length >= 3 ? flagged.slice(0,3) : [vis[0], vis[3], vis[8]].filter(Boolean);
+  const sig = [...flagged, ...vis.filter(m=>!m.signature)].slice(0,3);
   document.getElementById("signature").innerHTML = sig.map((m,i)=>cardHTML(m,i)).join("");
   document.getElementById("signature").removeAttribute("aria-busy");
   const items = vis.filter(m=>m.cat===activeCat).filter(matchQ);
@@ -184,7 +199,7 @@ function renderMenus(){
   document.querySelectorAll(".tab").forEach(tb=>{
     const on = tb.dataset.cat===activeCat;
     tb.setAttribute("aria-selected", on);
-    const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="coffee" ? "menu.t2" : "menu.t3";
+    const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="savoury" ? "menu.t2" : "menu.t3";
     const n = vis.filter(m=>m.cat===tb.dataset.cat).length;
     tb.innerHTML = `${t(key)} <span class="tcount">${n}</span>`;
   });
@@ -197,17 +212,6 @@ document.getElementById("msearch").addEventListener("input", e=>{
   query = e.target.value.trim();
   renderMenus();
 });
-document.addEventListener("click", e=>{
-  const b = e.target.closest("[data-ask]");
-  if(!b) return;
-  const m = MENU[+b.dataset.ask];
-  if(!m) return;
-  const v = m[lang] || m.id;
-  const pre = lang==="id" ? `Halo! Apakah "${v.n}" tersedia hari ini? ` : `Hello! Is "${v.n}" available today? `;
-  document.getElementById("f-note").value = pre;
-  openWA();
-});
-
 // Nav aktif mengikuti section
 const secIO = new IntersectionObserver(es=>{
   es.forEach(en=>{
@@ -258,14 +262,19 @@ function attachCardTilt(){
 const io = new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } }),{threshold:.12});
 function observeReveals(){ document.querySelectorAll(".rv:not(.in)").forEach(el=>io.observe(el)); }
 
+let pillFrame = 0;
 function movePill(){
-  const btn = document.querySelector(`.tab[data-cat="${activeCat}"]`);
-  const pill = document.getElementById("pill");
-  const tabs = document.querySelector(".tabs");
-  if(!btn || !pill) return;
-  requestAnimationFrame(()=>{
-    pill.style.left = (btn.offsetLeft - (tabs ? tabs.scrollLeft : 0))+"px";
-    pill.style.width = btn.offsetWidth+"px";
+  if(pillFrame) return;
+  pillFrame = requestAnimationFrame(()=>{
+    pillFrame = 0;
+    const btn = document.querySelector(`.tab[data-cat="${activeCat}"]`);
+    const pill = document.getElementById("pill");
+    const tabs = document.querySelector(".tabs");
+    if(!btn || !pill) return;
+    const left = btn.offsetLeft - (tabs ? tabs.scrollLeft : 0);
+    const width = btn.offsetWidth;
+    pill.style.left = left+"px";
+    pill.style.width = width+"px";
   });
 }
 
@@ -284,60 +293,13 @@ burger.onclick=()=>{
   burger.classList.toggle("open", open);
   burger.setAttribute("aria-expanded", open);
 };
-mmenu.querySelectorAll("a, [data-open-wa]").forEach(a=>a.addEventListener("click",()=>{
+mmenu.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{
   mmenu.hidden = true; burger.classList.remove("open"); burger.setAttribute("aria-expanded","false");
 }));
 
-// WA modal + validation + success
-const bd = document.getElementById("backdrop");
+// Shared by the gallery lightbox and mobile contact bar.
 const stickybar = document.getElementById("stickybar");
 let modalOpen = false;
-let lastMsg = "", lastPretty = "";
-const openWA = ()=>{
-  modalOpen = true;
-  document.getElementById("wa-form").hidden = false;
-  document.getElementById("wa-success").hidden = true;
-  bd.hidden = false; stickybar.classList.add("hide");
-  setTimeout(()=>document.getElementById("f-name").focus(), 50);
-};
-const closeWA = ()=>{ modalOpen = false; bd.hidden = true; stickybar.classList.remove("hide"); onScroll(); };
-document.querySelectorAll("[data-open-wa]").forEach(b=>b.onclick=openWA);
-document.getElementById("closewa").onclick=closeWA;
-bd.addEventListener("click",e=>{ if(e.target===bd) closeWA(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !bd.hidden) closeWA(); });
-const fDate = document.getElementById("f-date");
-const todayStr = new Date().toISOString().slice(0,10);
-fDate.min = todayStr;
-if(!fDate.value) fDate.value = todayStr;
-function setErr(id, msg){ const el = document.getElementById(id); if(!msg){ el.hidden = true; return true; } el.textContent = msg; el.hidden = false; return false; }
-function buildMsg(){
-  const n=document.getElementById("f-name").value.trim(),
-        p=parseInt(document.getElementById("f-pax").value,10),
-        d=fDate.value, tm=document.getElementById("f-time").value,
-        no=document.getElementById("f-note").value.trim()||"-";
-  let ok = true;
-  ok = setErr("e-name", n ? "" : t("wa.ereq")) && ok;
-  ok = setErr("e-pax", (p>=1 && p<=20) ? "" : t("wa.epax")) && ok;
-  ok = setErr("e-date", (d && d >= todayStr) ? "" : t("wa.edate")) && ok;
-  ok = setErr("e-time", (tm >= "09:00" && tm <= "21:00") ? "" : t("wa.etime")) && ok;
-  if(!ok) return null;
-  const msg = lang==="id"
-    ? `Halo Ruethies Patisserie! Saya ${n} — reservasi ${p} orang, ${d} pukul ${tm}. Catatan: ${no}. Terima kasih! #MadeWithDelicacy`
-    : `Hello Ruethies Patisserie! I'm ${n} — reserving for ${p}, ${d} at ${tm}. Notes: ${no}. Thank you! #MadeWithDelicacy`;
-  return { msg, pretty: `${n} • ${p} 👥 • ${d} ${tm}` };
-}
-document.getElementById("sendwa").onclick=()=>{
-  const r = buildMsg(); if(!r) return;
-  lastMsg = r.msg; lastPretty = r.pretty;
-  document.getElementById("wa-preview").textContent = lastPretty;
-  document.getElementById("wa-form").hidden = true;
-  document.getElementById("wa-success").hidden = false;
-};
-document.getElementById("openwa").onclick=()=>{ window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(lastMsg)}`,"_blank"); };
-document.getElementById("backwa").onclick=()=>{
-  document.getElementById("wa-success").hidden = true;
-  document.getElementById("wa-form").hidden = false;
-};
 const copyBtn = document.getElementById("copyaddr");
 const copyOrig = { id:"Salin Alamat", en:"Copy Address" };
 copyBtn.onclick=async ()=>{
@@ -350,16 +312,24 @@ copyBtn.onclick=async ()=>{
 document.querySelector(".tabs")?.addEventListener("scroll", movePill, {passive:true});
 window.addEventListener("resize",movePill);
 if(document.fonts?.ready) document.fonts.ready.then(movePill);
+let scrollFrame = 0;
 function onScroll(){
-  document.getElementById("nav").style.boxShadow = scrollY>24?"0 12px 32px -18px rgba(61,0,0,.25)":"none";
-  const hero = document.querySelector(".hero");
-  const past = hero ? scrollY > hero.offsetTop + hero.offsetHeight - 120 : scrollY > 600;
-  stickybar.classList.toggle("show", past && !modalOpen);
-  stickybar.classList.toggle("hide", modalOpen);
-  if(can3D && heroVis && hero && scrollY < hero.offsetHeight){
-    plx = Math.min(12, scrollY * 0.05);
-    queueHero();
-  }
+  if(scrollFrame) return;
+  scrollFrame = requestAnimationFrame(()=>{
+    scrollFrame = 0;
+    const y = scrollY;
+    const hero = document.querySelector(".hero");
+    const height = hero ? hero.offsetHeight : 0;
+    const end = hero ? hero.offsetTop + height : 720;
+    const past = y > end - 120;
+    document.getElementById("nav").classList.toggle("scrolled", y > 24);
+    stickybar.classList.toggle("show", past && !modalOpen);
+    stickybar.classList.toggle("hide", modalOpen);
+    if(can3D && heroVis && hero && y < height){
+      plx = Math.min(12, y * 0.05);
+      queueHero();
+    }
+  });
 }
 
 // Galeri atmosphere — sumber utama atmosphere.json (edit di sana saja)
@@ -375,7 +345,9 @@ let ATMOS = [
     id:{cap:"Detail lapisan yang renyah"}, en:{cap:"Crisp layered details"} },
 ];
 function atmosCap(a){ return (a[lang] && a[lang].cap) || a.id.cap; }
+let atmosLoading = false, atmosReady = false;
 function renderAtmos(){
+  if(!atmosReady) return;
   const row = document.getElementById("archrow");
   if(!row) return;
   row.innerHTML = ATMOS.map((a,i)=>{
@@ -391,29 +363,65 @@ function normAtmos(items){
   }));
   return clean.length ? clean : null;
 }
-// Galeri di bawah lipatan: datanya diambil saat browser idle agar tidak berebut bandwidth dengan hero/menu.
-onIdle(()=>{
+function loadAtmos(){
+  if(atmosLoading || atmosReady) return;
+  atmosLoading = true;
   fetch("atmosphere.json", { cache: "reload" })
     .then(r => { if(!r.ok) throw 0; return r.json(); })
-    .then(j => { const c = normAtmos(j); if(c){ ATMOS = c; renderAtmos(); } })
-    .catch(()=>{ /* fallback bawaan tetap dipakai */ });
-});
+    .then(j => { const c = normAtmos(j); if(c) ATMOS = c; })
+    .catch(()=>{ /* fallback bawaan tetap dipakai */ })
+    .finally(()=>{ atmosReady = true; atmosLoading = false; renderAtmos(); });
+}
 
-// Lightbox (dari data master ATMOS yang sama)
-let lbIdx = 0;
-const lb = document.getElementById("lightbox"), lbImg = document.getElementById("lb-img"), lbCap = document.getElementById("lb-cap"), lbCount = document.getElementById("lb-count");
+// Satu lightbox untuk suasana dan foto produk. Foto detail dimuat saat dibuka.
+let lbIdx = 0, lbProduct = null, lbReturnFocus = null;
+const lb = document.getElementById("lightbox"), lbImg = document.getElementById("lb-img"), lbCap = document.getElementById("lb-cap"), lbCount = document.getElementById("lb-count"), lbWA = document.getElementById("lb-wa");
+function productPhotos(m){
+  return [m.img, ...(Array.isArray(m.detail_images) ? m.detail_images.slice(0,2) : [])].filter(src=>typeof src === "string" && /^images\/menu\/[a-z0-9-]+\.(jpg|webp)$/i.test(src));
+}
 function showLB(i){
-  lbIdx = (i + ATMOS.length) % ATMOS.length;
-  const a = ATMOS[lbIdx], cap = atmosCap(a);
-  lbImg.src = a.imgFull || a.img; lbImg.alt = cap; lbCap.textContent = cap;
-  if(lbCount) lbCount.textContent = `0${lbIdx+1} / 0${ATMOS.length}`;
+  const photos = lbProduct ? productPhotos(lbProduct) : ATMOS.map(a=>a.imgFull || a.img);
+  if(!photos.length) return;
+  lb.setAttribute("data-gallery", lbProduct ? "product" : "atmosphere");
+  if(lb.hidden) lbReturnFocus = document.activeElement;
+  lbIdx = (i + photos.length) % photos.length;
+  const cap = lbProduct ? (lbProduct[lang] || lbProduct.id).n : atmosCap(ATMOS[lbIdx]);
+  // Only the selected photo gets a high-resolution request. List images stay small.
+  lbImg.removeAttribute("srcset"); lbImg.removeAttribute("sizes");
+  const source = lbProduct?.photo_sources?.[photos[lbIdx]];
+  const safeSource = source && /^images\/menu\/[a-z0-9-]+\.webp$/.test(source.src) &&
+    typeof source.srcset === "string" && source.srcset.split(", ").every(s=>/^\/images\/menu\/[a-z0-9-]+\.webp [0-9]+w$/.test(s));
+  lbImg.onerror = ()=>{ lbImg.onerror=null; lbImg.removeAttribute("srcset"); lbImg.src=photos[lbIdx]; };
+  if(safeSource){
+    lbImg.sizes = "(max-width: 760px) calc(100vw - 60px), 680px";
+    lbImg.srcset = source.srcset;
+    lbImg.src = source.src;
+  } else lbImg.src = photos[lbIdx];
+  lbImg.alt = cap; lbCap.textContent = cap;
+  const description = document.getElementById("lb-description");
+  if(description){
+    description.textContent = lbProduct ? ((lbProduct[lang] || lbProduct.id).detail || (lbProduct[lang] || lbProduct.id).d || "") : "";
+    description.hidden = !description.textContent;
+  }
+  lbCount.textContent = `${String(lbIdx+1).padStart(2,"0")} / ${String(photos.length).padStart(2,"0")}`;
+  document.getElementById("lb-prev").hidden = document.getElementById("lb-next").hidden = photos.length < 2;
+  lbWA.hidden = !lbProduct;
+  if(lbProduct) { lbWA.href = whatsappURL(productMessage(cap)); lbWA.textContent = t("menu.ask") + " →"; }
+  lb.querySelector('[role="dialog"]').setAttribute("aria-label", lbProduct ? productPhotoLabel(cap) : (lang === "en" ? "Atmosphere gallery" : "Galeri suasana"));
   lb.hidden = false; modalOpen = true; stickybar.classList.add("hide");
   document.getElementById("lb-close").focus();
 }
-function hideLB(){ lb.hidden = true; modalOpen = false; stickybar.classList.remove("hide"); onScroll(); }
-document.getElementById("archrow").addEventListener("click", e=>{
+function hideLB(){ lb.hidden = true; lbImg.removeAttribute("srcset"); lbImg.removeAttribute("sizes"); lbImg.removeAttribute("src"); lbImg.onerror=null; modalOpen = false; stickybar.classList.remove("hide"); onScroll(); if(lbReturnFocus?.isConnected) lbReturnFocus.focus(); }
+document.addEventListener("click", e=>{
+  const product = e.target.closest("[data-product]");
+  if(product){
+    if(e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    lbProduct = MENU[Number(product.dataset.product)];
+    if(lbProduct && lbProduct.available !== false){ e.preventDefault(); showLB(0); }
+    return;
+  }
   const b = e.target.closest("[data-lb]");
-  if(b) showLB(+b.dataset.lb);
+  if(b){ lbProduct = null; showLB(+b.dataset.lb); }
 });
 document.getElementById("lb-close").onclick = hideLB;
 document.getElementById("lb-prev").onclick = (e)=>{ e.stopPropagation(); showLB(lbIdx-1); };
@@ -422,8 +430,14 @@ lb.addEventListener("click",e=>{ if(e.target===lb) hideLB(); });
 document.addEventListener("keydown",e=>{
   if(lb.hidden) return;
   if(e.key==="Escape") hideLB();
-  if(e.key==="ArrowLeft") showLB(lbIdx-1);
-  if(e.key==="ArrowRight") showLB(lbIdx+1);
+  if(e.key==="ArrowLeft") { e.preventDefault(); showLB(lbIdx-1); }
+  if(e.key==="ArrowRight") { e.preventDefault(); showLB(lbIdx+1); }
+  if(e.key==="Tab"){
+    const buttons = [...lb.querySelectorAll('button, a[href]')].filter(el=>!el.hidden);
+    const first=buttons[0], last=buttons[buttons.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
 });
 let tx = 0;
 lb.addEventListener("touchstart",e=>{ tx = e.touches[0].clientX; },{passive:true});
@@ -432,5 +446,26 @@ lb.addEventListener("touchend",e=>{
   if(Math.abs(dx) > 40) showLB(lbIdx + (dx < 0 ? 1 : -1));
 },{passive:true});
 window.addEventListener("scroll",onScroll,{passive:true});
+window.addEventListener("resize",onScroll);
+if("ResizeObserver" in window){
+  const layoutObserver = new ResizeObserver(()=>{ movePill(); onScroll(); });
+  const hero = document.querySelector(".hero");
+  if(hero) layoutObserver.observe(hero);
+}
+const mapButton = document.getElementById("load-map");
+if(mapButton){
+  mapButton.hidden = false;
+  mapButton.addEventListener("click",()=>{
+    const frame = document.getElementById("visit-map");
+    if(!frame || frame.hasAttribute("src")) return;
+    frame.src = frame.dataset.src;
+    frame.hidden = false;
+    document.getElementById("map-placeholder").hidden = true;
+    frame.tabIndex = 0;
+    frame.focus();
+  });
+}
 applyLang();
 onScroll();
+onceNear("faq", loadFAQ);
+onceNear("atmosphere", loadAtmos);

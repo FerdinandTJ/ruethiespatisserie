@@ -15,6 +15,9 @@ PANDUAN-GIT-PULL-HOSTINGER.md
 # Data runtime admin (akun, log, backup, rate-limit) — hanya di server, jangan masuk repo
 admin/data/*.json
 admin/data/*.jsonl
+admin/data/log.jsonl.*
+admin/data/*.lock
+admin/data/*.tmp.*
 admin/data/backups/
 admin/ruethies-data/
 ruethies-data/

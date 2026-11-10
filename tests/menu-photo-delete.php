@@ -20,6 +20,8 @@ function fixture(): void {
   foreach (['index.html', 'app.js', 'styles.css', 'llms.txt'] as $file) file_put_contents(RUETHIES_PUBLIC . '/' . $file, '');
   file_put_contents(RUETHIES_PUBLIC . '/images/menu/example.jpg', 'jpeg');
   file_put_contents(RUETHIES_PUBLIC . '/images/menu/example.webp', 'webp');
+  file_put_contents(RUETHIES_PUBLIC . '/images/menu/example-detail.webp', 'medium');
+  file_put_contents(RUETHIES_PUBLIC . '/images/menu/example-full.webp', 'large');
 }
 function exists_pair(): bool {
   clearstatcache();
@@ -33,7 +35,7 @@ function cleanup(string $path): void {
 }
 
 try {
-  $catalog = menu_with_ids([['id'=>['n'=>'First']],['id'=>['n'=>'Second']]]);
+  $catalog = menu_with_ids([['cat'=>'cakery','img'=>'images/menu/first.jpg','id'=>['n'=>'First','d'=>'']],['cat'=>'cakery','img'=>'images/menu/second.jpg','id'=>['n'=>'Second','d'=>'']]]);
   check(strlen($catalog[0]['uid'])===32 && $catalog[0]['uid']!==$catalog[1]['uid'], 'catalog migration assigns distinct permanent IDs');
   $uid = $catalog[0]['uid']; $catalog[0]['id']['n']='Renamed'; $catalog=array_reverse($catalog);
   check(menu_with_ids($catalog)[1]['uid']===$uid, 'IDs survive rename, reorder and repeated migration');
@@ -42,6 +44,7 @@ try {
   check(menu_save([]), 'menu saved before cleanup');
   check(menu_photo_delete_unused('images/menu/example.jpg') === 'deleted' && !exists_pair(), 'unused JPEG and WebP deleted');
   check(!file_exists(RUETHIES_PUBLIC . '/images/menu/example.webp'), 'WebP companion removed');
+  check(!file_exists(RUETHIES_PUBLIC.'/images/menu/example-detail.webp')&&!file_exists(RUETHIES_PUBLIC.'/images/menu/example-full.webp'),'responsive companions removed with unused photo');
   check(menu_photo_delete_unused('images/menu/example.jpg') === 'deleted', 'already missing files are harmless');
   check(menu_photo_delete_unused('') === 'none', 'menu without image');
 
