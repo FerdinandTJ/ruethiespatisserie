@@ -6,9 +6,9 @@ if [ "$(basename "$PWD")" != staging ] || [ "$(basename "$(dirname "$PWD")")" !=
 fi
 if [ "$(git branch --show-current)" != staging ]; then echo 'STOP: branch harus staging.' >&2; exit 1; fi
 if ! git diff --cached --quiet; then echo 'STOP: ada perubahan staged; tinjau dahulu.' >&2; exit 1; fi
-while IFS= read -r changed; do
+git diff --name-only | while IFS= read -r changed; do
   case "$changed" in .htaccess|menu.json|faq.json|atmosphere.json|index.html|llms.txt) ;; *) echo "STOP: perubahan lain perlu ditinjau: $changed" >&2; exit 1;; esac
-done < <(git diff --name-only)
+done
 umask 077
 STAGING_BACKUP_DIR="../../deploy-backups/staging-$(date +%Y%m%d-%H%M%S)-$$"
 mkdir -p "$STAGING_BACKUP_DIR"
