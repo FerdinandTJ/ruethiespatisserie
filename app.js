@@ -382,6 +382,7 @@ function productPhotos(m){
 function showLB(i){
   const photos = lbProduct ? productPhotos(lbProduct) : ATMOS.map(a=>a.imgFull || a.img);
   if(!photos.length) return;
+  lb.setAttribute("data-gallery", lbProduct ? "product" : "atmosphere");
   if(lb.hidden) lbReturnFocus = document.activeElement;
   lbIdx = (i + photos.length) % photos.length;
   const cap = lbProduct ? (lbProduct[lang] || lbProduct.id).n : atmosCap(ATMOS[lbIdx]);
