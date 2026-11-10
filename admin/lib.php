@@ -5,7 +5,7 @@ require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/security-resources.php';
 require_once __DIR__ . '/catalog.php';
 
-const RUETHIES_CATS = ['cakery' => 'Kue & Jajanan', 'savoury' => 'Camilan Gurih', 'packages' => 'Paket & Sajian'];
+define('RUETHIES_CATS', CATALOG_CATEGORIES);
 
 /* ---------- util ---------- */
 function h($s): string { return htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8'); }

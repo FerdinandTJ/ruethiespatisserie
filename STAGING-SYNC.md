@@ -12,7 +12,7 @@ Kerjakan dari public_html/staging, bukan public_html. Hentikan sementara aktivit
 
 1. Catat git status --short dan git rev-parse HEAD. Jika ada perubahan CMS atau .htaccess, simpan dan tinjau dahulu; jangan reset --hard atau stash pop membabi buta. .htaccess hosting dapat berisi Basic Auth dari hPanel, yang harus tetap dipertahankan bersama aturan baru.
 2. Backup folder staging serta ruethies-data-staging di luar public_html; gunakan umask 077 saat backup, lalu kembalikan umask 022 SEBELUM pull. Simpan snapshot database melalui fasilitas backup hosting bila diperlukan.
-3. Jangan menimpa menu.json, faq.json, atmosphere.json, users.json atau po-config.php hosting dengan data laptop. Simpan perubahan konten hosting sebelum pull dan rekonsiliasi file terkait. Jika katalog lama masih memakai kategori drinks/menu lama, tentukan migrasi katalog dahulu; CLI SEO akan menolak kategori tidak didukung. Jangan menghapus data untuk memaksa lolos.
+3. Jangan menimpa menu.json, faq.json, atmosphere.json, users.json atau po-config.php hosting dengan data laptop. Simpan perubahan konten hosting sebelum pull dan rekonsiliasi file terkait. Kategori coffee lama tetap didukung khusus direktori public_html/staging, termasuk editor admin, tab katalog dan halaman produk. UID dan konten lama tidak perlu diganti. Kategori lain yang tidak didukung tetap ditolak; jangan menghapus data untuk memaksa lolos.
 4. Setelah working tree siap: git pull --ff-only origin staging.
 5. Jalankan dari staging:
 
@@ -37,3 +37,5 @@ Katalog repository yang baru tidak otomatis memetakan produk lama pada jadwal PO
 Suite keamanan, UI admin, SEO/public HTTP, routing Apache (termasuk Basic Auth dan path staging terenkode), foto, WhatsApp, dan PO UI dijalankan pada fixture lokal. Tiga suite PO database memakai instance MySQL terisolasi melalui socket, bukan database hosting. Tidak ada pesan WhatsApp nyata dikirim.
 
 Integrasi tambahan mencakup homepage SEO + tautan PO, navigasi CMS ke PO, UID tetap setelah edit, foto yang dirujuk PO tidak terhapus, dan verifikasi ulang kedaluwarsa yang menolak pembayaran sampai pemilik memverifikasi ulang.
+
+Pembaruan kompatibilitas: kategori coffee hanya diaktifkan berdasarkan layout filesystem staging, bukan Host header. Pengujian staging-legacy.php memverifikasi migrasi idempoten, UID tidak berubah, tab kopi/HTML/URL produk tersedia, serta Host header tidak mengaktifkan kategori lama di produksi.

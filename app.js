@@ -24,7 +24,7 @@ if(!catalogueElement){
 }
 
 const I18N = {
-  id:{ "nav.preorder":"Pre-order","nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",
+  id:{ "menu.coffee":"Kopi & Minuman","nav.preorder":"Pre-order","nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",
     "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Snack Box &amp; Kue di <em>Cikarang</em>',
     "hero.french":"kue klasik · camilan gurih · snackbox",
     "hero.sub":"Kenali snack box, Bolu Jadoel, brownies, Lapis Surabaya, dan camilan gurih Ruethies Patisserie di Lippo Cikarang. Tanyakan pilihan dan pemesanan melalui WhatsApp. #MadeWithDelicacy.",
@@ -41,7 +41,7 @@ const I18N = {
     "visit.map":"Tampilkan Peta Interaktif","visit.mapTitle":"Peta Ruethies Patisserie — N°51",
     "faq.eyebrow":"05 — Informasi","faq.title":"Pertanyaan Umum",
     "foot.visit":"Kunjungi","foot.contact":"Kontak" },
-  en:{ "nav.preorder":"Pre-order","nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Skip to menu",
+  en:{ "menu.coffee":"Coffee & Drinks","nav.preorder":"Pre-order","nav.home":"Home","nav.menu":"Menu","nav.visit":"Visit","nav.atmos":"Atmosphere","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Skip to menu",
     "hero.eyebrow":"N°01 — Artisan Patisserie, Cikarang","hero.title":'Snack Boxes &amp; Cakes in <em>Cikarang</em>',
     "hero.french":"classic cakes · savoury snacks · snackboxes",
     "hero.sub":"Explore snack boxes, classic cakes, brownies and savoury snacks at Ruethies Patisserie in Lippo Cikarang. Ask about selections and ordering on WhatsApp. #MadeWithDelicacy.",
@@ -199,7 +199,7 @@ function renderMenus(){
   document.querySelectorAll(".tab").forEach(tb=>{
     const on = tb.dataset.cat===activeCat;
     tb.setAttribute("aria-selected", on);
-    const key = tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="savoury" ? "menu.t2" : "menu.t3";
+    const key = tb.dataset.cat==="coffee" ? "menu.coffee" : tb.dataset.cat==="cakery" ? "menu.t1" : tb.dataset.cat==="savoury" ? "menu.t2" : "menu.t3";
     const n = vis.filter(m=>m.cat===tb.dataset.cat).length;
     tb.innerHTML = `${t(key)} <span class="tcount">${n}</span>`;
   });

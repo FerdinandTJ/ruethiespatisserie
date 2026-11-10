@@ -2,7 +2,9 @@
 // Pure shared catalogue helpers. No session, account store, or private-data access.
 if (!defined('RUETHIES_ADMIN') && !defined('RUETHIES_PUBLIC_RENDER')) { http_response_code(404); exit; }
 const CATALOG_ORIGIN = 'https://ruethiespatisserie.com';
-const CATALOG_CATEGORIES = ['cakery'=>'Kue & Jajanan','savoury'=>'Camilan Gurih','packages'=>'Paket & Sajian'];
+// Legacy coffee stays editable only inside the staging filesystem layout.
+define('CATALOG_CATEGORIES', ['cakery'=>'Kue & Jajanan','savoury'=>'Camilan Gurih','packages'=>'Paket & Sajian'] +
+  ((basename(dirname(__DIR__))==='staging' && basename(dirname(__DIR__,2))==='public_html') ? ['coffee'=>'Kopi & Minuman'] : []));
 function catalog_escape(string $text): string { return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function catalog_json($value): string { return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR); }
 function catalog_image($path): bool { return is_string($path) && (bool)preg_match('~\Aimages/menu/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:jpg|png|webp)\z~D', $path); }

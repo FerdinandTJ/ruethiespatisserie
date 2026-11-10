@@ -94,6 +94,9 @@ function seo_head(string $html,string $title,string $description,string $path,st
 }
 function seo_home(string $template,array $items,array $faq): string {
   $public=array_values(array_filter($items,fn($m)=>($m['available'] ?? true)!==false));
+  if(isset(CATALOG_CATEGORIES['coffee']) && array_filter($public,fn($m)=>$m['cat']==='coffee')) {
+    $template=str_replace('<span class="pill" id="pill"></span>', '<button class="tab" role="tab" data-cat="coffee" data-i18n="menu.coffee">Kopi &amp; Minuman</button><span class="pill" id="pill"></span>', $template);
+  }
   $html=seo_block($template,'SEO:MENU',implode("\n",array_map(fn($m,$i)=>seo_row($m,$i),$public,array_keys($public))));
   $chosen=array_slice(array_keys(array_filter($public,fn($m)=>!empty($m['signature']))),0,3);
   foreach(array_keys($public) as $key)if(count($chosen)<3 && !in_array($key,$chosen,true))$chosen[]=$key;
