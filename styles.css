@@ -414,3 +414,13 @@ html:not(.enhanced) .menu-tools,html:not(.enhanced) .tabs{display:none}
   .backdrop.lb[data-gallery="atmosphere"] .lb-count{grid-row:2;align-self:start}
   .backdrop.lb[data-gallery] .x{top:12px;right:16px}
 }
+
+/* Snack box photos share one frame; subsequent photos load only when selected. */
+.product-carousel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.product-carousel .product-photo-frame{order:1}
+.product-carousel .product-photo-frame img{display:block;height:clamp(240px,42vw,460px);max-height:60svh;width:100%;object-fit:contain;background:var(--beige-deep)}
+.carousel-controls{order:2;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.carousel-controls button{min-height:44px;min-width:44px;border:1px solid var(--wine-12);border-radius:999px;background:var(--beige);color:var(--wine);font:inherit;cursor:pointer;padding:8px 16px}
+.carousel-controls [data-carousel="pause"]{margin-right:auto;font-size:.8rem}
+.carousel-position{min-width:44px;text-align:center;font-size:.8rem;color:var(--muted)}
+.product-catalog-link{font-size:.85rem;margin-top:16px}.product-catalog-link a{color:var(--wine);text-underline-offset:4px}
