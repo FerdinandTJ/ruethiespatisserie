@@ -90,6 +90,7 @@ try{
  for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=$http('/pre-order/');if($code)break;}
  mt_check($code===200&&str_contains($html,'Midtrans Test'),'Sandbox schedule available over HTTP');
  [$code,$html]=$http('/pre-order/status/?t='.$ft);preg_match('/name="csrf" value="([a-f0-9]+)"/',$html,$match);$csrf=$match[1];mt_check($code===200&&str_contains($html,'Bayar di Midtrans Sandbox')&&!str_contains($html,'sender_name'),'Sandbox invoice has pay button and no manual-transfer form');
+ mt_check(str_contains($html,'Mode Sandbox')&&!str_contains($html,'password akses')&&!str_contains($html,'cron'),'client invoice discloses simulation without obsolete access or worker instructions');
  [$code,$html]=$http('/pre-order/status/?t='.$ft,['action'=>'midtrans-pay','csrf'=>'wrong']);mt_check(str_contains($html,'Sesi formulir berakhir'),'pay endpoint requires customer CSRF');
  [$code,$html]=$http('/pre-order/status/?t='.$ft,['action'=>'report-transfer','csrf'=>$csrf,'sender_name'=>'Test','transfer_amount'=>25000,'transfer_reference'=>'Test']);mt_check(po_order($db,$ft)['payment_status']==='unpaid','manual transfer report cannot affect gateway order');
  po_query($db,"UPDATE po_midtrans_payments SET create_state='ready',snap_url=? WHERE order_id=?",['https://app.sandbox.midtrans.com/snap/v4/redirection/existing-token',$f['id']]);
@@ -106,6 +107,7 @@ try{
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$f['id']);mt_check($code===200&&str_contains($admin,'Periksa Midtrans Sandbox')&&!str_contains($admin,'name="decision"'),'gateway admin detail has status check without manual approval form');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$id);mt_check($code===200&&str_contains($admin,'value="manual-fulfill"'),'paid gateway admin detail exposes fulfillment action');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$e['id']);mt_check($code===200&&str_contains($admin,'Jangan proses pesanan otomatis'),'late payment is visible to owner');
+ [$code,$admin]=$http('/admin/po.php?view=pesanan&payment=paid_review');mt_check($code===200&&str_contains($admin,'Perlu ditinjau')&&str_contains($admin,$e['code'])&&!str_contains($admin,$f['code']),'review filter exposes exceptional Sandbox payments without unpaid orders');
  [$code]=$http('/admin/midtrans-upgrade.php');mt_check($code===404,'gateway migration is CLI-only');
  mt_check(!preg_match('/PHP (Warning|Fatal)|Uncaught/',file_get_contents($root.'/http.log')),'HTTP flow has no PHP errors');
  echo "All Midtrans Sandbox tests passed; provider calls mocked.\n";

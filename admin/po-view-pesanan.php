@@ -13,7 +13,7 @@
 </section><?php endif; ?>
 <?php else: ?>
 <div class="stats po-stats" aria-label="Ringkasan seluruh pesanan">
-<?php foreach([['review','Perlu verifikasi',['payment'=>'under_review']],['pending','Menunggu konfirmasi',['status'=>'pending']],['ready','Siap diambil',['status'=>'ready']],['completed','Selesai',['status'=>'completed']]]as[$key,$label,$params]): ?>
+<?php foreach([['review','Perlu ditinjau',['payment'=>'paid_review']],['pending','Menunggu pembayaran',['status'=>'pending']],['ready','Siap diambil',['status'=>'ready']],['completed','Selesai',['status'=>'completed']]]as[$key,$label,$params]): ?>
 <a class="stat po-stat" href="<?= h(po_admin_url('pesanan',$params)) ?>"><div><b><?= (int)$stats[$key] ?></b><span><?= h($label) ?></span></div></a>
 <?php endforeach; ?></div>
 <section class="card" id="orders"><h2>Daftar pesanan</h2>

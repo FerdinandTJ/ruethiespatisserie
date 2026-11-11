@@ -29,7 +29,7 @@ if($action==='save-slot'&&!$sid)$sid=max(0,(int)filter_var($_POST['id']??0,FILTE
 $total = 0; $counts = []; $stats=['pending'=>0,'review'=>0,'ready'=>0,'completed'=>0];
 $catalog = []; $choices = []; $editingProduct=null; $detailOrder=null; $scheduleLocked=false;
 $payment = po_payment_defaults();
-$waCounts=[];$waJobs=[];$waEnabled=false;$waHeartbeat=0;$waConfigError=false;
+$waCounts=[];$waJobs=[];$waEnabled=false;$waHeartbeat=0;$waConfigError=false;$waTestMode=false;
 function po_admin_url(string $view,array $params=[]): string { return 'po.php?'.http_build_query(['view'=>$view]+$params); }
 try {
   $db = po_db();
@@ -53,7 +53,7 @@ try {
       po_rate($db,'manual-verification:'.$me['name'],5);
       po_manual_verify_identity($me,$_POST);
       po_wa_retry($db,po_int($_POST['job_id']??0,1,PHP_INT_MAX),po_int($_POST['version']??-1,0,PHP_INT_MAX),$me);
-      $_SESSION['po_notice']='Tindakan disimpan. Notifikasi diproses cron, bukan saat membuka halaman ini.';
+      $_SESSION['po_notice']='Tindakan disimpan. Notifikasi masuk antrean pengiriman.';
     } else {
       if (!is_owner($me)) throw new DomainException('Pengaturan jadwal dan produk hanya untuk pemilik.');
       if ($action === 'save-slot') {
@@ -76,14 +76,14 @@ try {
   $ready = true;
 } catch (RuethiesReauthRequired $e) { header('Location: index.php?p=verifikasi',true,303);exit; }
 catch (DomainException $e) { $error = $e->getMessage(); $ready = true; }
-catch (Throwable $e) { http_response_code(503); $error = 'Database PO belum siap atau sedang bermasalah. Periksa konfigurasi privat dan jalankan installer CLI sesuai panduan.'; error_log('PO admin: storage unavailable'); }
+catch (Throwable $e) { http_response_code(503); $error = 'Data pesanan belum tersedia. Silakan coba lagi atau hubungi pengelola website.'; error_log('PO admin: storage unavailable'); }
 if ($ready) {
   try {
     if(is_owner($me)&&$view==='rekening') $payment=po_payment_settings($db);
     if(is_owner($me)&&$view==='notifikasi') {
       $waCounts=po_query($db,'SELECT status,COUNT(*) AS n FROM po_whatsapp_outbox GROUP BY status')->fetchAll();
       $waJobs=po_query($db,"SELECT w.*,o.code FROM po_whatsapp_outbox w JOIN po_orders o ON o.id=w.order_id WHERE w.status IN ('failed','uncertain') ORDER BY w.id DESC LIMIT 20")->fetchAll();
-      try { $waEnabled=po_wa_settings(po_config())['enabled']; } catch(Throwable $e) { $waConfigError=true; }
+      try { $waSettings=po_wa_settings(po_config());$waEnabled=$waSettings['enabled'];$waTestMode=!empty($waSettings['test_recipient']); } catch(Throwable $e) { $waConfigError=true; }
       $waHeartbeat=(int)(jread(ruethies_data_dir().'/po-wa-heartbeat.json',[])['last_success']??0);
     }
     if(in_array($view,['pesanan','jadwal','produk'],true)) {
@@ -115,10 +115,10 @@ if ($ready) {
         $total=(int)po_query($db,'SELECT COUNT(*) FROM po_orders o'.$filter,$args)->fetchColumn();
         $orders=po_query($db,'SELECT o.*,s.title,s.pickup_from,s.pickup_until FROM po_orders o JOIN po_slots s ON s.id=o.slot_id'.$filter.' ORDER BY o.id DESC LIMIT 25 OFFSET '.(($page-1)*25),$args)->fetchAll();
         $counts=po_query($db,'SELECT status,payment_status,COUNT(*) AS n FROM po_orders WHERE flow_version=\'midtrans_v1\' GROUP BY status,payment_status')->fetchAll();
-        foreach($counts as $c){if(isset($stats[$c['status']]))$stats[$c['status']]+=(int)$c['n'];if($c['payment_status']==='under_review')$stats['review']+=(int)$c['n'];}
+        foreach($counts as $c){if(isset($stats[$c['status']]))$stats[$c['status']]+=(int)$c['n'];if($c['payment_status']==='paid_review')$stats['review']+=(int)$c['n'];}
       }
     }
-  }catch(Throwable $e){$ready=false;$error='Data PO belum dapat dimuat. Coba lagi atau periksa instalasi database.';}
+  }catch(Throwable $e){$ready=false;$error='Data pesanan belum dapat dimuat. Silakan coba lagi.';}
 }
 $csrf = ruethies_csrf();
 function po_datetime_value(?array $row,string $key): string { if(($_POST['action']??'')==='save-slot'&&is_string($_POST[$key]??null))return $_POST[$key];return $row?date('Y-m-d\TH:i',(int)$row[$key]):''; }
@@ -134,7 +134,7 @@ $poIntros=['pesanan'=>'Pantau pesanan dan tindak lanjuti pembayaran pelanggan.',
 <main class="main" id="admin-main"><nav class="mnav" aria-label="Navigasi admin mobile"><a href="index.php">Menu</a><a href="index.php?p=galeri">Galeri</a><a href="index.php?p=faq">FAQ</a><a class="on" href="po.php" aria-current="page">Pre-order</a><?php if(is_owner($me)): ?><a href="index.php?p=pengaturan">Pengaturan</a><?php endif; ?></nav>
 <div class="pagehead"><div><p class="eyebrow">RUETHIES · PRE-ORDER</p><h1><?= h($poLabels[$view]) ?></h1><p class="sub"><?= h($poIntros[$view]) ?></p></div><a class="btn ghost" href="/pre-order/" target="_blank" rel="noopener"><?= icon('web',16) ?> Halaman pelanggan</a></div>
 <nav class="po-tabs" aria-label="Bagian pre-order"><?php foreach($poLabels as$key=>$label): if(!is_owner($me)&&in_array($key,['rekening','notifikasi'],true))continue; ?><a class="<?= $view===$key?'on':'' ?>" href="<?= h(po_admin_url($key)) ?>" <?= $view===$key?'aria-current="page"':'' ?>><?= h(['pesanan'=>'Pesanan','jadwal'=>'Jadwal','produk'=>'Produk','rekening'=>'Rekening','notifikasi'=>'WhatsApp'][$key]) ?></a><?php endforeach; ?></nav>
-<p class="po-environment">Staging · Gunakan data contoh. Notifikasi mengikuti pengaturan nomor uji.</p>
+<p class="po-environment">Mode Sandbox · Pembayaran simulasi.</p>
 <?php if($error): ?><p class="err" role="alert"><?= h($error) ?></p><?php endif; ?><?php if($notice): ?><p class="okmsg" role="status"><?= h($notice) ?></p><?php endif; ?>
 <?php if($ready): require __DIR__.'/po-view-'.$view.'.php'; endif; ?>
 </main></div></div></body></html>

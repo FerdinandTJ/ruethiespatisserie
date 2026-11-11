@@ -76,7 +76,7 @@ try {
     if (!$order) { http_response_code(404); $error = 'Tautan status tidak valid atau pesanan tidak ditemukan.'; }
   }
 } catch (DomainException $e) { $error = $e->getMessage(); }
-catch (Throwable $e) { http_response_code(503); $unavailable = true; $error = 'PO Sandbox sedang disiapkan. Silakan coba lagi setelah admin mengaktifkan database.'; error_log('PO demo: storage or configuration unavailable'); }
+catch (Throwable $e) { http_response_code(503); $unavailable = true; $error = 'Pemesanan sementara belum tersedia. Silakan coba lagi nanti atau hubungi kami melalui WhatsApp.'; error_log('PO demo: storage or configuration unavailable'); }
 // Keep the invoice visible when a transfer report has a correctable validation error.
 if($statusRequested && !$order && !$unavailable && $db && preg_match('/\A[a-f0-9]{64}\z/',$token)) {
   try { $order=po_order($db,$token); if ($order && ($order['flow_version'] ?? 'legacy') !== 'midtrans_v1') $order=null; } catch(Throwable $e) { $unavailable=true;http_response_code(503);$error='Status pesanan belum dapat dimuat.'; }
@@ -95,56 +95,37 @@ function po_value(array $values, string $key): string { return is_string($values
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261108-fonnte"><script src="/po.js?v=20261108-fonnte" defer></script></head>
+<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261111-presentation"><script src="/po.js?v=20261108-fonnte" defer></script></head>
 <body>
-<div class="demo-banner">STAGING · Midtrans Sandbox + WhatsApp · Pembayaran simulasi, bukan uang sungguhan</div>
+<div class="sandbox-notice"><strong>Mode Sandbox</strong> · Pembayaran simulasi tanpa uang sungguhan.</div>
 <header class="po-header"><a href="/" aria-label="Beranda Ruethies"><img src="/logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="/">Kembali ke website ↗</a></header>
 <main class="po-wrap">
 <p class="eyebrow">DIPERSIAPKAN DENGAN KELEMBUTAN</p>
 <h1><?= $order ? 'Pesanan Anda' : 'Rencanakan momen manis Anda.' ?></h1>
-<p class="intro">Pilih sajian favorit, ajukan pre-order, lalu ambil di toko setelah dikonfirmasi oleh tim Ruethies.</p>
+<p class="intro">Pilih sajian dan jadwal pengambilan, selesaikan pembayaran, lalu pantau pesanan Anda.</p>
 <?php if ($error): ?><div class="alert error" role="alert"><?= h($error) ?></div><?php endif; ?>
 
-<?php if($order&&($order['flow_version']??'legacy')==='midtrans_v1'): require __DIR__.'/admin/po-midtrans-status.php'; elseif ($order && ($order['flow_version']??'legacy')==='manual_v1'): require __DIR__.'/admin/po-manual-status.php'; elseif ($order): ?>
-<section class="panel"><p class="eyebrow">NOMOR PENGAJUAN</p><h2><?= h($order['code']) ?></h2>
-<p class="status"><?= h(PO_STATUSES[$order['status']]) ?></p>
-<?php if ($order['status'] === 'pending'): ?><p>Pengajuan tercatat, tetapi <strong>belum diterima atau mengunci kuota</strong>. Tim kami akan memeriksa ketersediaan. Pengajuan yang belum dikonfirmasi sampai <?= h(po_date((int)$order['expires_at'])) ?> akan kedaluwarsa.</p>
-<?php elseif ($order['status'] === 'confirmed'): ?><p>Pengajuan telah diterima. Pantau halaman ini sampai pesanan siap diambil.</p>
-<?php elseif ($order['status'] === 'ready'): ?><p>Pesanan siap diambil. Tunjukkan nomor pengajuan saat datang ke toko.</p>
-<?php elseif ($order['status'] === 'completed'): ?><p>Pengambilan telah selesai. Terima kasih sudah memilih Ruethies.</p>
-<?php else: ?><p>Pengajuan ini sudah ditutup. Anda dapat membuat pengajuan baru pada jadwal yang tersedia.</p><?php endif; ?>
-<h3><?= h($order['title']) ?></h3><p>Ambil di toko: <?= h(po_date((int)$order['pickup_from'])) ?> sampai <?= h(po_date((int)$order['pickup_until'])) ?></p>
-<ul class="order-lines"><?php foreach ($order['lines'] as $line): ?><li><span><?= (int)$line['qty'] ?> × <?= h($line['name']) ?></span><strong><?= h(po_money((int)$line['price'] * (int)$line['qty'])) ?></strong></li><?php endforeach; ?></ul>
-<p class="total"><span>Total pengajuan</span><strong><?= h(po_money((int)$order['total'])) ?></strong></p>
-<p class="muted">Belum ada pembayaran yang diproses atau dicatat.</p>
-<label for="po-status-link">Tautan pribadi pesanan Anda</label>
-<input id="po-status-link" type="text" readonly spellcheck="false" autocomplete="off" value="https://staging.ruethiespatisserie.com/pre-order/status/?t=<?= h($token) ?>" aria-describedby="po-link-help">
-<p class="muted" id="po-link-help">Simpan tautan ini untuk melihat status. Jangan membagikannya kepada orang lain. Anda juga bisa memilih teks tautan lalu menyalinnya secara manual.</p>
-<button type="button" class="secondary" id="po-copy-link" hidden>Salin tautan pesanan</button>
-<p id="po-copy-feedback" role="status" aria-live="polite"></p>
-<div class="actions"><a class="button" href="/pre-order/status/?t=<?= h($token) ?>">Perbarui status</a><a class="button secondary" href="/pre-order/">Lihat jadwal lain</a></div>
-</section>
-
+<?php if($order): require __DIR__.'/admin/po-midtrans-status.php'; ?>
 <?php elseif ($review): ?>
-<section class="panel"><p class="eyebrow">LANGKAH 2 DARI 2</p><h2>Periksa pengajuan Anda</h2>
+<section class="panel"><p class="eyebrow">LANGKAH 2 DARI 2</p><h2>Periksa pesanan Anda</h2>
 <h3><?= h($review['slot']['title']) ?></h3><p>Ambil di toko: <?= h(po_date((int)$review['slot']['pickup_from'])) ?> sampai <?= h(po_date((int)$review['slot']['pickup_until'])) ?></p>
 <ul class="order-lines"><?php foreach ($review['lines'] as $line): ?><li><span><?= (int)$line['qty'] ?> × <?= h($line['name']) ?></span><strong><?= h(po_money($line['price'] * $line['qty'])) ?></strong></li><?php endforeach; ?></ul>
-<p class="total"><span>Total pengajuan</span><strong><?= h(po_money($review['total'])) ?></strong></p>
+<p class="total"><span>Total pesanan</span><strong><?= h(po_money($review['total'])) ?></strong></p>
 <p><strong><?= h(po_value($values,'name')) ?></strong><br>WhatsApp: <?= h(po_value($values,'phone')) ?></p>
 <?php if (po_value($values,'note') !== ''): ?><p class="customer-note">Catatan: <?= h(po_value($values,'note')) ?></p><?php endif; ?>
-<?php if(($review['slot']['flow_version']??'legacy')==='midtrans_v1'): ?><div class="alert">Uji Midtrans Sandbox: kuota ditahan 15 menit. Simpan tautan invoice dan gunakan pembayaran simulasi, bukan uang sungguhan.</div><?php elseif(($review['slot']['flow_version']??'legacy')==='manual_v1'): ?><div class="alert">Setelah dikirim, kuota ditahan 15 menit. Invoice dan rekening transfer akan muncul di halaman pesanan. WhatsApp adalah notifikasi tambahan; simpan tautan di website.</div><?php else: ?><div class="alert">Belum ada pembayaran. Pengajuan baru diterima setelah admin mengonfirmasi ketersediaan.</div><?php endif; ?>
+<div class="alert">Kuota pesanan disimpan selama 15 menit. Setelah membuat pesanan, lanjutkan pembayaran melalui invoice.</div>
 <form method="post" action="/pre-order/"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="action" value="submit"><input type="hidden" name="nonce" value="<?= h($nonce) ?>">
-<button type="submit">Kirim pengajuan PO</button> <a class="text-link" href="/pre-order/?edit=<?= h($nonce) ?>">Ubah pilihan</a></form>
+<button type="submit">Buat pesanan →</button> <a class="text-link" href="/pre-order/?edit=<?= h($nonce) ?>">Ubah pilihan</a></form>
 </section>
 
 <?php elseif (!$unavailable && !$statusRequested): ?>
 <section class="panel"><p class="eyebrow">01 · PILIH JADWAL</p><h2>PO yang sedang dibuka</h2>
-<?php if (!$slots): ?><div class="empty">Belum ada jadwal PO yang dibuka. Silakan kembali setelah admin membuka periode baru.</div><?php endif; ?>
+<?php if (!$slots): ?><div class="empty">Belum ada jadwal pre-order yang tersedia. Silakan cek kembali atau hubungi kami melalui WhatsApp.</div><?php endif; ?>
 <div class="slot-grid"><?php foreach ($slots as $s): ?><a class="slot <?= $slot && $slot['id'] == $s['id'] ? 'selected' : '' ?>" href="/pre-order/?slot=<?= (int)$s['id'] ?>#pilihan" <?= $slot && $slot['id'] == $s['id'] ? 'aria-current="true"' : '' ?>>
 <strong><?= h($s['title']) ?></strong><span>Ambil <?= h(po_date((int)$s['pickup_from'])) ?></span><small>PO ditutup <?= h(po_date((int)$s['closes_at'])) ?></small></a><?php endforeach; ?></div></section>
 <?php if ($slot): ?>
 <form method="post" action="/pre-order/" id="po-form"><input type="hidden" name="action" value="review"><input type="hidden" name="csrf" value="<?= h($csrf) ?>"><input type="hidden" name="slot_id" value="<?= (int)$slot['id'] ?>">
-<section class="panel" id="pilihan"><p class="eyebrow">02 · PILIH SAJIAN</p><h2><?= h($slot['title']) ?></h2><p class="muted">Jumlah 0 berarti tidak dipilih. Ketersediaan akhir dikonfirmasi oleh admin.</p>
+<section class="panel" id="pilihan"><p class="eyebrow">02 · PILIH SAJIAN</p><h2><?= h($slot['title']) ?></h2><p class="muted">Pilih jumlah sajian yang Anda inginkan. Biarkan 0 untuk sajian yang tidak dipilih.</p>
 <?php if (!$products): ?><div class="empty">Produk untuk jadwal ini sedang disiapkan.</div><?php endif; ?>
 <?php foreach ($products as $p): $left = max(0, (int)$p['quota'] - (int)$p['reserved']); $minQty = (int)($p['min_qty'] ?? 1); $maxQty = min((int)($p['max_qty'] ?? 20),$left); $canOrder = $maxQty >= $minQty; $qty = is_array($values['qty'] ?? null) ? ($values['qty'][$p['id']] ?? 0) : 0; ?>
 <div class="product"><div class="product-info"><?php if ($p['image']): ?><img class="product-photo" src="/<?= h($p['image']) ?>" alt="" width="88" height="66" loading="lazy"><?php endif; ?><div><h3><?= h($p['name']) ?></h3><p class="muted"><?= h($p['description']) ?></p><p><?= h(po_money((int)$p['price'])) ?> <span class="muted">/ item</span></p><small><?= $left ? 'Kuota tersedia: ' . $left : 'Kuota habis' ?></small><br><small>Minimal <?= $minQty ?> · Maksimal <?= (int)($p['max_qty'] ?? 20) ?> buah per pesanan</small><?php if ($left && !$canOrder): ?><br><small>Sisa kuota kurang dari minimal pembelian.</small><?php endif; ?></div></div>
@@ -157,8 +138,8 @@ function po_value(array $values, string $key): string { return is_string($values
 <label>Catatan (opsional)<textarea name="note" rows="3" maxlength="500"><?= h(po_value($values,'note')) ?></textarea></label>
 <div class="trap" aria-hidden="true"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
 <div class="pickup"><strong>Ambil di toko Ruethies Patisserie</strong><br>Ruko The Neo Patio East No. 51, Lippo Cikarang.<br><?= h(po_date((int)$slot['pickup_from'])) ?> sampai <?= h(po_date((int)$slot['pickup_until'])) ?></div>
-<label class="check"><input type="checkbox" name="consent" value="yes" required <?= ($values['consent'] ?? '') === 'yes' ? 'checked' : '' ?>>Saya setuju kontak digunakan untuk menindaklanjuti pengajuan ini dan memahami pesanan perlu konfirmasi admin.</label>
-<button type="submit" <?= !$products ? 'disabled' : '' ?>>Periksa ringkasan →</button><p class="muted">Demo presentasi: gunakan nama dan nomor contoh. Notifikasi WhatsApp staging hanya dikirim ke nomor uji yang diizinkan.</p></section></form>
+<label class="check"><input type="checkbox" name="consent" value="yes" required <?= ($values['consent'] ?? '') === 'yes' ? 'checked' : '' ?>>Saya menyetujui penggunaan kontak untuk informasi pesanan dan akan mengambil pesanan sesuai jadwal.</label>
+<button type="submit" <?= !$products ? 'disabled' : '' ?>>Periksa ringkasan →</button><p class="muted">Simpan tautan pesanan setelah checkout untuk melihat status pembayaran dan pengambilan.</p></section></form>
 <?php endif; endif; ?>
-</main><footer class="po-footer">Ruethies Patisserie · Made With Delicacy · Demo pre-order</footer>
+</main><footer class="po-footer">Ruethies Patisserie · Made With Delicacy · Pre-order</footer>
 </body></html>

@@ -123,3 +123,9 @@ Referensi resmi: [Snap Redirect](https://docs.midtrans.com/docs/snap-snap-integr
 - Setelah update melalui `tools/update-staging.sh`, tidak perlu migrasi tambahan. Konfigurasi Midtrans/Fonnte dan cron tetap digunakan. Buat jadwal Midtrans baru jika sebelumnya hanya memiliki jadwal demo/manual.
 
 Script update mendukung staging tanpa Basic Auth bila proteksi sudah dihapus oleh pemilik. Jika blok proteksi hPanel masih ada, blok itu tetap dipertahankan; aturan autentikasi tidak lengkap/tidak dikenali tetap menghentikan update. Login admin, noindex, dan validasi webhook tetap berlaku.
+
+## Tampilan presentasi client (11 November 2026)
+
+Halaman pelanggan memakai istilah pesanan/pembayaran/pengambilan, tanpa instruksi teknis cron/database atau demo presentasi. Penanda Mode Sandbox dan instruksi pembayaran simulasi tetap terlihat; ini belum aktivasi pembayaran produksi. Keterangan password staging yang sudah tidak berlaku dihapus. Admin WhatsApp menampilkan peringatan penerima uji berdasarkan konfigurasi sebenarnya, sehingga routing pengujian tidak disalahartikan sebagai pengiriman ke pelanggan.
+
+Pembaruan detail foto main diselaraskan ke staging. Deployment tetap mempertahankan katalog dan galeri hosting, akun, pesanan, konfigurasi Midtrans/Fonnte, serta cron. Tidak ada migrasi atau penghapusan data. Jika ingin tiga foto Suasana terbaru dari main, backup dan terapkan atmosphere.json secara terpisah sesuai PHOTO-OPTIMIZATION.md; jangan mengganti katalog hosting tanpa peninjauan.
