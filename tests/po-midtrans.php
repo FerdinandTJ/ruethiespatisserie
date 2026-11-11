@@ -109,6 +109,13 @@ try{
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$e['id']);mt_check($code===200&&str_contains($admin,'Jangan proses pesanan otomatis'),'late payment is visible to owner');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&payment=paid_review');mt_check($code===200&&str_contains($admin,'Perlu ditinjau')&&str_contains($admin,$e['code'])&&!str_contains($admin,$f['code']),'review filter exposes exceptional Sandbox payments without unpaid orders');
  [$code]=$http('/admin/midtrans-upgrade.php');mt_check($code===404,'gateway migration is CLI-only');
+ $stockBefore=po_query($db,'SELECT quota,reserved FROM po_products WHERE id=?',[$pid])->fetch();
+ po_query($db,'UPDATE po_products SET reserved=quota WHERE id=?',[$pid]);
+ [$code,$stockHtml]=$http('/pre-order/?slot='.$sid);
+ mt_check($code===200&&str_contains($stockHtml,'class="availability sold-out">Habis</span>')&&str_contains($stockHtml,'Semua sajian untuk jadwal ini sudah habis')&&preg_match('/<button type="submit" disabled>Periksa ringkasan/',$stockHtml),'sold-out product has clear label and disables checkout when all quota is used');
+ [$code,$stockAdmin]=$http('/admin/po.php?view=produk&slot='.$sid);mt_check($code===200&&str_contains($stockAdmin,'class="badge">Habis</span>'),'admin product list also labels exhausted quota');
+ po_query($db,'UPDATE po_products SET reserved=? WHERE id=?',[$stockBefore['reserved'],$pid]);
+ [$code,$stockHtml]=$http('/pre-order/?slot='.$sid);mt_check($code===200&&!str_contains($stockHtml,'class="availability sold-out"')&&!preg_match('/<button type="submit" disabled>Periksa ringkasan/',$stockHtml),'available quota restores purchasable product without stale sold-out status');
  mt_check(!preg_match('/PHP (Warning|Fatal)|Uncaught/',file_get_contents($root.'/http.log')),'HTTP flow has no PHP errors');
  echo "All Midtrans Sandbox tests passed; provider calls mocked.\n";
 }finally{if($curl)$curl=null;if(is_resource($process)){proc_terminate($process);proc_close($process);}$db=null;$server->exec("DROP DATABASE `$database`");if(is_dir($root))mt_remove($root);}

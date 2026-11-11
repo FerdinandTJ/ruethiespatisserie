@@ -9,3 +9,5 @@
 @media print { .sandbox-notice,.po-header,.po-footer,.actions,form,#po-copy-link,#po-copy-feedback { display:none!important; } body { background:#fff;color:#000; } .po-wrap { max-width:none;margin:0;padding:0; } .panel { box-shadow:none;border:0; } .panel,input { color:#000;background:#fff; } }
 
 @media(max-width:600px){.sandbox-notice{margin:12px 16px;padding:10px 12px;font-size:.74rem}}
+
+.availability{display:inline-block;margin:6px 0;padding:3px 10px;border:1px solid var(--line);border-radius:999px;background:var(--cream);color:var(--muted);font-size:.76rem;font-weight:700}.availability.sold-out{color:var(--wine);border-color:#dbb7b2;background:#f9eeeb}
