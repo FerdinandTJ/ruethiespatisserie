@@ -20,6 +20,7 @@
     document.querySelector('[data-product-home]').textContent=en?'Home':'Beranda';
     const menuCrumb=document.querySelector('[data-product-menu]');if(menuCrumb)menuCrumb.textContent=en?'Menu':'Menu';
     document.querySelector('[data-product-catalog]').textContent=en?'Explore all menu items →':'Lihat seluruh menu →';
+    const platter=document.querySelector('[data-product-platter]');if(platter)platter.textContent=en?'Explore Platter options →':'Lihat pilihan Platter →';
     const detail=document.getElementById('product-detail');detail.replaceChildren();
     (item.detail || '').split(/\n\s*\n/).filter(Boolean).forEach(paragraph=>{const p=document.createElement('p');p.textContent=paragraph;detail.appendChild(p);});
     const content={context:en?(snack?'Ruethies Patisserie offers snack boxes in Lippo Cikarang, Cikarang Selatan. Browse photos of the treats and packaging, then share the quantity and date you need on WhatsApp.':'Discover '+item.n+' at Ruethies Patisserie in Lippo Cikarang. Ask us about selections and availability.'):(snack?'Ruethies Patisserie menyediakan snack box di Lippo Cikarang, Cikarang Selatan. Lihat foto sajian dan kemasan sebagai referensi, lalu sampaikan jumlah dan tanggal kebutuhan melalui WhatsApp.':'Temukan '+item.n+' dalam katalog Ruethies Patisserie di Lippo Cikarang. Hubungi kami untuk menanyakan pilihan dan ketersediaannya.'),terms:en?'Confirm selections, sizes, prices, minimum quantities, lead times, pickup or delivery on WhatsApp.':'Pilihan isi, ukuran, harga, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran dikonfirmasi melalui WhatsApp.',order:en?'How to order':'Cara memesan',location:en?'Find Ruethies Patisserie':'Lokasi Ruethies Patisserie',directions:en?'Get directions →':'Dapatkan rute →',faq:en?'Questions about '+item.n:'Pertanyaan tentang '+item.n,related:en?'More to explore':'Pilihan lainnya'};
@@ -39,6 +40,7 @@
     const slides=[...root.querySelectorAll('[data-slide]')];
     if(slides.length<2)return null;
     const controls=root.querySelector('.carousel-controls'),pause=root.querySelector('[data-carousel="pause"]'),prev=root.querySelector('[data-carousel="prev"]'),next=root.querySelector('[data-carousel="next"]'),position=root.querySelector('.carousel-position');
+    const dots=[...root.querySelectorAll('[data-carousel-slide]')];
     const motion=matchMedia('(prefers-reduced-motion: reduce)');
     let index=0,timer=null,running=!motion.matches,hovered=false,visible=!('IntersectionObserver' in window),english=false,pointerState=null;
     controls.hidden=false;
@@ -48,7 +50,9 @@
       pause.textContent=running?(english?'Pause':'Jeda'):(english?'Play':'Putar');
       pause.setAttribute('aria-label',running?(english?'Pause automatic photos':'Jeda pergantian foto otomatis'):(english?'Start automatic photos':'Mulai pergantian foto otomatis'));
       prev.setAttribute('aria-label',english?'Previous photo':'Foto sebelumnya');next.setAttribute('aria-label',english?'Next photo':'Foto berikutnya');
-      position.textContent=(index+1)+' / '+slides.length;
+      position.textContent=String(index+1).padStart(2,'0')+' / '+String(slides.length).padStart(2,'0');
+      dots.forEach((dot,i)=>{dot.setAttribute('aria-current',String(i===index));dot.setAttribute('aria-label',(english?'Show photo ':'Lihat foto ')+(i+1));});
+      root.querySelector('.carousel-dots')?.setAttribute('aria-label',english?'Choose photo':'Pilih foto');
       position.setAttribute('aria-live',running?'off':'polite');
     }
     function schedule(){clearTimeout(timer);timer=null;if(running&&visible&&!hovered&&!document.hidden)timer=setTimeout(()=>show(index+1),6000);labels();}
@@ -61,6 +65,11 @@
     pause.addEventListener('pointerdown',()=>{pointerState=running;});
     pause.addEventListener('click',()=>{running=!(pointerState??running);pointerState=null;schedule();});
     prev.addEventListener('click',()=>{running=false;show(index-1);});next.addEventListener('click',()=>{running=false;show(index+1);});
+    dots.forEach((dot,i)=>dot.addEventListener('click',()=>{running=false;show(i);}));
+    let touchStart=null;
+    root.addEventListener('pointerdown',event=>{if(event.pointerType==='touch'&&!event.target.closest('button'))touchStart={x:event.clientX,y:event.clientY};});
+    root.addEventListener('pointercancel',()=>{touchStart=null;});
+    root.addEventListener('pointerup',event=>{if(!touchStart)return;const dx=event.clientX-touchStart.x,dy=event.clientY-touchStart.y;touchStart=null;if(Math.abs(dx)>45&&Math.abs(dx)>Math.abs(dy)){running=false;show(index+(dx<0?1:-1));}});
     root.addEventListener('mouseenter',()=>{hovered=true;schedule();});root.addEventListener('mouseleave',()=>{hovered=false;schedule();});
     root.addEventListener('focusin',()=>{running=false;schedule();});
     root.addEventListener('keydown',event=>{if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();running=false;show(index+(event.key==='ArrowRight'?1:-1));}});

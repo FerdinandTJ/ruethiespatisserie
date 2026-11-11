@@ -69,3 +69,9 @@ Core Web Vitals nyata perlu diperiksa di Search Console/PageSpeed setelah deploy
 - Lulus tes carousel state/timer, HTTP/CMS/SEO, JSON-LD, FAQ, navigasi katalog dan galeri. Browser lokal diuji pada 320, 390 dan 1440 px: satu bingkai, tanpa overflow, unduhan foto sesuai slide, ID/EN, autoplay nyata, reduced motion, dan tanpa JavaScript. Safari perangkat nyata serta pengindeksan/ranking setelah rilis belum diverifikasi.
 - Rujukan: https://developers.google.com/search/docs/appearance/ai-features dan https://www.w3.org/WAI/ARIA/apg/patterns/carousel/. GEO tidak memerlukan schema khusus dan tidak menjamin website dikutip layanan AI.
 - Deployment memakai backup dan pull main; tidak ada migrasi database atau perubahan JSON hosting. Pengujian browser memakai dua foto detail fixture, bukan menambahkan foto baru ke menu.json hosting. Jika foto detail belum diisi admin, halaman tetap menampilkan satu foto tanpa kontrol carousel.
+
+### Fokus Snackbox dan penyempurnaan carousel
+
+Halaman Snackbox tidak lagi menampilkan tiga kartu rekomendasi. Tautan HTML sederhana “Lihat pilihan Platter →” hanya muncul jika produk dengan slug permanen platter masih terlihat. Tautan seluruh katalog tetap tersedia. Rekomendasi di halaman produk lainnya tetap mengikuti kategori.
+
+Kontrol carousel diperhalus dengan indikator aktif yang bisa dipilih, hitungan foto, tautan jeda/putar, transisi ringan dan gestur geser horizontal. Reduced motion menonaktifkan animasi, dan foto tetap dimuat sesuai pilihan. Tes HTTP mencakup Platter yang disembunyikan, sementara browser lokal 320/390/1440 px mencakup indikator, swipe sentuh nyata, ID/EN, autoplay dan fallback tanpa JavaScript.

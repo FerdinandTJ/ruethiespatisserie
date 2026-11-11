@@ -116,7 +116,11 @@ function seo_home(string $template,array $items,array $faq): string {
 function seo_product_photos(array $m,array $photos,bool $carousel): string {
   $name=$m['id']['n'];
   $html='<div class="product-photos'.($carousel?' product-carousel':'').'"'.($carousel?' id="product-carousel" role="region" aria-roledescription="carousel" aria-label="Foto produk"':'').'>';
-  if($carousel)$html.='<div class="carousel-controls" hidden><button type="button" data-carousel="pause">Jeda</button><button type="button" data-carousel="prev" aria-label="Foto sebelumnya">‹</button><span class="carousel-position" aria-live="off">1 / '.count($photos).'</span><button type="button" data-carousel="next" aria-label="Foto berikutnya">›</button></div>';
+  if($carousel){
+    $html.='<div class="carousel-controls" hidden><button type="button" data-carousel="pause">Jeda</button><div class="carousel-dots" role="group" aria-label="Pilih foto">';
+    foreach($photos as $i=>$photo)$html.='<button type="button" data-carousel-slide="'.$i.'" aria-label="Lihat foto '.($i+1).'" aria-current="'.($i?'false':'true').'"><span aria-hidden="true"></span></button>';
+    $html.='</div><div class="carousel-navigation"><button type="button" data-carousel="prev" aria-label="Foto sebelumnya">‹</button><span class="carousel-position" aria-live="off">01 / '.str_pad((string)count($photos),2,'0',STR_PAD_LEFT).'</span><button type="button" data-carousel="next" aria-label="Foto berikutnya">›</button></div></div>';
+  }
   foreach($photos as $i=>$photo){
     $image=seo_detail_picture($m,$photo,$i===0);
     if($carousel && $i>0)$image=preg_replace('/\b(src|srcset)=/', 'data-$1=', $image);
@@ -140,17 +144,25 @@ function seo_product(string $template,array $m,array $items): string {
   $body='<main id="home" class="product-page container">'.$breadcrumb.'<section class="product-intro"><div><p class="eyebrow">RUETHIES · LIPPO CIKARANG</p><h1 class="h2" id="product-title">'.catalog_escape($heading).'</h1><p class="product-summary" id="product-summary">'.catalog_escape($m['id']['d']).'</p><div id="product-detail">'.seo_paragraphs(catalog_detail($m,'id')).'</div><p class="product-context" data-copy="context">'.($snack?'Ruethies Patisserie menyediakan snack box di Lippo Cikarang, Cikarang Selatan. Lihat foto sajian dan kemasan sebagai referensi, lalu sampaikan jumlah dan tanggal kebutuhan melalui WhatsApp.':'Temukan '.catalog_escape($name).' dalam katalog Ruethies Patisserie di Lippo Cikarang. Hubungi kami untuk menanyakan pilihan dan ketersediaannya.').'</p><a class="btn primary" id="product-wa" href="'.seo_wa($name).'" target="_blank" rel="noopener">Tanyakan '.catalog_escape($name).' via WhatsApp</a><p class="muted product-note" data-copy="terms">Pilihan isi, ukuran, harga, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran dikonfirmasi melalui WhatsApp.</p><p class="product-catalog-link"><a href="/#menu" data-product-catalog>Lihat seluruh menu →</a></p></div>'.seo_product_photos($m,$photos,$snack&&count($photos)>1);
   $body.='</section><section class="product-information"><div><h2 class="h2" data-copy="order">Cara memesan</h2><ol id="order-steps"><li>Sebutkan produk yang Anda minati.</li><li>Sampaikan jumlah serta tanggal kebutuhan.</li><li>Konfirmasikan pilihan, harga, dan cara menerima pesanan melalui WhatsApp.</li></ol></div><div><h2 class="h2" id="product-location" data-copy="location">Lokasi Ruethies Patisserie</h2><p>Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.</p><p><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.3443722,107.1490519" target="_blank" rel="noopener" data-copy="directions">Dapatkan rute →</a></p><p>Email: <a href="mailto:info@ruethiespatisserie.com">info@ruethiespatisserie.com</a></p></div></section>';
   $faq=[['q'=>'Bagaimana cara memesan '.$name.'?','a'=>'Hubungi WhatsApp 0851-3928-1257. Sebutkan produk, jumlah, dan tanggal kebutuhan untuk mengonfirmasi pilihan serta harga.'],['q'=>'Apakah harga dan ketentuan pesanan tersedia di website?','a'=>'Silakan konfirmasikan harga, pilihan isi, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran melalui WhatsApp.'],['q'=>'Di mana lokasi Ruethies Patisserie?','a'=>'Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.']];
-  $body.='<section class="product-faq"><h2 class="h2" data-copy="faq">Pertanyaan tentang '.catalog_escape($name).'</h2><div id="product-faq">'.seo_faq_html($faq).'</div></section><section class="product-related"><h2 class="h2" data-copy="related">Pilihan lainnya</h2><div class="cards3">';
+  $body.='<section class="product-faq"><h2 class="h2" data-copy="faq">Pertanyaan tentang '.catalog_escape($name).'</h2><div id="product-faq">'.seo_faq_html($faq).'</div></section>';
   $related=array_values(array_filter($items,fn($r)=>$r['uid']!==$m['uid'] && ($r['available'] ?? true)!==false));
-  usort($related,fn($a,$b)=>(int)($b['cat']===$m['cat'])<=>(int)($a['cat']===$m['cat']));
-  foreach(array_slice($related,0,3) as $r) $body.='<article class="card"><a class="ph product-photo" href="'.catalog_path($r).'">'.seo_picture($r).'</a><div class="bd"><h3><a href="'.catalog_path($r).'">'.catalog_escape($r['id']['n']).'</a></h3><p>'.catalog_escape($r['id']['d']).'</p></div></article>';
-  $body.='</div></section></main>';
+  if($snack){
+    foreach($related as $r)if($r['slug']==='platter'){
+      $body.='<aside class="product-alternative"><a href="'.catalog_path($r).'" data-product-platter>Lihat pilihan Platter →</a></aside>';break;
+    }
+  }else{
+    $body.='<section class="product-related"><h2 class="h2" data-copy="related">Pilihan lainnya</h2><div class="cards3">';
+    usort($related,fn($a,$b)=>(int)($b['cat']===$m['cat'])<=>(int)($a['cat']===$m['cat']));
+    foreach(array_slice($related,0,3) as $r) $body.='<article class="card"><a class="ph product-photo" href="'.catalog_path($r).'">'.seo_picture($r).'</a><div class="bd"><h3><a href="'.catalog_path($r).'">'.catalog_escape($r['id']['n']).'</a></h3><p>'.catalog_escape($r['id']['d']).'</p></div></article>';
+    $body.='</div></section>';
+  }
+  $body.='</main>';
   $html=preg_replace_callback('~<main id="home">.*?</main>~s',fn()=>$body,$template);
   // Public links use root-relative paths; the same header/footer works on nested pages.
   $html=preg_replace('~href="#([^\"]*)"~','href="/#$1"',$html);
   $html=preg_replace('~<!-- LIGHTBOX -->.*?</body>~s','</body>',$html);
   $html=preg_replace('~<link rel="preload"[^>]*>~','',$html);
-  $html=preg_replace('~<script src="app.js\?[^\"]+" defer></script>~','<script src="/product.js?v=20261111-carousel" defer></script>',$html);
+  $html=preg_replace('~<script src="app.js\?[^\"]+" defer></script>~','<script src="/product.js?v=20261111-carousel-refined" defer></script>',$html);
   $html=str_replace('</body>','<script type="application/json" id="product-data">'.catalog_json(['product'=>seo_interactive_product($m),'faq'=>$faq]).'</script></body>',$html);
   $crumbItems=[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/']];
   if(!$snack)$crumbItems[]=['@type'=>'ListItem','position'=>2,'name'=>'Menu','item'=>CATALOG_ORIGIN.'/#menu'];
