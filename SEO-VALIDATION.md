@@ -75,3 +75,7 @@ Core Web Vitals nyata perlu diperiksa di Search Console/PageSpeed setelah deploy
 Halaman Snackbox tidak lagi menampilkan tiga kartu rekomendasi. Tautan HTML sederhana “Lihat pilihan Platter →” hanya muncul jika produk dengan slug permanen platter masih terlihat. Tautan seluruh katalog tetap tersedia. Rekomendasi di halaman produk lainnya tetap mengikuti kategori.
 
 Kontrol carousel diperhalus dengan indikator aktif yang bisa dipilih, hitungan foto, tautan jeda/putar, transisi ringan dan gestur geser horizontal. Reduced motion menonaktifkan animasi, dan foto tetap dimuat sesuai pilihan. Tes HTTP mencakup Platter yang disembunyikan, sementara browser lokal 320/390/1440 px mencakup indikator, swipe sentuh nyata, ID/EN, autoplay dan fallback tanpa JavaScript.
+
+### Penyelarasan Platter
+
+Platter memakai carousel paket yang sama dengan Snackbox apabila foto detail tersedia. Breadcrumb HTML dan schema langsung Beranda → Platter di Cikarang, dengan terjemahan ID/EN yang konsisten. Rekomendasi kartu diganti tautan ke Snackbox jika masih ditampilkan admin; tautan katalog tetap terpisah. Tidak ada perubahan URL canonical, katalog hosting, atau migrasi data.

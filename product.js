@@ -10,17 +10,18 @@
   let language='id';try{if(localStorage.getItem('ruethies-lang')==='en')language='en';}catch{}
   const text=(id,value)=>{document.getElementById(id).textContent=value;};
   function render(){
-    const en=language==='en', item=product[language] || product.id, snack=product.slug==='snackbox';
+    const en=language==='en', item=product[language] || product.id, snack=product.slug==='snackbox', packagePage=snack||product.slug==='platter';
     document.documentElement.lang=language;
     document.querySelectorAll('[data-i18n]').forEach(el=>{if(words[language][el.dataset.i18n])el.textContent=words[language][el.dataset.i18n];});
     for(const key of ['id','en'])document.getElementById('btn-'+key).classList.toggle('on',key===language);
     text('product-title',snack?(en?'Snack Boxes in Cikarang':'Snack Box di Cikarang'):item.n+(en?' in Cikarang':' di Cikarang'));
     text('product-summary',item.d);
-    text('product-crumb',snack?(en?'Snack Boxes in Cikarang':'Snack Box di Cikarang'):item.n);
+    text('product-crumb',snack?(en?'Snack Boxes in Cikarang':'Snack Box di Cikarang'):item.n+(packagePage?(en?' in Cikarang':' di Cikarang'):''));
     document.querySelector('[data-product-home]').textContent=en?'Home':'Beranda';
     const menuCrumb=document.querySelector('[data-product-menu]');if(menuCrumb)menuCrumb.textContent=en?'Menu':'Menu';
     document.querySelector('[data-product-catalog]').textContent=en?'Explore all menu items →':'Lihat seluruh menu →';
     const platter=document.querySelector('[data-product-platter]');if(platter)platter.textContent=en?'Explore Platter options →':'Lihat pilihan Platter →';
+    const snackbox=document.querySelector('[data-product-snackbox]');if(snackbox)snackbox.textContent=en?'Explore Snackbox options →':'Lihat pilihan Snackbox →';
     const detail=document.getElementById('product-detail');detail.replaceChildren();
     (item.detail || '').split(/\n\s*\n/).filter(Boolean).forEach(paragraph=>{const p=document.createElement('p');p.textContent=paragraph;detail.appendChild(p);});
     const content={context:en?(snack?'Ruethies Patisserie offers snack boxes in Lippo Cikarang, Cikarang Selatan. Browse photos of the treats and packaging, then share the quantity and date you need on WhatsApp.':'Discover '+item.n+' at Ruethies Patisserie in Lippo Cikarang. Ask us about selections and availability.'):(snack?'Ruethies Patisserie menyediakan snack box di Lippo Cikarang, Cikarang Selatan. Lihat foto sajian dan kemasan sebagai referensi, lalu sampaikan jumlah dan tanggal kebutuhan melalui WhatsApp.':'Temukan '+item.n+' dalam katalog Ruethies Patisserie di Lippo Cikarang. Hubungi kami untuk menanyakan pilihan dan ketersediaannya.'),terms:en?'Confirm selections, sizes, prices, minimum quantities, lead times, pickup or delivery on WhatsApp.':'Pilihan isi, ukuran, harga, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran dikonfirmasi melalui WhatsApp.',order:en?'How to order':'Cara memesan',location:en?'Find Ruethies Patisserie':'Lokasi Ruethies Patisserie',directions:en?'Get directions →':'Dapatkan rute →',faq:en?'Questions about '+item.n:'Pertanyaan tentang '+item.n,related:en?'More to explore':'Pilihan lainnya'};
