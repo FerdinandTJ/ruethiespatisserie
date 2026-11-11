@@ -1,32 +1,32 @@
 [
     {
-        "img": "images/suasana-1.jpg",
-        "imgFull": "images/suasana-1-xl.jpg",
+        "img": "images/menu/snackbox.webp",
+        "imgFull": "images/menu/snackbox-full.webp",
         "id": {
-            "cap": "Interior hangat — kayu dan cahaya sore"
+            "cap": "Snackbox — sajian dalam kemasan Ruethies"
         },
         "en": {
-            "cap": "Warm interior — wood & evening light"
+            "cap": "Snack boxes — presented in Ruethies packaging"
         }
     },
     {
-        "img": "images/suasana-2.jpg",
-        "imgFull": "images/suasana-2-xl.jpg",
+        "img": "images/menu/platter.webp",
+        "imgFull": "images/menu/platter-full.webp",
         "id": {
-            "cap": "Dibuat manual dengan teliti"
+            "cap": "Platter — pilihan kudapan untuk berbagi"
         },
         "en": {
-            "cap": "Handcrafted with care"
+            "cap": "Platter — a selection of treats to share"
         }
     },
     {
-        "img": "images/suasana-3.jpg",
-        "imgFull": "images/suasana-3-xl.jpg",
+        "img": "images/menu/marble-cake.webp",
+        "imgFull": "images/menu/marble-cake-full.webp",
         "id": {
-            "cap": "Detail lapisan yang renyah"
+            "cap": "Marble Cake — kue klasik berpola marmer"
         },
         "en": {
-            "cap": "Crisp layered details"
+            "cap": "Marble Cake — a classic marbled cake"
         }
     }
 ]

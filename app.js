@@ -35,7 +35,7 @@ const I18N = {
     "menu.eyebrow":"02 — Menu","menu.title":'Pilih <em>Menu Favorit Anda</em>',"menu.t1":"Kue & Jajanan","menu.t2":"Camilan Gurih","menu.t3":"Paket & Sajian",
     "menu.note":"Tanyakan ketersediaan, varian isi, ukuran, harga, dan pilihan paket melalui WhatsApp.",
     "menu.searchPh":"Cari brownies, pastel, snackbox…","menu.empty":"Tidak ditemukan. Silakan coba kata kunci lain atau tanya via WhatsApp.","menu.ask":"Tanya via WA",
-    "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Interior hangat — kayu dan cahaya sore","atmos.c2":"Dibuat manual dengan teliti","atmos.c3":"Detail lapisan yang renyah",
+    "atmos.eyebrow":"03 — Suasana","atmos.title":'Sudut yang <em>Fotogenik</em>',"atmos.c1":"Snackbox — sajian dalam kemasan Ruethies","atmos.c2":"Platter — pilihan kudapan untuk berbagi","atmos.c3":"Marble Cake — kue klasik berpola marmer",
     "visit.eyebrow":"04 — Kunjungi Kami","visit.title":'Mampir, <em>Duduk Manis</em>',"visit.hours":"Setiap Hari • 09.00 – 21.00",
     "visit.dir":"Dapatkan Rute","visit.copy":"Salin Alamat","visit.contact":"Hubungi via WhatsApp","visit.call":"Telepon",
     "visit.map":"Tampilkan Peta Interaktif","visit.mapTitle":"Peta Ruethies Patisserie — N°51",
@@ -52,7 +52,7 @@ const I18N = {
     "menu.eyebrow":"02 — Menu","menu.title":'Choose Your <em>Craving</em>',"menu.t1":"Cakes & Desserts","menu.t2":"Savoury Snacks","menu.t3":"Boxes & Platters",
     "menu.note":"Ask about availability, fillings, sizes, prices and package options via WhatsApp.",
     "menu.searchPh":"Search brownies, pastel, snackbox…","menu.empty":"No match. Try another word or ask on WhatsApp.","menu.ask":"Ask on WA",
-    "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Warm interior — wood & evening light","atmos.c2":"Handcrafted with care","atmos.c3":"Crisp layered details",
+    "atmos.eyebrow":"03 — Atmosphere","atmos.title":'Most <em>Photogenic</em> Corners',"atmos.c1":"Snack boxes — presented in Ruethies packaging","atmos.c2":"Platter — a selection of treats to share","atmos.c3":"Marble Cake — a classic marbled cake",
     "visit.eyebrow":"04 — Visit Us","visit.title":'Drop by, <em>Sit Pretty</em>',"visit.hours":"Daily • 9 AM – 9 PM",
     "visit.dir":"Get Directions","visit.copy":"Copy Address","visit.contact":"Contact via WhatsApp","visit.call":"Call",
     "visit.map":"Show Interactive Map","visit.mapTitle":"Map of Ruethies Patisserie — N°51",
@@ -334,15 +334,36 @@ function onScroll(){
 
 // Galeri atmosphere — sumber utama atmosphere.json (edit di sana saja)
 let ATMOS = [
-  { img:"images/suasana-1.jpg",
-    imgFull:"images/suasana-1-xl.jpg",
-    id:{cap:"Interior hangat — kayu dan cahaya sore"}, en:{cap:"Warm interior — wood & evening light"} },
-  { img:"images/suasana-2.jpg",
-    imgFull:"images/suasana-2-xl.jpg",
-    id:{cap:"Dibuat manual dengan teliti"}, en:{cap:"Handcrafted with care"} },
-  { img:"images/suasana-3.jpg",
-    imgFull:"images/suasana-3-xl.jpg",
-    id:{cap:"Detail lapisan yang renyah"}, en:{cap:"Crisp layered details"} },
+  {
+    "img": "images/menu/snackbox.webp",
+    "imgFull": "images/menu/snackbox-full.webp",
+    "id": {
+      "cap": "Snackbox — sajian dalam kemasan Ruethies"
+    },
+    "en": {
+      "cap": "Snack boxes — presented in Ruethies packaging"
+    }
+  },
+  {
+    "img": "images/menu/platter.webp",
+    "imgFull": "images/menu/platter-full.webp",
+    "id": {
+      "cap": "Platter — pilihan kudapan untuk berbagi"
+    },
+    "en": {
+      "cap": "Platter — a selection of treats to share"
+    }
+  },
+  {
+    "img": "images/menu/marble-cake.webp",
+    "imgFull": "images/menu/marble-cake-full.webp",
+    "id": {
+      "cap": "Marble Cake — kue klasik berpola marmer"
+    },
+    "en": {
+      "cap": "Marble Cake — a classic marbled cake"
+    }
+  }
 ];
 function atmosCap(a){ return (a[lang] && a[lang].cap) || a.id.cap; }
 let atmosLoading = false, atmosReady = false;
