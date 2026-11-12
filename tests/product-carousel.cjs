@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync(require('node:path').join(__dirname,'../product.js'),'utf8');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../carousel.js'),'utf8');
 function element(){return {hidden:false,dataset:{},attrs:{},events:{},addEventListener(n,f){this.events[n]=f},setAttribute(k,v){this.attrs[k]=v},removeAttribute(k){delete this.dataset[k.replace('data-','')]}};}
 function fixture(reduced=false){
  const buttons=Object.fromEntries(['pause','prev','next'].map(n=>[n,element()])),controls=element(),position=element(),root=element(),timers=new Map(),document=element(),motion=element();
@@ -8,7 +8,7 @@ function fixture(reduced=false){
  const slides=Array.from({length:3},(_,i)=>{const slide=element(),img=element();slide.hidden=i!==0;if(i)img.dataset.src='/photo-'+i+'.webp';slide.img=img;slide.querySelectorAll=s=>s==='[data-src]'&&img.dataset.src?[img]:[];return slide;});
  root.querySelectorAll=s=>s==='[data-slide]'?slides:dots;root.querySelector=s=>s==='.carousel-dots'?dotGroup:s==='.carousel-controls'?controls:s==='.carousel-position'?position:buttons[s.match(/"(.*?)"/)[1]];
  const context=vm.createContext({document,window:{IntersectionObserver:true},IntersectionObserver:class{constructor(cb){observer=cb}observe(){}},matchMedia:()=>motion,setTimeout:f=>{timers.set(++timerId,f);return timerId},clearTimeout:id=>timers.delete(id)});
- vm.runInContext(source.slice(source.indexOf('  function initCarousel'),source.indexOf('  const carousel=initCarousel')),context);
+ vm.runInContext(source.slice(source.indexOf('  function initCarousel'),source.indexOf('  window.RuethiesCarousel=')),context);
  const api=context.initCarousel(root);
  return{root,slides,dots,buttons,controls,position,document,motion,timers,api,context,intersect(yes){observer([{isIntersecting:yes}])},tick(){assert.equal(timers.size,1);const [id,work]=timers.entries().next().value;timers.delete(id);work()}};
 }

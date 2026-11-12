@@ -79,7 +79,7 @@ function seo_menu_schema(array $items): array {
     foreach($items as $m) if($m['cat']===$category) $rows[]=['@type'=>'MenuItem','name'=>$m['id']['n'],'description'=>$m['id']['d'],'url'=>CATALOG_ORIGIN.catalog_path($m),'image'=>CATALOG_ORIGIN.'/'.$m['img']];
     if($rows)$sections[]=['@type'=>'MenuSection','name'=>$label,'hasMenuItem'=>$rows];
   }
-  return ['@context'=>'https://schema.org','@type'=>'Menu','name'=>'Menu Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/#menu','hasMenuSection'=>$sections];
+  return ['@context'=>'https://schema.org','@type'=>'Menu','name'=>'Menu Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/menu/','hasMenuSection'=>$sections];
 }
 function seo_head(string $html,string $title,string $description,string $path,string $image,array $schemas): string {
   $html=preg_replace_callback('~<title>.*?</title>~s',fn()=>'<title>'.catalog_escape($title).'</title>',$html);
@@ -180,8 +180,9 @@ function seo_assets(string $html): string {
     return $m[1].'="'.$value.'"';
   },$html);
 }
-function seo_sitemap(array $items,int $homeModified): string {
-  $xml='<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'.CATALOG_ORIGIN.'/</loc><lastmod>'.gmdate('c',$homeModified).'</lastmod></url>';
+function seo_sitemap(array $items,int $homeModified,array $pageModified=[]): string {
+  $xml='<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'.CATALOG_ORIGIN.'/</loc><lastmod>'.gmdate('c',$pageModified['/']??$homeModified).'</lastmod></url>';
+  foreach(['/menu/','/tentang-kami/','/hubungi-kami/','/cara-pesan/'] as $path)$xml.='<url><loc>'.CATALOG_ORIGIN.$path.'</loc><lastmod>'.gmdate('c',$pageModified[$path]??$homeModified).'</lastmod></url>';
   foreach($items as $m) if(($m['available'] ?? true)!==false) $xml.='<url><loc>'.CATALOG_ORIGIN.catalog_path($m).'</loc><lastmod>'.catalog_escape($m['updated_at']).'</lastmod></url>';
   return $xml.'</urlset>';
 }
@@ -190,6 +191,7 @@ function seo_llms(string $template,array $items,array $faq): string {
   $text="# Ruethies Patisserie\n\nSnack box, kue klasik dan camilan gurih di Lippo Cikarang.\n\n";
   $text.='- Alamat: '.$business['address']['streetAddress'].', '.$business['address']['addressLocality']."\n- WhatsApp: https://wa.me/6285139281257\n- Email: info@ruethiespatisserie.com\n- Jam buka: 09.00–21.00 WIB setiap hari\n- Pilihan, harga, minimum pesanan, tenggat, pengambilan dan pengantaran dikonfirmasi melalui WhatsApp.\n\n## Menu\n";
   foreach($items as $m) if(($m['available'] ?? true)!==false)$text.='- ['.$m['id']['n'].']('.CATALOG_ORIGIN.catalog_path($m).'): '.$m['id']['d']."\n";
+  $text.="\n## Halaman\n- [Menu](".CATALOG_ORIGIN."/menu/)\n- [Tentang Kami](".CATALOG_ORIGIN."/tentang-kami/)\n- [Lokasi dan Kontak](".CATALOG_ORIGIN."/hubungi-kami/)\n- [Cara Pesan](".CATALOG_ORIGIN."/cara-pesan/)\n";
   $text.="\n## FAQ\n";foreach($faq as $f)$text.='- '.$f['q'].' '.$f['a']."\n";
   return $text;
 }
