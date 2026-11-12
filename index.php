@@ -31,11 +31,11 @@ try {
   if($path==='/tentang-kami/')$modified=max($modified,filemtime(__DIR__.'/atmosphere.json'));
   if($path==='/sitemap.xml') {
     $baseModified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/public-lib/profile.php'));
-    $pageModified=['/'=>max($baseModified,filemtime(__DIR__.'/menu.json')),'/menu/'=>max($baseModified,filemtime(__DIR__.'/menu.json')),'/tentang-kami/'=>max($baseModified,is_file(__DIR__.'/atmosphere.json')?filemtime(__DIR__.'/atmosphere.json'):0),'/hubungi-kami/'=>$baseModified,'/cara-pesan/'=>max($baseModified,filemtime(__DIR__.'/faq.json'))];
+    $pageModified=['/'=>max($baseModified,filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json')),'/menu/'=>max($baseModified,filemtime(__DIR__.'/menu.json')),'/tentang-kami/'=>max($baseModified,is_file(__DIR__.'/atmosphere.json')?filemtime(__DIR__.'/atmosphere.json'):0),'/hubungi-kami/'=>$baseModified,'/cara-pesan/'=>max($baseModified,filemtime(__DIR__.'/faq.json'))];
     seo_reply(seo_sitemap($items,$modified,$pageModified),'application/xml',max($modified,...array_values($pageModified)));exit;
   }
   if($path==='/llms.txt') { seo_reply(seo_llms($template,$items,$faq),'text/plain',$modified);exit; }
-  if($path==='/')$html=profile_home($template,$items);
+  if($path==='/')$html=profile_home($template,$items,$faq);
   elseif($path==='/menu/')$html=profile_catalog($template,$items,$_GET);
   elseif(isset(PROFILE_PAGES[$path]))$html=profile_information($template,$path,$faq,$path==='/tentang-kami/'?profile_gallery_read(__DIR__.'/atmosphere.json'):[],$items);
   else {

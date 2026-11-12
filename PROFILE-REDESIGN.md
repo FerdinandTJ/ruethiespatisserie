@@ -1,6 +1,6 @@
 # Redesign profil Ruethies — preview lokal
 
-Branch: `feat/redesign-profile`, dibuat dari `main`. Belum dipush, digabungkan ke main, atau dideploy. Tidak ada migrasi database maupun perubahan konfigurasi pembayaran.
+Redesign dikerjakan pada `feat/redesign-profile` dari `main`, lalu digabungkan dan dipush ke `main` atas permintaan pemilik. Deployment hosting dilakukan pemilik melalui SSH. Tidak ada migrasi database maupun perubahan konfigurasi pembayaran.
 
 ## Melihat preview
 
@@ -16,12 +16,12 @@ Preview memakai data katalog lokal. Data/foto detail dari hosting yang tidak ada
 
 ## Halaman dan alur
 
-- `/`: hero satu foto, tiga kategori, produk pilihan, langkah pemesanan, perkenalan singkat, dan lokasi.
+- `/`: hero satu foto, tiga kategori, produk pilihan, langkah pemesanan, perkenalan singkat, lokasi, dan FAQ hosting.
 - `/menu/`: grid katalog, kategori dan pencarian GET. Parameter kategori/q tidak membuat URL canonical baru.
 - URL produk lama dan `/snack-box-cikarang/`: galeri kiri, informasi/form WhatsApp kanan, detail, FAQ dan tautan katalog. Snackbox/Platter memakai alternatif timbal balik jika produknya terlihat.
 - `/tentang-kami/`: perkenalan faktual dan galeri yang tetap bersumber dari atmosphere.json.
 - `/hubungi-kami/`: kontak, alamat, jam buka, rute dan peta setelah interaksi.
-- `/cara-pesan/`: langkah pesan, informasi yang perlu dikonfirmasi, serta FAQ hosting.
+- `/cara-pesan/`: langkah pesan, informasi yang perlu dikonfirmasi, serta FAQ hosting yang juga tampil di beranda.
 
 Tombol header menuju WhatsApp umum. Form produk hanya menyusun pesan berisi produk, URL, jumlah, tanggal opsional dan catatan. Tidak membuat pesanan, memesan stok, menghitung total atau melakukan pembayaran. Data form tidak disimpan; hanya pilihan bahasa yang menggunakan penyimpanan browser. Tanpa JavaScript, navigasi/filter/FAQ tetap berfungsi dan WhatsApp dasar tetap tersedia.
 
@@ -48,7 +48,7 @@ Pemeriksaan yang lulus:
 
 ### Perbandingan pemuatan awal lokal
 
-Chrome yang sama, viewport 1440 × 900, DPR 1, cache dimatikan, dua pengukuran setiap versi tanpa interaksi:
+Chrome yang sama, viewport 1440 × 900, DPR 1, cache dimatikan, dua pengukuran setiap versi tanpa interaksi, sebelum penambahan kembali FAQ beranda:
 
 | Ukuran | Sebelum | Redesign |
 |---|---:|---:|
@@ -64,3 +64,13 @@ Layout shift awal tercatat 0 pada sampel beranda mobile/desktop dan detail produ
 Cerita pendiri/sejarah, foto tim/dapur/fasad, harga dan varian resmi, isi paket tetap, minimum pesanan, lead time, area/biaya antar, ketentuan perubahan/pembatalan, alergen dan penyimpanan belum ditambahkan. Halaman hanya memakai fakta/aset yang sudah ada dan mengarahkan konfirmasi ke WhatsApp.
 
 Review desain publik ini dahulu. Penyesuaian UI admin dan setiap deployment produksi menjadi pekerjaan terpisah setelah diminta.
+
+## Revisi setelah review
+
+- Properti Bakery.menu selalu menuju URL katalog /menu/, termasuk bila template hosting masih berisi anchor lama.
+- Hasil pencarian nonkosong dan filter kategori aktif memakai noindex, follow serta canonical /menu/. Katalog penuh tetap indexable. Tidak menambahkan hasil pencarian/filter ke sitemap dan tidak memblokirnya di robots.txt agar crawler bisa membaca noindex. Ini kebijakan halaman utilitas, bukan landing page SEO baru.
+- Structured data Menu mengikuti produk yang ditampilkan pada hasil filter.
+- Warna paragraf footer ditetapkan eksplisit agar tidak mewarisi teks cream dari footer lama. Versi CSS diperbarui untuk revalidasi aset.
+- FAQ beranda menggunakan data FAQ hosting yang sama dengan Cara Pesan, accordion HTML native, terjemahan dan JSON-LD yang sesuai konten.
+
+Referensi kebijakan noindex: https://developers.google.com/search/docs/crawling-indexing/block-indexing

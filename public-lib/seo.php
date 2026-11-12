@@ -66,7 +66,7 @@ function seo_business(string $template): array {
   foreach ($matches[1] as $raw) {
     $data=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
     if (($data['@type'] ?? '')==='CafeOrCoffeeShop' || ($data['@type'] ?? '')==='Bakery') {
-      $data['@type']='Bakery';$data['image']=CATALOG_ORIGIN.'/images/hero-marble-cake.jpg';
+      $data['@type']='Bakery';$data['menu']=CATALOG_ORIGIN.'/menu/';$data['image']=CATALOG_ORIGIN.'/images/hero-marble-cake.jpg';
       return $data;
     }
   }
