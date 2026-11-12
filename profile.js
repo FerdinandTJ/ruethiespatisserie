@@ -48,12 +48,22 @@
     document.querySelectorAll('.rp-gallery-photo img').forEach((img,i)=>{const row=data.gallery?.[i];if(row)img.alt=(row[language]||row.id).cap;});
     carousel?.localize(language==='en');
     if(dialog){dialog.setAttribute('aria-label',phrase('Galeri Ruethies','Ruethies Gallery'));document.getElementById('rp-gallery-close').setAttribute('aria-label',phrase('Tutup foto','Close photo'));dialog.querySelector('[data-gallery-prev]').setAttribute('aria-label',phrase('Foto sebelumnya','Previous photo'));dialog.querySelector('[data-gallery-next]').setAttribute('aria-label',phrase('Foto berikutnya','Next photo'));}
-    burger?.setAttribute('aria-label',phrase('Menu navigasi','Navigation menu'));
+    burger?.setAttribute('aria-label',menu?.hidden===false?phrase('Tutup navigasi','Close navigation'):phrase('Buka navigasi','Open navigation'));
     const search=document.getElementById('rp-search');if(search)search.placeholder=phrase('Brownies, pastel, snackbox…','Brownies, savoury bites, snack boxes…');
   }
   document.querySelectorAll('[data-language]').forEach(button=>{button.disabled=false;button.addEventListener('click',()=>{language=button.dataset.language;try{localStorage.setItem('ruethies-lang',language);}catch{}render();});});
   const burger=document.getElementById('rp-burger'),menu=document.getElementById('rp-mobile-menu');
-  if(burger&&menu){burger.hidden=false;menu.hidden=true;burger.addEventListener('click',()=>{menu.hidden=!menu.hidden;burger.setAttribute('aria-expanded',String(!menu.hidden));});menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.hidden=true;burger.setAttribute('aria-expanded','false');}));document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!menu.hidden){menu.hidden=true;burger.setAttribute('aria-expanded','false');burger.focus();}});}
+  if(burger&&menu){
+    const header=burger.closest('.rp-header'),desktop=window.matchMedia('(min-width:1101px)');
+    function closeMenu(focus=false){menu.hidden=true;burger.setAttribute('aria-expanded','false');burger.setAttribute('aria-label',phrase('Buka navigasi','Open navigation'));header.classList.remove('rp-menu-open');if(focus)burger.focus();}
+    header.classList.add('rp-nav-enhanced');burger.hidden=false;closeMenu();
+    burger.addEventListener('click',()=>{if(!menu.hidden){closeMenu();return;}menu.hidden=false;burger.setAttribute('aria-expanded','true');burger.setAttribute('aria-label',phrase('Tutup navigasi','Close navigation'));header.classList.add('rp-menu-open');});
+    menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>closeMenu()));
+    document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!menu.hidden){event.preventDefault();closeMenu(true);}});
+    document.addEventListener('click',event=>{if(!menu.hidden&&!header.contains(event.target))closeMenu();});
+    document.addEventListener('focusin',event=>{if(!menu.hidden&&!header.contains(event.target))closeMenu();});
+    desktop.addEventListener('change',event=>{if(event.matches)closeMenu();});
+  }
   const loadMap=document.getElementById('rp-map-load');if(loadMap){loadMap.hidden=false;loadMap.addEventListener('click',()=>{const frame=document.getElementById('rp-map-frame');frame.src='https://www.google.com/maps?q=-6.3443722,107.1490519&z=16&output=embed';frame.hidden=false;document.getElementById('rp-map-placeholder').hidden=true;});}
   const dialog=document.getElementById('rp-gallery-dialog');let galleryIndex=0,returnFocus=null;
   function showGallery(index){
