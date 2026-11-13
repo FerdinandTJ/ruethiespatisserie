@@ -9,6 +9,7 @@ function sr_check(bool $ok,string $label):void{if(!$ok)throw new RuntimeExceptio
 function sr_remove(string $path):void{if(!is_dir($path)){unlink($path);return;}foreach(scandir($path)as$n)if($n!=='.'&&$n!=='..')sr_remove($path.'/'.$n);rmdir($path);}
 try{
  sr_check(!str_ends_with(catalog_slug(str_repeat('a',69).' word'),'-'),'slug truncation never leaves an invalid trailing hyphen');
+ mkdir($public.'/fonts',0700);copy($source.'/fonts/cormorant-garamond-400-latin.woff2',$public.'/fonts/cormorant-garamond-400-latin.woff2');
  foreach(['.htaccess','index.html','404.html','faq.json','atmosphere.json','admin/catalog.php','public-lib/seo.php','public-lib/profile.php']as$file)copy($source.'/'.$file,$public.'/'.$file);
  file_put_contents($public.'/menu.json',json_encode(catalog_metadata(catalog_read_json($source.'/menu.json'),filemtime($source.'/menu.json'))));
  file_put_contents($public.'/index.php','#!/usr/bin/env -S '.$cgi.' -d cgi.force_redirect=0'."\n".file_get_contents($source.'/index.php'));chmod($public.'/index.php',0700);
@@ -24,6 +25,8 @@ try{
  for($i=0;$i<40;$i++){usleep(100000);[$code,$body,$h]=$get('/');if($code)break;}
  if($code!==200)throw new RuntimeException('Apache/PHP CGI did not render: '.$body.' '.file_get_contents($tmp.'/error.log'));
  sr_check(str_contains($body,'id="profile-data"')&&str_contains($body,'href="/snack-box-cikarang/"'),'real Apache root rewrite executes PHP renderer');
+ [$fontCode,$fontBody,$fontHeaders]=$get('/fonts/cormorant-garamond-400-latin.woff2');sr_check($fontCode===200&&str_starts_with($fontHeaders['content-type'][0]??'','font/woff2')&&str_contains(implode(',',$fontHeaders['cache-control']??[]),'max-age=2592000'),'local WOFF2 has explicit MIME type and versioned-asset retention');
+ [$code,$body,$h]=$get('/');
  $cache=implode(',',$h['cache-control']??[]);sr_check(str_contains($cache,'max-age=0')&&!str_contains($cache,'max-age=600')&&str_contains($cache,'must-revalidate'),'mod_expires does not override HTML revalidation');
  $etag=$h['etag'][0];[$code,$body]=$get('/','ruethiespatisserie.com',['If-None-Match: '.$etag]);sr_check($code===304&&$body==='','real Apache ETag returns 304');
  foreach(['/snack-box-cikarang/','/menu/brownies-cokelat/']as$path){[$code,$body]=$get($path);sr_check($code===200&&str_contains($body,'class="rp-product-intro"'),'real Apache product route renders: '.$path);}

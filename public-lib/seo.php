@@ -47,10 +47,15 @@ function seo_detail_picture(array $item,string $photo,bool $eager): string {
   if (!$source) return seo_picture(array_replace($item,['img'=>$photo]),$eager);
   return '<img src="/'.catalog_escape($source['src']).'" srcset="'.catalog_escape($source['srcset']).'" sizes="(max-width: 760px) calc(100vw - 40px), 640px" width="'.$source['width'].'" height="'.$source['height'].'" alt="'.catalog_escape($item['id']['n']).'" '.($eager?'fetchpriority="high"':'loading="lazy"').' decoding="async">';
 }
-function seo_picture(array $item,bool $eager=false): string {
-  $src='/'.$item['img']; $name=catalog_escape($item['id']['n']);
-  $source=str_ends_with($src,'.jpg') ? '<source type="image/webp" srcset="'.catalog_escape(substr($src,0,-4).'.webp').'">' : '';
-  return '<picture>'.$source.'<img src="'.catalog_escape($src).'" alt="'.$name.'" width="640" height="480" '.($eager?'fetchpriority="high"':'loading="lazy"').' decoding="async"></picture>';
+function seo_picture(array $item,bool $eager=false,string $sizes='(max-width:400px) calc(100vw - 36px), (max-width:760px) calc((100vw - 66px)/2), (max-width:1248px) calc((100vw - 104px)/3), 381px'): string {
+  $photo=$item['img'];$validPhoto=(bool)preg_match('~\Aimages/(?:menu/)?[a-z0-9]+(?:-[a-z0-9]+)*\.(?:jpg|jpeg|png|webp)\z~D',$photo);$base=preg_replace('~\.(jpg|jpeg|png|webp)$~','',$photo);$root=dirname(__DIR__);$candidates=[];
+  if($validPhoto)foreach([320,480,640,960,1280]as$width){$path=$base.'-w'.$width.'.webp';$file=$root.'/'.$path;if(is_file($file)&&!is_link($file)&&($size=@getimagesize($file)))$candidates[$size[0]]=['src'=>$path,'width'=>$size[0],'height'=>$size[1]];}
+  $preferred=$validPhoto&&is_file($root.'/'.$base.'.webp')?$base.'.webp':$photo;
+  $original=$validPhoto&&!is_link($root.'/'.$preferred)?@getimagesize($root.'/'.$preferred):false;
+  if($original&&!isset($candidates[$original[0]]))$candidates[$original[0]]=['src'=>$preferred,'width'=>$original[0],'height'=>$original[1]];
+  ksort($candidates);$chosen=$candidates[480]??($candidates?reset($candidates):['src'=>$photo,'width'=>640,'height'=>480]);
+  $set=count($candidates)>1?' srcset="'.catalog_escape(implode(', ',array_map(fn($r)=>'/'.$r['src'].' '.$r['width'].'w',$candidates))).'" sizes="'.catalog_escape($sizes).'"':'';
+  return '<picture><img src="/'.catalog_escape($chosen['src']).'"'.$set.' alt="'.catalog_escape($item['id']['n']).'" width="'.$chosen['width'].'" height="'.$chosen['height'].'" '.($eager?'fetchpriority="high"':'loading="lazy"').' decoding="async"></picture>';
 }
 function seo_row(array $m,int $index): string {
   $name=catalog_escape($m['id']['n']);$url=catalog_path($m);
