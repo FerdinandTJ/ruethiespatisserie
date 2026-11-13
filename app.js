@@ -27,7 +27,7 @@ const I18N = {
   id:{ "nav.home":"Beranda","nav.menu":"Menu","nav.visit":"Lokasi","nav.atmos":"Suasana","nav.info":"Info","nav.contact":"WhatsApp","nav.skip":"Langsung ke menu",
     "hero.eyebrow":"N°01 — Patisserie Artisan di Cikarang","hero.title":'Snack Box &amp; Kue di <em>Cikarang</em>',
     "hero.french":"kue klasik · camilan gurih · snackbox",
-    "hero.sub":"Kenali snack box, Bolu Jadoel, brownies, Lapis Surabaya, dan camilan gurih Ruethies Patisserie di Lippo Cikarang. Tanyakan pilihan dan pemesanan melalui WhatsApp. #MadeWithDelicacy.",
+    "hero.sub":"Kenali snack box, Bolu Jadoel, brownies, Lapis Marble, dan camilan gurih Ruethies Patisserie di Lippo Cikarang. Tanyakan pilihan dan pemesanan melalui WhatsApp. #MadeWithDelicacy.",
     "hero.cta1":"Lihat Menu","hero.cta2":"Hubungi via WhatsApp","hero.p1":"Ruko Neo Patio East No. 51","hero.p2":"Untuk dinikmati bersama","hero.p3":"Buka setiap hari",
     "hero.snack":"Kenali snack box kami →","hero.b1":"Untuk Momen Anda","hero.b2":"Kue & Kudapan Pilihan",
     "sig.eyebrow":"01 — Signature","sig.title":'Favorit yang Paling <em>Dirindukan</em>',"sig.sub":"Kenali pilihan kue, camilan gurih, dan paket untuk momen Anda.",

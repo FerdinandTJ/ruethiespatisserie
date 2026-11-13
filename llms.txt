@@ -16,7 +16,7 @@
 - **Rute:** https://www.google.com/maps/dir/?api=1&destination=-6.3443722,107.1490519
 
 ## Menu
-- **Kue & Jajanan:** Bolu Jadoel, Brownies Cokelat, Lapis Surabaya, Marble Cake, Jongkong.
+- **Kue & Jajanan:** Bolu Jadoel, Brownies Cokelat, Lapis Marble, Marble Cake, Jongkong.
 - **Camilan Gurih:** Pastel, Kroket, Risol.
 - **Paket & Sajian:** Platter, Snackbox. Pilihan isi dan kemasan dikonfirmasi melalui WhatsApp.
 - Tanyakan ketersediaan, varian, ukuran, harga, dan kebutuhan pesanan melalui WhatsApp.
