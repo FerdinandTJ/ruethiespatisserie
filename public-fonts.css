@@ -1,7 +1,0 @@
-/* Same brand families, Latin subset. See fonts/*-OFL.txt for licenses. */
-@font-face{font-family:"Cormorant Garamond";font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/cormorant-garamond-400-latin.woff2') format('woff2')}
-@font-face{font-family:"Cormorant Garamond";font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/cormorant-garamond-italic-400-latin.woff2') format('woff2')}
-@font-face{font-family:"Plus Jakarta Sans";font-style:normal;font-weight:400 700;font-display:swap;src:url('/fonts/plus-jakarta-sans-latin.woff2') format('woff2')}
-/* x-height ratios derived from brand fonts and Georgia/Arial; explicit metrics limit swapping shifts. */
-@font-face{font-family:"Ruethies Serif Fallback";src:local('Georgia');size-adjust:80.1753%;ascent-override:115.2475%;descent-override:35.7966%;line-gap-override:0%}
-@font-face{font-family:"Ruethies Sans Fallback";src:local('Arial');size-adjust:103.3642%;ascent-override:100.4216%;descent-override:21.4774%;line-gap-override:0%}

@@ -71,7 +71,6 @@ function menu_photo_delete_unused(string $image): string {
   if ($image === '') return 'none';
   if (!preg_match('~\Aimages/menu/([a-z0-9]+(?:-[a-z0-9]+)*)\.(?:jpg|webp)\z~D', $image, $m)) return 'kept';
   $names = [$m[1] . '.jpg', $m[1] . '.webp', $m[1] . '-detail.webp', $m[1] . '-full.webp'];
-  foreach([320,480,640,960,1280]as$width)$names[]=$m[1].'-w'.$width.'.webp';
   $public = realpath(RUETHIES_PUBLIC);
   $dir = $public . '/images/menu';
   if (!$public || is_link($public . '/images') || is_link($dir) || realpath($dir) !== $dir) return 'failed';
@@ -198,9 +197,7 @@ function galeri_upload(array $file, string $caption): array {
   $j1 = RUETHIES_PUBLIC . "/images/$try.jpg"; $j2 = RUETHIES_PUBLIC . "/images/$try-xl.jpg";
   $ok = @imagejpeg($t1, $j1, 68) && @imagejpeg($t2, $j2, 70);
   if (function_exists('imagewebp')) { @imagewebp($t1, RUETHIES_PUBLIC . "/images/$try.webp", 66); @imagewebp($t2, RUETHIES_PUBLIC . "/images/$try-xl.webp", 68); }
-  [$variants,$variantError]=$ok?photo_write_variants($t1,RUETHIES_PUBLIC."/images/$try"):[[],null];
   unset($t1); unset($t2);
-  if($variantError){foreach(["$try.jpg","$try.webp","$try-xl.jpg","$try-xl.webp"]as$name)@unlink(RUETHIES_PUBLIC."/images/".$name);return [null,null,$variantError];}
   if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
   return ["images/$try.jpg", "images/$try-xl.jpg", null];
 }
@@ -358,22 +355,6 @@ function b64_image(string $field, int $maxBytes): array {
   if ($error=security_image_metadata($raw,$maxBytes)) return [null,$error];
   return [$raw, null];
 }
-// Generate small WebP companions at upload/CLI time only; never on public requests.
-function photo_write_variants(GdImage $src,string $base): array {
-  $public=realpath(RUETHIES_PUBLIC);$originalDir=dirname($base);$dir=realpath($originalDir);$written=[];
-  if(!$public||!$dir||is_link($public.'/images')||is_link($originalDir)||!in_array($dir,[$public.'/images',$public.'/images/menu'],true)||!preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/D',basename($base)))return [[], 'Lokasi foto tidak valid.'];
-  $base=$dir.'/'.basename($base);
-  foreach([320,480,640,960,1280]as$width){
-    if($width>imagesx($src))continue;
-    $file=$base.'-w'.$width.'.webp';
-    if(is_link($file)||file_exists($file)){foreach($written as$f)@unlink($f);return [[], 'Varian foto sudah ada atau tidak aman.'];}
-    $height=max(2,(int)round(imagesy($src)*$width/imagesx($src)));$small=imagescale($src,$width,$height);$tmp=$file.'.tmp.'.bin2hex(random_bytes(6));
-    $ok=$small&&function_exists('imagewebp')&&@imagewebp($small,$tmp,76);unset($small);
-    if(!$ok||!@chmod($tmp,0644)||!@rename($tmp,$file)){@unlink($tmp);foreach($written as$f)@unlink($f);return [[], 'Gagal menyimpan varian foto.'];}
-    $written[]=$file;
-  }
-  return [$written,null];
-}
 function photo_upload_raw(string $raw, string $name, bool $detail = false, int $maxBytes = 3145728): array {
   [$src,$error] = security_image_decode($raw,$maxBytes);
   if ($error) return [null,$error];
@@ -385,10 +366,8 @@ function photo_upload_raw(string $raw, string $name, bool $detail = false, int $
   $try = img_unique(RUETHIES_IMGDIR, photo_slug($name));
   if (!@imagejpeg($dst, RUETHIES_IMGDIR . "/$try.jpg", $detail ? 85 : 68)) { unset($dst,$src); return [null, 'Gagal menyimpan foto.']; }
   if (function_exists('imagewebp')) @imagewebp($dst, RUETHIES_IMGDIR . "/$try.webp", $detail ? 82 : 66);
-  [$variants,$variantError]=photo_write_variants($dst,RUETHIES_IMGDIR."/$try");
   unset($dst);
-  if($variantError){@unlink(RUETHIES_IMGDIR."/$try.jpg");@unlink(RUETHIES_IMGDIR."/$try.webp");unset($src);return [null,$variantError];}
-  $written = array_merge($variants,[RUETHIES_IMGDIR . "/$try.jpg", RUETHIES_IMGDIR . "/$try.webp"]);
+  $written = [RUETHIES_IMGDIR . "/$try.jpg", RUETHIES_IMGDIR . "/$try.webp"];
   foreach (['detail'=>800, 'full'=>1600] as $suffix=>$limit) {
     $scale = min(1, $limit / max(imagesx($src), imagesy($src)));
     $large = imagescale($src, max(2,(int)round(imagesx($src)*$scale)), max(2,(int)round(imagesy($src)*$scale)));
@@ -414,9 +393,7 @@ function galeri_upload_raw(string $raw, string $caption): array {
   if (!$t1 || !$t2) { if ($t1) unset($t1); if ($t2) unset($t2); return [null, null, 'Gagal memproses foto.']; }
   $ok = @imagejpeg($t1, RUETHIES_PUBLIC . "/images/$try.jpg", 68) && @imagejpeg($t2, RUETHIES_PUBLIC . "/images/$try-xl.jpg", 70);
   if (function_exists('imagewebp')) { @imagewebp($t1, RUETHIES_PUBLIC . "/images/$try.webp", 66); @imagewebp($t2, RUETHIES_PUBLIC . "/images/$try-xl.webp", 68); }
-  [$variants,$variantError]=$ok?photo_write_variants($t1,RUETHIES_PUBLIC."/images/$try"):[[],null];
   unset($t1); unset($t2);
-  if($variantError){foreach(["$try.jpg","$try.webp","$try-xl.jpg","$try-xl.webp"]as$name)@unlink(RUETHIES_PUBLIC."/images/".$name);return [null,null,$variantError];}
   if (!$ok) return [null, null, 'Gagal menyimpan foto.'];
   return ["images/$try.jpg", "images/$try-xl.jpg", null];
 }

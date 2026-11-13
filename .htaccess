@@ -37,11 +37,6 @@ SetEnvIfNoCase Host "^staging\.ruethiespatisserie\.com(:[0-9]+)?$" RUETHIES_NOIN
 Header always set X-Robots-Tag "noindex, nofollow, noarchive" env=RUETHIES_NOINDEX
 </IfModule>
 
-# Local WOFF2 fonts are already compressed.
-<IfModule mod_mime.c>
-AddType font/woff2 .woff2
-</IfModule>
-
 # Compress
 <IfModule mod_deflate.c>
 AddOutputFilterByType DEFLATE text/html text/css application/javascript image/svg+xml
@@ -58,7 +53,6 @@ ExpiresByType image/jpeg "access plus 30 days"
 ExpiresByType image/png "access plus 30 days"
 ExpiresByType image/svg+xml "access plus 30 days"
 ExpiresByType image/webp "access plus 30 days"
-ExpiresByType font/woff2 "access plus 30 days"
 ExpiresByType application/json "access plus 0 seconds"
 </IfModule>
 
@@ -74,7 +68,7 @@ Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style
 </IfModule>
 
 # Aset CSS/JS memakai versi URL; JSON admin tetap wajib revalidasi.
-<FilesMatch "\.(css|js|woff2)$">
+<FilesMatch "\.(css|js)$">
 <IfModule mod_headers.c>
 Header set Cache-Control "public, max-age=2592000"
 </IfModule>
