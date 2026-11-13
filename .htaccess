@@ -8,6 +8,8 @@ RewriteRule ^ - [F,L]
 # RewriteRule mencocokkan path setelah percent decoding oleh server.
 RewriteCond %{HTTP_HOST} !^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^staging(?:/|$) - [F,L,NC]
+# URL produk lama dihentikan atas permintaan pemilik; tanpa redirect.
+RewriteRule ^menu/lapis-surabaya/?$ - [R=404,L,NC]
 # Alias beranda dan produk langsung ke URL akhir pada domain produksi.
 RewriteCond %{HTTP_HOST} ^(?:www\.)?ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^index\.(?:html|php)$ https://ruethiespatisserie.com/ [R=301,L]

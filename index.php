@@ -18,6 +18,7 @@ try {
   if(!in_array($_SERVER['REQUEST_METHOD'] ?? 'GET',['GET','HEAD'],true)){header('Allow: GET, HEAD');http_response_code(405);exit;}
   $path=parse_url($_SERVER['REQUEST_URI'] ?? '/',PHP_URL_PATH);
   if(!is_string($path))throw new RuntimeException('URL tidak valid.');
+  if(in_array(strtolower($path),['/menu/lapis-surabaya','/menu/lapis-surabaya/'],true)){http_response_code(404);header('Cache-Control: no-store');readfile(__DIR__.'/404.html');exit;}
   if(in_array($path,['/index.html','/index.php'],true)){header('Location: /',true,301);exit;}
   if(in_array($path,['/menu/snackbox','/menu/snackbox/','/menu/snack-box','/menu/snack-box/'],true)){header('Location: /snack-box-cikarang/',true,301);exit;}
   if(preg_match('~\A/(?:menu|tentang-kami|hubungi-kami|cara-pesan|snack-box-cikarang|menu/[a-z0-9]+(?:-[a-z0-9]+)*)\z~D',$path)){header('Location: '.$path.'/',true,301);exit;}

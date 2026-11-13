@@ -15,8 +15,8 @@ try{
   if(count($matches)!==1)throw new RuntimeException('Nama produk ambigu: '.$copy['slug']);
   $i=$matches[0];$before=$new[$i];
   foreach(['id','en']as$lang){$new[$i][$lang]=array_replace($new[$i][$lang]??[],$copy[$lang]);if(!isset($new[$i][$lang]['n']))$new[$i][$lang]['n']=$before['id']['n'];}
-  // Seed only a missing old slug before renaming; an existing hosting slug is permanent.
-  if($copy['slug']==='lapis-surabaya'&&!isset($new[$i]['slug']))$new[$i]['slug']='lapis-surabaya';
+  // The owner explicitly approved replacing this one product URL. Other slugs stay permanent.
+  if($copy['slug']==='lapis-marble')$new[$i]['slug']='lapis-marble';
   if($new[$i]!==$before){if(isset($new[$i]['updated_at']))$new[$i]['updated_at']=gmdate('Y-m-d\TH:i:s\Z');$changed[]=['slug'=>$new[$i]['slug']??$copy['slug'],'before'=>$before['id']['n'],'after'=>$new[$i]['id']['n']];}
  }
  catalog_validate($new,false);catalog_validate(catalog_metadata($new,time()));$backup=null;
