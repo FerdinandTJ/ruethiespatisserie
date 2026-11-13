@@ -4,8 +4,8 @@
   const fonts=document.getElementById('site-fonts');if(fonts)fonts.media='all';
   const snapshot=JSON.parse(document.getElementById('product-data').textContent), product=snapshot.product;
   const words={
-    id:{'nav.home':'Beranda','nav.menu':'Menu','nav.visit':'Lokasi','nav.atmos':'Suasana','nav.info':'Info','nav.contact':'WhatsApp','nav.skip':'Langsung ke menu','hero.cta1':'Lihat Menu','foot.visit':'Kunjungi','foot.contact':'Kontak','visit.hours':'Setiap Hari • 09.00 – 21.00'},
-    en:{'nav.home':'Home','nav.menu':'Menu','nav.visit':'Visit','nav.atmos':'Atmosphere','nav.info':'Info','nav.contact':'WhatsApp','nav.skip':'Skip to menu','hero.cta1':'Explore Menu','foot.visit':'Visit','foot.contact':'Contact','visit.hours':'Daily • 9 AM – 9 PM'}
+    id:{'nav.home':'Beranda','nav.menu':'Menu','nav.visit':'Lokasi','nav.atmos':'Suasana','nav.info':'Info','nav.contact':'WhatsApp','nav.skip':'Langsung ke menu','hero.cta1':'Lihat Menu','foot.visit':'Kunjungi','foot.contact':'Kontak','visit.hours':'Setiap Hari • 07.00 – 21.00'},
+    en:{'nav.home':'Home','nav.menu':'Menu','nav.visit':'Visit','nav.atmos':'Atmosphere','nav.info':'Info','nav.contact':'WhatsApp','nav.skip':'Skip to menu','hero.cta1':'Explore Menu','foot.visit':'Visit','foot.contact':'Contact','visit.hours':'Daily • 7 AM – 9 PM'}
   };
   let language='id';try{if(localStorage.getItem('ruethies-lang')==='en')language='en';}catch{}
   const text=(id,value)=>{document.getElementById(id).textContent=value;};

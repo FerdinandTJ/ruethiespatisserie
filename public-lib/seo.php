@@ -189,7 +189,7 @@ function seo_sitemap(array $items,int $homeModified,array $pageModified=[]): str
 function seo_llms(string $template,array $items,array $faq): string {
   $business=seo_business($template);
   $text="# Ruethies Patisserie\n\nSnack box, kue klasik dan camilan gurih di Lippo Cikarang.\n\n";
-  $text.='- Alamat: '.$business['address']['streetAddress'].', '.$business['address']['addressLocality']."\n- WhatsApp: https://wa.me/6285139281257\n- Email: info@ruethiespatisserie.com\n- Jam buka: 09.00–21.00 WIB setiap hari\n- Pilihan, harga, minimum pesanan, tenggat, pengambilan dan pengantaran dikonfirmasi melalui WhatsApp.\n\n## Menu\n";
+  $text.='- Alamat: '.$business['address']['streetAddress'].', '.$business['address']['addressLocality']."\n- WhatsApp: https://wa.me/6285139281257\n- Email: info@ruethiespatisserie.com\n- Jam buka: 07.00–21.00 WIB setiap hari\n- Pilihan, harga, minimum pesanan, tenggat, pengambilan dan pengantaran dikonfirmasi melalui WhatsApp.\n\n## Menu\n";
   foreach($items as $m) if(($m['available'] ?? true)!==false)$text.='- ['.$m['id']['n'].']('.CATALOG_ORIGIN.catalog_path($m).'): '.$m['id']['d']."\n";
   $text.="\n## Halaman\n- [Menu](".CATALOG_ORIGIN."/menu/)\n- [Tentang Kami](".CATALOG_ORIGIN."/tentang-kami/)\n- [Lokasi dan Kontak](".CATALOG_ORIGIN."/hubungi-kami/)\n- [Cara Pesan](".CATALOG_ORIGIN."/cara-pesan/)\n";
   $text.="\n## FAQ\n";foreach($faq as $f)$text.='- '.$f['q'].' '.$f['a']."\n";
