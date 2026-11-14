@@ -46,4 +46,4 @@ chmod 644 .htaccess menu.json faq.json atmosphere.json
 touch .htaccess
 trap - EXIT
 echo "Kode staging diperbarui. Konten dan proteksi hPanel dipertahankan. Backup: $STAGING_BACKUP_DIR"
-echo 'Jangan stash pop. Lanjutkan CLI upgrade sesuai MIDTRANS-SANDBOX.md.'
+echo 'Jangan stash pop. Lanjutkan pemeriksaan sesuai STAGING-SYNC.md.'

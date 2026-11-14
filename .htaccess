@@ -8,13 +8,15 @@ RewriteRule ^ - [F,L]
 # RewriteRule mencocokkan path setelah percent decoding oleh server.
 RewriteCond %{HTTP_HOST} !^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^staging(?:/|$) - [F,L,NC]
+# URL produk lama dihentikan atas permintaan pemilik; tanpa redirect.
+RewriteRule ^menu/lapis-surabaya/?$ - [R=404,L,NC]
 # Alias beranda dan produk langsung ke URL akhir pada domain produksi.
 RewriteCond %{HTTP_HOST} ^(?:www\.)?ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^index\.(?:html|php)$ https://ruethiespatisserie.com/ [R=301,L]
 RewriteCond %{HTTP_HOST} ^(?:www\.)?ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^menu/snack-?box/?$ https://ruethiespatisserie.com/snack-box-cikarang/ [R=301,L]
 RewriteCond %{HTTP_HOST} ^(?:www\.)?ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
-RewriteRule ^(snack-box-cikarang|menu/[a-z0-9]+(?:-[a-z0-9]+)*)$ https://ruethiespatisserie.com/$1/ [R=301,L]
+RewriteRule ^(menu|tentang-kami|hubungi-kami|cara-pesan|snack-box-cikarang|menu/[a-z0-9]+(?:-[a-z0-9]+)*)$ https://ruethiespatisserie.com/$1/ [R=301,L]
 # Kanonis: HTTPS tanpa www, tanpa mempercayai Host untuk domain tujuan produksi.
 RewriteCond %{HTTP_HOST} ^www\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^ https://ruethiespatisserie.com%{REQUEST_URI} [R=301,L]
@@ -27,7 +29,7 @@ RewriteCond %{HTTP_HOST} ^staging\.ruethiespatisserie\.com(?::[0-9]+)?$ [NC]
 RewriteRule ^ https://staging.ruethiespatisserie.com%{REQUEST_URI} [R=301,L]
 # PO stays on its own controller, including POST bodies and magic-link queries.
 RewriteRule ^pre-order(?:/(?:status|return))?/?$ po.php [END]
-RewriteRule ^(?:index\.html|sitemap\.xml|llms\.txt|snack-box-cikarang/?|menu(?:/.*)?)$ index.php [END]
+RewriteRule ^(?:index\.html|sitemap\.xml|llms\.txt|tentang-kami/?|hubungi-kami/?|cara-pesan/?|snack-box-cikarang/?|menu(?:/.*)?)$ index.php [END]
 RewriteRule ^$ index.php [END]
 </IfModule>
 

@@ -66,7 +66,7 @@ function seo_business(string $template): array {
   foreach ($matches[1] as $raw) {
     $data=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
     if (($data['@type'] ?? '')==='CafeOrCoffeeShop' || ($data['@type'] ?? '')==='Bakery') {
-      $data['@type']='Bakery';$data['image']=CATALOG_ORIGIN.'/images/hero-marble-cake.jpg';
+      $data['@type']='Bakery';$data['menu']=CATALOG_ORIGIN.'/menu/';$data['image']=CATALOG_ORIGIN.'/images/hero-marble-cake.jpg';
       return $data;
     }
   }
@@ -79,7 +79,7 @@ function seo_menu_schema(array $items): array {
     foreach($items as $m) if($m['cat']===$category) $rows[]=['@type'=>'MenuItem','name'=>$m['id']['n'],'description'=>$m['id']['d'],'url'=>CATALOG_ORIGIN.catalog_path($m),'image'=>CATALOG_ORIGIN.'/'.$m['img']];
     if($rows)$sections[]=['@type'=>'MenuSection','name'=>$label,'hasMenuItem'=>$rows];
   }
-  return ['@context'=>'https://schema.org','@type'=>'Menu','name'=>'Menu Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/#menu','hasMenuSection'=>$sections];
+  return ['@context'=>'https://schema.org','@type'=>'Menu','name'=>'Menu Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/menu/','hasMenuSection'=>$sections];
 }
 function seo_head(string $html,string $title,string $description,string $path,string $image,array $schemas): string {
   $html=preg_replace_callback('~<title>.*?</title>~s',fn()=>'<title>'.catalog_escape($title).'</title>',$html);
@@ -116,32 +116,65 @@ function seo_home(string $template,array $items,array $faq): string {
   $html=str_replace('</body>','<script type="application/json" id="catalog-data">'.catalog_json($snapshot).'</script></body>',$html);
   return $html;
 }
+function seo_product_photos(array $m,array $photos,bool $carousel): string {
+  $name=$m['id']['n'];
+  $html='<div class="product-photos'.($carousel?' product-carousel':'').'"'.($carousel?' id="product-carousel" role="region" aria-roledescription="carousel" aria-label="Foto produk"':'').'>';
+  if($carousel){
+    $html.='<div class="carousel-controls" hidden><button type="button" data-carousel="pause">Jeda</button><div class="carousel-dots" role="group" aria-label="Pilih foto">';
+    foreach($photos as $i=>$photo)$html.='<button type="button" data-carousel-slide="'.$i.'" aria-label="Lihat foto '.($i+1).'" aria-current="'.($i?'false':'true').'"><span aria-hidden="true"></span></button>';
+    $html.='</div><div class="carousel-navigation"><button type="button" data-carousel="prev" aria-label="Foto sebelumnya">‹</button><span class="carousel-position" aria-live="off">01 / '.str_pad((string)count($photos),2,'0',STR_PAD_LEFT).'</span><button type="button" data-carousel="next" aria-label="Foto berikutnya">›</button></div></div>';
+  }
+  foreach($photos as $i=>$photo){
+    $image=seo_detail_picture($m,$photo,$i===0);
+    if($carousel && $i>0)$image=preg_replace('/\b(src|srcset)=/', 'data-$1=', $image);
+    $html.='<figure class="product-photo-frame"'.($carousel?' data-slide="'.$i.'"'.($i?' hidden':''):'').'>'.$image.'<figcaption>'.catalog_escape($name).($i?' · Detail '.$i:'').'</figcaption></figure>';
+  }
+  if($carousel){
+    $html.='<noscript><p>Foto lainnya: ';
+    foreach(array_slice($photos,1)as$i=>$photo)$html.='<a href="/'.catalog_escape($photo).'">Foto detail '.($i+1).'</a> ';
+    $html.='</p></noscript>';
+  }
+  return $html.'</div>';
+}
 function seo_product(string $template,array $m,array $items): string {
-  $snack=$m['slug']==='snackbox';$path=catalog_path($m);$name=$m['id']['n'];
+  $snack=$m['slug']==='snackbox';$packagePage=$snack||$m['slug']==='platter';$path=catalog_path($m);$name=$m['id']['n'];
   $heading=$snack?'Snack Box di Cikarang':$name.' di Cikarang';
   $title=$snack?'Pesan Snack Box Cikarang | Ruethies Patisserie':$heading.' | Ruethies Patisserie';
   $description=$snack?'Kenali snack box Ruethies Patisserie di Lippo Cikarang. Lihat foto dan hubungi WhatsApp untuk pilihan isi, harga, jumlah pesanan serta tanggal kebutuhan.':$name.' di Ruethies Patisserie, Lippo Cikarang. '.$m['id']['d'].' Tanyakan pilihan dan pemesanan melalui WhatsApp.';
   $description=mb_strlen($description)>170 ? rtrim(mb_substr($description,0,167)).'…' : $description;
-  $photos=array_values(array_filter(array_merge([$m['img']],$m['detail_images'] ?? [])));
-  $body='<main id="home" class="product-page container"><nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/">Beranda</a><span aria-hidden="true"> / </span><a href="/#menu">Menu</a><span aria-hidden="true"> / </span><span>'.catalog_escape($name).'</span></nav><section class="product-intro"><div><p class="eyebrow">RUETHIES · LIPPO CIKARANG</p><h1 class="h2" id="product-title">'.catalog_escape($heading).'</h1><p class="product-summary" id="product-summary">'.catalog_escape($m['id']['d']).'</p><div id="product-detail">'.seo_paragraphs(catalog_detail($m,'id')).'</div><p class="product-context" data-copy="context">'.($snack?'Snack box merupakan pilihan paket kudapan dalam kotak. Hubungi Ruethies Patisserie di Lippo Cikarang untuk membicarakan kebutuhan Anda.':'Temukan '.catalog_escape($name).' dalam katalog Ruethies Patisserie di Lippo Cikarang. Hubungi kami untuk menanyakan pilihan dan ketersediaannya.').'</p><a class="btn primary" id="product-wa" href="'.seo_wa($name).'" target="_blank" rel="noopener">Tanyakan '.catalog_escape($name).' via WhatsApp</a><p class="muted product-note" data-copy="terms">Pilihan isi, ukuran, harga, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran dikonfirmasi melalui WhatsApp.</p></div><div class="product-photos">';
-  foreach($photos as $i=>$photo) $body.='<figure class="product-photo-frame">'.seo_detail_picture($m,$photo,$i===0).'<figcaption>'.catalog_escape($name).($i ? ' · Detail '.$i : '').'</figcaption></figure>';
-  $body.='</div></section><section class="product-information"><div><h2 class="h2" data-copy="order">Cara memesan</h2><ol id="order-steps"><li>Sebutkan produk yang Anda minati.</li><li>Sampaikan jumlah serta tanggal kebutuhan.</li><li>Konfirmasikan pilihan, harga, dan cara menerima pesanan melalui WhatsApp.</li></ol></div><div><h2 class="h2" data-copy="location">Lokasi Ruethies Patisserie</h2><p>Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.</p><p><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.3443722,107.1490519" target="_blank" rel="noopener" data-copy="directions">Dapatkan rute →</a></p><p>Email: <a href="mailto:info@ruethiespatisserie.com">info@ruethiespatisserie.com</a></p></div></section>';
+  $photos=array_slice(array_values(array_unique(array_filter(array_merge([$m['img']],$m['detail_images'] ?? [])))),0,3);
+  $breadcrumb='<nav class="breadcrumbs" aria-label="Breadcrumb"><a href="/" data-product-home>Beranda</a><span aria-hidden="true"> / </span>'.($packagePage?'':'<a href="/#menu" data-product-menu>Menu</a><span aria-hidden="true"> / </span>').'<span aria-current="page" id="product-crumb">'.catalog_escape($packagePage?$heading:$name).'</span></nav>';
+  $body='<main id="home" class="product-page container">'.$breadcrumb.'<section class="product-intro"><div><p class="eyebrow">RUETHIES · LIPPO CIKARANG</p><h1 class="h2" id="product-title">'.catalog_escape($heading).'</h1><p class="product-summary" id="product-summary">'.catalog_escape($m['id']['d']).'</p><div id="product-detail">'.seo_paragraphs(catalog_detail($m,'id')).'</div><p class="product-context" data-copy="context">'.($snack?'Ruethies Patisserie menyediakan snack box di Lippo Cikarang, Cikarang Selatan. Lihat foto sajian dan kemasan sebagai referensi, lalu sampaikan jumlah dan tanggal kebutuhan melalui WhatsApp.':'Temukan '.catalog_escape($name).' dalam katalog Ruethies Patisserie di Lippo Cikarang. Hubungi kami untuk menanyakan pilihan dan ketersediaannya.').'</p><a class="btn primary" id="product-wa" href="'.seo_wa($name).'" target="_blank" rel="noopener">Tanyakan '.catalog_escape($name).' via WhatsApp</a><p class="muted product-note" data-copy="terms">Pilihan isi, ukuran, harga, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran dikonfirmasi melalui WhatsApp.</p><p class="product-catalog-link"><a href="/#menu" data-product-catalog>Lihat seluruh menu →</a></p></div>'.seo_product_photos($m,$photos,$packagePage&&count($photos)>1);
+  $body.='</section><section class="product-information"><div><h2 class="h2" data-copy="order">Cara memesan</h2><ol id="order-steps"><li>Sebutkan produk yang Anda minati.</li><li>Sampaikan jumlah serta tanggal kebutuhan.</li><li>Konfirmasikan pilihan, harga, dan cara menerima pesanan melalui WhatsApp.</li></ol></div><div><h2 class="h2" id="product-location" data-copy="location">Lokasi Ruethies Patisserie</h2><p>Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.</p><p><a href="https://www.google.com/maps/dir/?api=1&amp;destination=-6.3443722,107.1490519" target="_blank" rel="noopener" data-copy="directions">Dapatkan rute →</a></p><p>Email: <a href="mailto:info@ruethiespatisserie.com">info@ruethiespatisserie.com</a></p></div></section>';
   $faq=[['q'=>'Bagaimana cara memesan '.$name.'?','a'=>'Hubungi WhatsApp 0851-3928-1257. Sebutkan produk, jumlah, dan tanggal kebutuhan untuk mengonfirmasi pilihan serta harga.'],['q'=>'Apakah harga dan ketentuan pesanan tersedia di website?','a'=>'Silakan konfirmasikan harga, pilihan isi, minimum pesanan, tenggat pemesanan, serta pengambilan atau pengantaran melalui WhatsApp.'],['q'=>'Di mana lokasi Ruethies Patisserie?','a'=>'Ruko The Neo Patio East No. 51, Lippo, Cikarang Selatan, Kabupaten Bekasi, Jawa Barat 17530.']];
-  $body.='<section class="product-faq"><h2 class="h2" data-copy="faq">Pertanyaan tentang '.catalog_escape($name).'</h2><div id="product-faq">'.seo_faq_html($faq).'</div></section><section class="product-related"><h2 class="h2" data-copy="related">Pilihan lainnya</h2><div class="cards3">';
+  $body.='<section class="product-faq"><h2 class="h2" data-copy="faq">Pertanyaan tentang '.catalog_escape($name).'</h2><div id="product-faq">'.seo_faq_html($faq).'</div></section>';
   $related=array_values(array_filter($items,fn($r)=>$r['uid']!==$m['uid'] && ($r['available'] ?? true)!==false));
-  usort($related,fn($a,$b)=>(int)($b['cat']===$m['cat'])<=>(int)($a['cat']===$m['cat']));
-  foreach(array_slice($related,0,3) as $r) $body.='<article class="card"><a class="ph product-photo" href="'.catalog_path($r).'">'.seo_picture($r).'</a><div class="bd"><h3><a href="'.catalog_path($r).'">'.catalog_escape($r['id']['n']).'</a></h3><p>'.catalog_escape($r['id']['d']).'</p></div></article>';
-  $body.='</div></section></main>';
+  if($packagePage){
+    $alternateSlug=$snack?'platter':'snackbox';
+    foreach($related as $r)if($r['slug']===$alternateSlug){
+      $body.='<aside class="product-alternative"><a href="'.catalog_path($r).'" data-product-'.$alternateSlug.'>Lihat pilihan '.($snack?'Platter':'Snackbox').' →</a></aside>';break;
+    }
+  }else{
+    $body.='<section class="product-related"><h2 class="h2" data-copy="related">Pilihan lainnya</h2><div class="cards3">';
+    usort($related,fn($a,$b)=>(int)($b['cat']===$m['cat'])<=>(int)($a['cat']===$m['cat']));
+    foreach(array_slice($related,0,3) as $r) $body.='<article class="card"><a class="ph product-photo" href="'.catalog_path($r).'">'.seo_picture($r).'</a><div class="bd"><h3><a href="'.catalog_path($r).'">'.catalog_escape($r['id']['n']).'</a></h3><p>'.catalog_escape($r['id']['d']).'</p></div></article>';
+    $body.='</div></section>';
+  }
+  $body.='</main>';
   $html=preg_replace_callback('~<main id="home">.*?</main>~s',fn()=>$body,$template);
   // Public links use root-relative paths; the same header/footer works on nested pages.
   $html=preg_replace('~href="#([^\"]*)"~','href="/#$1"',$html);
   $html=preg_replace('~<!-- LIGHTBOX -->.*?</body>~s','</body>',$html);
   $html=preg_replace('~<link rel="preload"[^>]*>~','',$html);
-  $html=preg_replace('~<script src="app.js\?[^\"]+" defer></script>~','<script src="/product.js?v=20261109-seo" defer></script>',$html);
+  $html=preg_replace('~<script src="app.js\?[^\"]+" defer></script>~','<script src="/product.js?v=20261111-package-pages" defer></script>',$html);
   $html=str_replace('</body>','<script type="application/json" id="product-data">'.catalog_json(['product'=>seo_interactive_product($m),'faq'=>$faq]).'</script></body>',$html);
-  $crumb=['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/'],['@type'=>'ListItem','position'=>2,'name'=>'Menu','item'=>CATALOG_ORIGIN.'/#menu'],['@type'=>'ListItem','position'=>3,'name'=>$name,'item'=>CATALOG_ORIGIN.$path]]];
-  $page=['@context'=>'https://schema.org','@type'=>'WebPage','@id'=>CATALOG_ORIGIN.$path,'url'=>CATALOG_ORIGIN.$path,'name'=>$title,'inLanguage'=>'id','description'=>$description,'mainEntity'=>['@type'=>'MenuItem','name'=>$name,'description'=>$m['id']['d'],'image'=>array_map(fn($p)=>CATALOG_ORIGIN.'/'.$p,$photos)]];
-  return seo_head($html,$title,$description,$path,$m['img'],[seo_business($template),$page,$crumb,seo_faq_schema($faq)]);
+  $crumbItems=[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/']];
+  if(!$packagePage)$crumbItems[]=['@type'=>'ListItem','position'=>2,'name'=>'Menu','item'=>CATALOG_ORIGIN.'/#menu'];
+  $crumbItems[]=['@type'=>'ListItem','position'=>count($crumbItems)+1,'name'=>$packagePage?$heading:$name,'item'=>CATALOG_ORIGIN.$path];
+  $crumb=['@context'=>'https://schema.org','@type'=>'BreadcrumbList','@id'=>CATALOG_ORIGIN.$path.'#breadcrumb','itemListElement'=>$crumbItems];
+  $business=seo_business($template);
+  $page=['@context'=>'https://schema.org','@type'=>'WebPage','@id'=>CATALOG_ORIGIN.$path,'url'=>CATALOG_ORIGIN.$path,'name'=>$title,'inLanguage'=>'id','description'=>$description,'dateModified'=>$m['updated_at'],'about'=>['@id'=>$business['@id']],'breadcrumb'=>['@id'=>$crumb['@id']],'mainEntity'=>['@type'=>'MenuItem','@id'=>CATALOG_ORIGIN.$path.'#menu-item','url'=>CATALOG_ORIGIN.$path,'name'=>$name,'description'=>$m['id']['d'],'image'=>array_map(fn($p)=>CATALOG_ORIGIN.'/'.(seo_photo_source($p)['src']??$p),$photos)]];
+  return seo_head($html,$title,$description,$path,$m['img'],[$business,$page,$crumb,seo_faq_schema($faq)]);
 }
 function seo_paragraphs(string $text): string { return implode('',array_map(fn($p)=>'<p>'.nl2br(catalog_escape($p),false).'</p>',array_filter(preg_split('/\R\s*\R/u',$text)))); }
 function seo_assets(string $html): string {
@@ -150,16 +183,18 @@ function seo_assets(string $html): string {
     return $m[1].'="'.$value.'"';
   },$html);
 }
-function seo_sitemap(array $items,int $homeModified): string {
-  $xml='<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'.CATALOG_ORIGIN.'/</loc><lastmod>'.gmdate('c',$homeModified).'</lastmod></url>';
+function seo_sitemap(array $items,int $homeModified,array $pageModified=[]): string {
+  $xml='<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'.CATALOG_ORIGIN.'/</loc><lastmod>'.gmdate('c',$pageModified['/']??$homeModified).'</lastmod></url>';
+  foreach(['/menu/','/tentang-kami/','/hubungi-kami/','/cara-pesan/'] as $path)$xml.='<url><loc>'.CATALOG_ORIGIN.$path.'</loc><lastmod>'.gmdate('c',$pageModified[$path]??$homeModified).'</lastmod></url>';
   foreach($items as $m) if(($m['available'] ?? true)!==false) $xml.='<url><loc>'.CATALOG_ORIGIN.catalog_path($m).'</loc><lastmod>'.catalog_escape($m['updated_at']).'</lastmod></url>';
   return $xml.'</urlset>';
 }
 function seo_llms(string $template,array $items,array $faq): string {
   $business=seo_business($template);
   $text="# Ruethies Patisserie\n\nSnack box, kue klasik dan camilan gurih di Lippo Cikarang.\n\n";
-  $text.='- Alamat: '.$business['address']['streetAddress'].', '.$business['address']['addressLocality']."\n- WhatsApp: https://wa.me/6285139281257\n- Email: info@ruethiespatisserie.com\n- Jam buka: 09.00–21.00 WIB setiap hari\n- Pilihan, harga, minimum pesanan, tenggat, pengambilan dan pengantaran dikonfirmasi melalui WhatsApp.\n\n## Menu\n";
+  $text.='- Alamat: '.$business['address']['streetAddress'].', '.$business['address']['addressLocality']."\n- WhatsApp: https://wa.me/6285139281257\n- Email: info@ruethiespatisserie.com\n- Jam buka: 07.00–21.00 WIB setiap hari\n- Pilihan, harga, minimum pesanan, tenggat, pengambilan dan pengantaran dikonfirmasi melalui WhatsApp.\n\n## Menu\n";
   foreach($items as $m) if(($m['available'] ?? true)!==false)$text.='- ['.$m['id']['n'].']('.CATALOG_ORIGIN.catalog_path($m).'): '.$m['id']['d']."\n";
+  $text.="\n## Halaman\n- [Menu](".CATALOG_ORIGIN."/menu/)\n- [Tentang Kami](".CATALOG_ORIGIN."/tentang-kami/)\n- [Lokasi dan Kontak](".CATALOG_ORIGIN."/hubungi-kami/)\n- [Cara Pesan](".CATALOG_ORIGIN."/cara-pesan/)\n";
   $text.="\n## FAQ\n";foreach($faq as $f)$text.='- '.$f['q'].' '.$f['a']."\n";
   return $text;
 }

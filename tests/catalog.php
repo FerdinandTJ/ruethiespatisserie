@@ -3,7 +3,7 @@ if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 define('RUETHIES_ADMIN',true);define('RUETHIES_PUBLIC',dirname(__DIR__));require RUETHIES_PUBLIC.'/admin/lib.php';
 function catalog_check(bool $ok,string $label):void{if(!$ok)throw new RuntimeException($label);echo "PASS: $label\n";}
 $menu=json_decode(file_get_contents(RUETHIES_PUBLIC.'/menu.json'),true,512,JSON_THROW_ON_ERROR);
-$expected=['Bolu Jadoel','Brownies Cokelat','Lapis Surabaya','Marble Cake','Jongkong','Pastel','Kroket','Risol','Platter','Snackbox'];
+$expected=['Bolu Jadoel','Brownies Cokelat','Lapis Marble','Marble Cake','Jongkong','Pastel','Kroket','Risol','Platter','Snackbox'];
 catalog_check(array_column(array_column($menu,'id'),'n')===$expected,'catalog contains exactly the ten approved products');
 catalog_check(array_keys(RUETHIES_CATS)===['cakery','savoury','packages'],'CMS categories match cakes, savouries and packages');
 foreach($menu as$item){catalog_check(isset(RUETHIES_CATS[$item['cat']])&&menu_validate(['cat'=>$item['cat'],'n'=>$item['id']['n'],'d'=>$item['id']['d'],'tag'=>$item['tag']['id']])!==null,'CMS accepts category and content: '.$item['id']['n']);foreach([$item['img'],substr($item['img'],0,-4).'.webp']as$path){$size=getimagesize(RUETHIES_PUBLIC.'/'.$path);catalog_check($size[0]===960&&$size[1]===720&&filesize(RUETHIES_PUBLIC.'/'.$path)<250000,'optimized menu photo: '.$path);}}

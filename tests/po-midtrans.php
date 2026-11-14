@@ -54,7 +54,15 @@ try{
  po_mt_apply($db,$id,mt_status($p));po_mt_apply($db,$id,mt_status($p,'pending'));po_mt_apply($db,$id,mt_status($p,'expire'));
  $paid=po_order($db,$token);mt_check($paid['payment_status']==='paid'&&$paid['reservation_status']==='committed'&&(int)po_query($db,"SELECT COUNT(*) FROM po_order_events WHERE order_id=? AND event='midtrans_paid'",[$id])->fetchColumn()===1,'duplicate/out-of-order success never double commits or downgrades paid order');
  mt_check((int)po_query($db,"SELECT COUNT(*) FROM po_whatsapp_outbox WHERE order_id=? AND kind='paid'",[$id])->fetchColumn()===2,'paid notifications enqueue once per audience');
+ $waConfig=$config;$waConfig['fonnte']=['enabled'=>true,'token'=>'FAKE-LOCAL-ONLY','owner_phone'=>'628111111111','test_recipient'=>'','allowed_recipients'=>[$paid['phone'],'628111111111']];
+ $deliveries=[];$send=static function($settings,$phone,$message)use(&$deliveries,$db){if($db->inTransaction())throw new RuntimeException('network under lock');$deliveries[]=[$phone,$message];return ['outcome'=>'accepted'];};
+ $summary=po_wa_run($db,$waConfig,5,$send);$recipients=array_column($deliveries,0);sort($recipients);$expected=[$paid['phone'],'628111111111'];sort($expected);
+ mt_check($summary['accepted']===2&&$summary['skipped']===1&&$recipients===$expected,'Fonnte worker sends paid notices to customer and owner, suppressing obsolete invoice');
+ po_wa_run($db,$waConfig,5,$send);mt_check(count($deliveries)===2,'accepted paid notices are not delivered twice');
+
  po_manual_fulfill($db,$id,'confirmed','ready',['name'=>'staff','role'=>'staff']);mt_check(po_order($db,$token)['status']==='ready','verified Sandbox order can be fulfilled by staff');
+ [$waOrder,$waPayment,$waToken]=mt_new($db,$sid,$pid,$secret);$override=$waConfig;$override['fonnte']['test_recipient']='628111111111';$deliveries=[];
+ po_wa_run($db,$override,5,$send);mt_check(count($deliveries)===2&&array_unique(array_column($deliveries,0))===['628111111111'],'test recipient overrides invoice and ready notification without real API requests');
  [$e,$ep,$et]=mt_new($db,$sid,$pid,$secret);po_query($db,'UPDATE po_orders SET expires_at=? WHERE id=?',[time()-200,$e['id']]);$before=(int)po_query($db,'SELECT reserved FROM po_products WHERE id=?',[$pid])->fetchColumn();
  mt_denied(fn()=>po_mt_reconcile($db,(int)$e['id'],$settings,static function(){throw new RuntimeException('timeout');}),'network failure keeps held quota');mt_check((int)po_query($db,'SELECT reserved FROM po_products WHERE id=?',[$pid])->fetchColumn()===$before,'timeout does not release stock');
  po_query($db,'UPDATE po_midtrans_payments SET next_check=0 WHERE order_id=?',[$e['id']]);po_mt_reconcile($db,(int)$e['id'],$settings,static fn()=>['status_code'=>'404']);mt_check(po_order($db,$et)['reservation_status']==='released','authenticated 404 only expires after checkout window and grace');

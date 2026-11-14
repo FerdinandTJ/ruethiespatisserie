@@ -1,41 +1,60 @@
-# Penyelarasan main ke staging — 10 November 2026
+# Penyelarasan halaman main ke staging — 14 November 2026
 
-Main 42eaa5b digabungkan ke staging acd5d55 melalui branch integrasi, dengan penyelesaian konflik yang mempertahankan PO. Tidak ada penggabungan staging ke main dan tidak ada perubahan token/API maupun database hosting.
+Integrasi dari main `ed29df3` ke staging `c68f576`. Branch main tidak diubah.
 
-Yang ikut: UI admin, katalog bawaan sepuluh produk, kontak WhatsApp/email, foto utama + dua foto detail, detail mobile, foto responsif on-demand, renderer PHP SEO, URL produk, sitemap dinamis, upgrade keamanan dan metadata SEO.
+## Hasil
 
-Yang dipertahankan: controller /pre-order/ dan /pre-order/status/, body POST serta query magic link, semua tabel/flow PO dan notifikasi Fonnte, navigasi PO pada CMS dan homepage, UID produk lama saat upgrade, proteksi file foto yang masih dirujuk PO, noindex dan password protection staging. Canonical dan sitemap tetap memakai domain produksi; staging tidak ditujukan untuk indeks pencarian.
+- Halaman Beranda, Menu, produk, Snack Box, Tentang Kami, Lokasi/Kontak, serta Cara Pesan/FAQ mengikuti struktur dan renderer main saat ini.
+- Galeri/carousel, form pesan WhatsApp, pencarian/filter GET, ID/EN, menu mobile, breadcrumb, metadata, sitemap, dan jam buka 07.00–21.00 WIB ikut diselaraskan.
+- Warna staging tetap wine `#7A0000` dan cream `#FAF6F0`, termasuk tombol, logo, footer dan warna browser. Palet biru main tidak diterapkan. BLUE-CREAM-THEME.md mendeskripsikan main, bukan tema staging.
+- Pre-order tersedia pada navigasi desktop, mobile, dan footer. Routing `/pre-order/`, `/pre-order/status/`, `/pre-order/return/` dan webhook tetap terpisah dari renderer publik, termasuk body POST dan query magic link.
+- Seluruh controller/admin/schema PO, Midtrans, Fonnte, konfigurasi privat, pengecekan stok dan worker cron dipertahankan. Tidak ada migrasi database dalam sinkronisasi ini.
+- Tidak ada perubahan berkas gambar atau kompresi. Optimasi foto Lighthouse yang pernah dibatalkan tidak diterapkan kembali.
 
-## Sebelum pull di hosting
+## Konten hosting dan identitas produk
 
-Kerjakan dari public_html/staging, bukan public_html. Hentikan sementara aktivitas admin selama backup/upgrade. Jangan menjalankan seed-demo atau mengganti database.
+`menu.json`, `faq.json`, dan `atmosphere.json` hosting tetap dipertahankan oleh updater. Jangan menggantinya dengan salinan laptop: UID katalog dapat dirujuk oleh jadwal PO. Kategori coffee lama staging tetap didukung termasuk kategori, ID/EN, halaman produk dan editor. Host header tidak dapat mengaktifkan kategori ini di produksi.
 
-1. Catat git status --short dan git rev-parse HEAD. Jika ada perubahan CMS atau .htaccess, simpan dan tinjau dahulu; jangan reset --hard atau stash pop membabi buta. .htaccess hosting dapat berisi Basic Auth dari hPanel, yang harus tetap dipertahankan bersama aturan baru.
-2. Backup folder staging serta ruethies-data-staging di luar public_html; gunakan umask 077 saat backup, lalu kembalikan umask 022 SEBELUM pull. Simpan snapshot database melalui fasilitas backup hosting bila diperlukan.
-3. Jangan menimpa menu.json, faq.json, atmosphere.json, users.json atau po-config.php hosting dengan data laptop. Simpan perubahan konten hosting sebelum pull dan rekonsiliasi file terkait. Kategori coffee lama tetap didukung khusus direktori public_html/staging, termasuk editor admin, tab katalog dan halaman produk. UID dan konten lama tidak perlu diganti. Kategori lain yang tidak didukung tetap ditolak; jangan menghapus data untuk memaksa lolos.
-4. Setelah working tree siap: git pull --ff-only origin staging.
-5. Jalankan dari staging:
+Katalog repository mengikuti main, tetapi hal itu **tidak mengganti katalog hosting**. Memindahkan katalog PO ke produk baru merupakan pekerjaan terpisah yang perlu mempertahankan/pemetaan UID; tidak dilakukan otomatis.
+
+CLI `admin/menu-copy-upgrade.php` yang dibawa dari main tersedia untuk penyelarasan deskripsi produk yang namanya cocok. `--check` tidak mengubah data; `--apply` bersifat opsional, membuat backup, mempertahankan UID/foto/status dan tidak menambahkan produk hilang. Ia juga mengganti nama/slug Lapis Surabaya yang cocok menjadi Lapis Marble. URL lama Lapis Surabaya menghasilkan 404, mengikuti main.
+
+## Deployment di SSH hPanel
+
+Hentikan sementara pengeditan admin. Jalankan **di public_html/staging**, bukan public_html:
 
 ```sh
-php admin/security-upgrade.php --check
-php admin/security-upgrade.php --apply
-php admin/seo-upgrade.php --check
-php admin/seo-upgrade.php --apply
-php admin/seo-upgrade.php --check
-php admin/po-cron.php --check
+cd /home/u857797475/domains/ruethiespatisserie.com/public_html/staging
+git status --short
+git fetch origin staging
+STAGING_DEPLOY_SCRIPT=$(mktemp)
+git show origin/staging:tools/update-staging.sh > "$STAGING_DEPLOY_SCRIPT" && bash "$STAGING_DEPLOY_SCRIPT"
+rm -f "$STAGING_DEPLOY_SCRIPT"
 ```
 
-Jika salah satu langkah gagal, berhenti dan periksa output sebelum melanjutkan. Upgrade menambahkan metadata akun dan katalog; hash password, secret 2FA, UID katalog yang valid, rekening, pesanan serta token Fonnte dipertahankan. Login admin lama akan dicabut. Tidak perlu impor SQL atau menjalankan installer PO untuk sinkronisasi ini.
+Updater mem-backup staging dan data privat di luar web root, mempertahankan JSON hosting serta Basic Auth hPanel bila ada. Konfigurasi tanpa Basic Auth yang telah dipilih pemilik juga dipertahankan. Perubahan kode hosting yang tidak dikenali membuat updater berhenti; tinjau dahulu. Jangan `git stash pop`.
 
-6. Bersihkan cache staging, lalu cek login pemilik dan OTP, akses admin PO, beranda/katalog/detail, noindex dan Basic Auth. Cek cron yang sudah ada masih menunjuk folder staging.
-7. Verifikasi pembayaran, pembatalan dan retry notifikasi mengikuti verifikasi ulang 5 menit. Setelah verifikasi, kembali ke PO dan kirim ulang tindakan secara sadar; password/OTP/payload keputusan tidak disimpan otomatis.
+Setelah update:
 
-Katalog repository yang baru tidak otomatis memetakan produk lama pada jadwal PO. Bila mengganti katalog hosting, lakukan pemetaan UID secara eksplisit dahulu. Pesanan lama tetap memakai snapshot, tetapi produk dengan UID yang tidak lagi ada tidak dapat menerima checkout baru.
+```sh
+php admin/seo-upgrade.php --check
+php admin/po-cron.php --check
+php admin/midtrans-upgrade.php --check
+php admin/menu-copy-upgrade.php --check
+```
+
+Metadata SEO yang sudah siap tidak perlu di-upgrade lagi. Jika check menyebut metadata belum siap, jalankan `php admin/seo-upgrade.php --apply`, lalu check ulang. Tidak perlu menjalankan ulang security-upgrade, installer/seed PO, atau impor SQL untuk pembaruan ini. Jangan menampilkan isi po-config.php/token saat mengirim hasil pemeriksaan.
+
+Jika ingin menyamakan deskripsi katalog yang cocok dengan main, setelah meninjau hasil check jalankan `php admin/menu-copy-upgrade.php --apply`. FAQ hosting tidak ditimpa; jam buka pada jawaban FAQ lama dapat diselaraskan ke 07.00–21.00 WIB melalui editor FAQ.
+
+Bersihkan cache staging lalu cek halaman langsung/refresh, login admin, daftar PO, invoice, pembayaran sandbox, dan cron/Fonnte. Header `X-Robots-Tag: noindex, nofollow, noarchive` staging tetap berlaku. Canonical bisnis tetap domain produksi sebagaimana sebelumnya; staging tidak didaftarkan ke Search Console.
 
 ## Validasi lokal
 
-Suite keamanan, UI admin, SEO/public HTTP, routing Apache (termasuk Basic Auth dan path staging terenkode), foto, WhatsApp, dan PO UI dijalankan pada fixture lokal. Tiga suite PO database memakai instance MySQL terisolasi melalui socket, bukan database hosting. Tidak ada pesan WhatsApp nyata dikirim.
+- Regresi SEO/public HTTP, routing Apache, CMS, autentikasi/keamanan, upgrade, katalog, foto, form WhatsApp, carousel dan updater lulus pada fixture sementara.
+- `tests/staging-legacy.php` menguji katalog lama/coffee, UID, halaman baru, ID/EN dan tautan Pre-order.
+- `tests/po-midtrans.php` lulus pada MySQL lokal dengan provider tiruan: checkout, concurrency, webhook, pembayaran, fulfillment, kuota habis, antrean notifikasi pelanggan/pemilik, deduplikasi, dan override nomor uji. Tidak ada API/payment atau WhatsApp nyata dipanggil.
+- Suite historis `po-flow.php`, `po-manual.php`, dan `po-whatsapp.php` masih memakai fixture pembuatan jadwal manual/legacy yang sudah ditolak staging sejak sebelum integrasi ini. Ketiganya bukan suite penerimaan flow aktif; kegagalan fixture tersebut tidak ditutup dengan mengaktifkan kembali flow yang telah dihentikan. Regresi flow aktif berada pada po-midtrans dan po-ui.
+- Preview browser 320/390/1280/1440: tujuh tipe halaman tanpa overflow, wine–cream terjaga, menu mobile/ID–EN berfungsi, tidak ada exception JavaScript.
 
-Integrasi tambahan mencakup homepage SEO + tautan PO, navigasi CMS ke PO, UID tetap setelah edit, foto yang dirujuk PO tidak terhapus, dan verifikasi ulang kedaluwarsa yang menolak pembayaran sampai pemilik memverifikasi ulang.
-
-Pembaruan kompatibilitas: kategori coffee hanya diaktifkan berdasarkan layout filesystem staging, bukan Host header. Pengujian staging-legacy.php memverifikasi migrasi idempoten, UID tidak berubah, tab kopi/HTML/URL produk tersedia, serta Host header tidak mengaktifkan kategori lama di produksi.
+Pemulihan: gunakan backup deployment yang dicetak updater. Pemulihan kode/data publik harus cocok; jangan memulihkan akun atau metadata keamanan lama. Database PO dan konfigurasi privat tidak berubah oleh integrasi ini.

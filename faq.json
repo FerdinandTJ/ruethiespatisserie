@@ -19,9 +19,9 @@
     },
     {
         "q": "Jam berapa buka?",
-        "a": "Setiap hari pukul 09.00–21.00 WIB.",
+        "a": "Setiap hari pukul 07.00–21.00 WIB.",
         "qe": "What are the opening hours?",
-        "ae": "Open daily 09.00–21.00 WIB."
+        "ae": "Open daily 07.00–21.00 WIB."
     },
     {
         "q": "Berapa kisaran harga?",

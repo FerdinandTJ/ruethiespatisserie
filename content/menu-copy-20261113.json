@@ -1,0 +1,115 @@
+[
+  {
+    "slug": "bolu-jadoel",
+    "source_product": "Bolu Jadul Mocca",
+    "aliases": [
+      "Bolu Jadoel",
+      "Bolu Jadul Mocca"
+    ],
+    "id": {
+      "d": "Bolu klasik beraroma mocca dan cokelat dengan tekstur lembut, menghadirkan nostalgia dalam setiap potongan.",
+      "detail": "Nostalgia Hangat dalam Setiap Potongan\n\nBolu jadul adalah penghormatan bagi resep klasik yang selalu dirindukan. Tanpa hiasan berlebihan, kelembutan teksturnya berpadu dengan aroma harum mocca dan cokelat—menghadirkan kembali kehangatan kenangan manis bersama keluarga di setiap gigitan."
+    },
+    "en": {
+      "d": "A soft classic cake with mocha and chocolate aromas, bringing warm nostalgia to every slice.",
+      "detail": "Warm Nostalgia in Every Bite\n\nThis old-fashioned cake is a tribute to a classic recipe that’s always cherished. Without excessive decoration, its soft texture blends with the rich aroma of mocha and chocolate—bringing back the warmth of sweet memories with family in every bite."
+    }
+  },
+  {
+    "slug": "brownies-cokelat",
+    "source_product": "Brownies",
+    "aliases": [
+      "Brownies Cokelat",
+      "Brownies"
+    ],
+    "id": {
+      "d": "Brownies dari cokelat pilihan dengan tekstur padat, lembut, dan lumer, untuk waktu santai maupun perayaan istimewa.",
+      "detail": "Kelezatan Pekat yang Menyempurnakan Suasana\n\nTerinspirasi dari kisah klasik tentang keindahan di balik kesederhanaan, brownies kami diracik dari cokelat pilihan untuk menghasilkan tekstur padat yang lembut dan lumer. Sajian manis yang tulus untuk menemani waktu santai maupun perayaan istimewa Anda."
+    },
+    "en": {
+      "d": "Brownies made with select chocolate, with a dense, soft, melt-in-your-mouth texture for quiet moments and special celebrations.",
+      "detail": "A Rich, Indulgent Treat That Complements Any Occasion\n\nInspired by the classic tale of beauty found in simplicity, our brownies are crafted from select chocolates to create a dense, soft, and melt-in-your-mouth texture. A heartfelt sweet treat to enjoy during your leisure time or to celebrate your special occasions."
+    }
+  },
+  {
+    "slug": "lapis-marble",
+    "source_product": "Lapis Marble",
+    "aliases": [
+      "Lapis Surabaya",
+      "Lapis Marble"
+    ],
+    "id": {
+      "d": "Kue lapis lembut bercorak marmer dengan perpaduan dua karakter rasa yang saling melengkapi.",
+      "detail": "Harmoni Keindahan dalam Setiap Lapisan\n\nTerinspirasi dari keindahan corak marmer alami, kue lapis ini melambangkan perpaduan harmonis antara dua karakter rasa yang saling melengkapi. Dikerjakan dengan penuh ketelitian dan kesabaran, menghasilkan tekstur lembut dan aroma memikat yang memperindah meja sajian Anda.",
+      "n": "Lapis Marble"
+    },
+    "en": {
+      "d": "A soft marble-patterned layer cake that brings together two complementary flavors.",
+      "detail": "Harmony and Beauty in Every Layer\n\nInspired by the beauty of natural marble patterns, this layer cake symbolizes the harmonious blend of two complementary flavors. Crafted with meticulous care and patience, it features a soft texture and an alluring aroma that will enhance your dining table.",
+      "n": "Lapis Marble"
+    }
+  },
+  {
+    "slug": "marble-cake",
+    "source_product": "Marble Cake",
+    "aliases": [
+      "Marble Cake"
+    ],
+    "id": {
+      "d": "Perpaduan adonan mentega lembut dan cokelat premium dengan corak marmer yang khas dalam setiap irisan.",
+      "detail": "Simfoni Rasa dalam Setiap Guratan\n\nSeperti corak marmer alami yang tak pernah sama, setiap potongan Marble Cake kami adalah karya seni rasa. Perpaduan harmonis antara adonan mentega lembut dan cokelat premium menghadirkan keseimbangan rasa klasik yang elegan untuk setiap momen berharga."
+    },
+    "en": {
+      "d": "A harmonious blend of rich, buttery batter and premium chocolate, with a distinctive marble pattern in every slice.",
+      "detail": "A Symphony of Flavors in Every Slice\n\nJust as no two natural marble patterns are alike, every slice of our Marble Cake is a work of art in flavor. The harmonious blend of a rich, buttery batter and premium chocolate creates an elegant, classic balance of flavors for every precious moment."
+    }
+  },
+  {
+    "slug": "pastel",
+    "source_product": "Pastel Ayam",
+    "aliases": [
+      "Pastel",
+      "Pastel Ayam"
+    ],
+    "id": {
+      "d": "Pastel berkulit renyah dengan isian ragout ayam, wortel, kentang, dan bihun yang gurih.",
+      "detail": "Pastel Ayam Klasik – Ruethies Patisserie\n\nPerpaduan sempurna antara kulit pastel yang renyah dengan pilinan cantik dan isian ragout ayam berbumbu gurih di dalamnya. Diisi melimpah dengan suwiran daging ayam pilihan, potongan wortel, kentang, dan bihun yang dimasak dengan rempah autentik—menghadirkan camilan hangat yang mengenyangkan dan menggugah selera."
+    },
+    "en": {
+      "d": "Crispy pastel pastries filled with savory chicken ragout, carrots, potatoes, and rice vermicelli.",
+      "detail": "Classic Chicken Pastel – Ruethies Patisserie\n\nThe perfect combination of a crispy pastel crust with a beautiful twist and a savory, seasoned chicken ragout filling inside. Generously filled with shredded premium chicken, carrot pieces, potatoes, and rice vermicelli cooked with authentic spices—it’s a warm, filling, and appetizing snack."
+    }
+  },
+  {
+    "slug": "kroket",
+    "source_product": "Kroket Ragout",
+    "aliases": [
+      "Kroket",
+      "Kroket Ragout"
+    ],
+    "id": {
+      "d": "Kroket yang memadukan rasa klasik, tekstur renyah, dan kehangatan dalam setiap gigitan.",
+      "detail": "Dari Sajian Bangsawan Menjadi Favorit Semua Kalangan\n\nBerawal dari tradisi kuliner Eropa yang menjunjung kreativitas dalam mengolah bahan sederhana menjadi hidangan istimewa, kami membawa filosofi itu ke dapur kami. Setiap kroket diracik dengan penuh ketelitian—menghadirkan perpaduan rasa klasik, tekstur renyah, dan kehangatan di setiap gigitan."
+    },
+    "en": {
+      "d": "Carefully crafted croquettes combining classic flavors, a crispy texture, and warmth in every bite.",
+      "detail": "From a Dish for the Aristocracy to a Favorite Among All\n\nDrawing inspiration from European culinary traditions that celebrate creativity in transforming simple ingredients into extraordinary dishes, we’ve brought that philosophy into our kitchen. Each croquette is crafted with meticulous care—delivering a blend of classic flavors, a crispy texture, and warmth in every bite."
+    }
+  },
+  {
+    "slug": "risol",
+    "source_product": "Risoles",
+    "aliases": [
+      "Risol",
+      "Risoles"
+    ],
+    "id": {
+      "d": "Risol berbalut renyah keemasan dengan isian lembut dan creamy, untuk menghangatkan suasana.",
+      "detail": "Perpaduan Keanggunan Klasik dan Kelembutan Modern\n\nMengusung tradisi kuliner Eropa yang diracik sepenuh hati untuk selera masa kini, risoles kami menghadirkan kontras sempurna antara balutan luar yang renyah keemasan dengan isian lembut nan creamy di dalamnya. Sebuah sajian klasik yang selalu berhasil menghangatkan suasana di setiap kesempatan."
+    },
+    "en": {
+      "d": "Risoles with a crispy, golden-brown crust and a soft, creamy filling to bring warmth to any occasion.",
+      "detail": "A Blend of Classic Elegance and Modern Delicacy\n\nDrawing on European culinary traditions and crafted with care to suit today’s tastes, our risoles offer the perfect contrast between a crispy, golden-brown crust and a soft, creamy filling. A classic treat that never fails to warm the atmosphere on any occasion."
+    }
+  }
+]

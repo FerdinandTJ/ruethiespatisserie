@@ -1,19 +1,8 @@
+# Public content is crawlable; private and staging paths use the same rules for every crawler.
 User-agent: *
-Allow: /
-Allow: /llms.txt
 Disallow: /admin/
-Disallow: /admin/setup.php
-
-# Bot AI & training dipersilakan (sinyal GEO) — jangan tambah Disallow untuk daftar ini.
-User-agent: GPTBot
-Allow: /
-User-agent: ClaudeBot
-Allow: /
-User-agent: PerplexityBot
-Allow: /
-User-agent: Google-Extended
-Allow: /
-User-agent: Applebot-Extended
-Allow: /
+Disallow: /staging/
+Disallow: /pre-order/
+Disallow: /midtrans-notify.php
 
 Sitemap: https://ruethiespatisserie.com/sitemap.xml

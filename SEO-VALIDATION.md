@@ -58,3 +58,24 @@ PHP, mesin dan CSP sama; lima permintaan pemanasan diikuti 30 permintaan per ver
 HTML bertambah karena katalog, schema dan snapshot interaksi sudah berada dalam respons pertama. Ada tambahan pekerjaan PHP; tidak diklaim lebih cepat dari HTML statis. Pada jalur normal, JavaScript tidak lagi memerlukan fetch `menu.json` untuk menampilkan katalog. Gambar tetap WebP/JPEG, detail lazy-loaded, peta menunggu interaksi, dan tidak ditambah skrip pihak ketiga.
 
 Core Web Vitals nyata perlu diperiksa di Search Console/PageSpeed setelah deployment dan setelah data lapangan tersedia. Hasil lokal tidak digunakan untuk menjanjikan skor atau posisi Google.
+
+## Revisi Snackbox — 11 November 2026
+
+- Breadcrumb Snackbox: Beranda → Snack Box di Cikarang. Structured data mengikuti dua tingkat ini; tautan katalog /#menu tersedia terpisah. Produk lain mempertahankan hierarki Beranda → Menu → Produk.
+- Jika admin menambahkan foto detail Snackbox, maksimal tiga foto menempati satu carousel. Berganti setiap 6 detik saat terlihat; kontrol jeda/putar, sebelumnya/berikutnya dan keyboard tersedia. Fokus, hover, tab latar, posisi di luar layar, dan reduced motion ditangani. Tanpa JavaScript foto pertama, konten, serta tautan foto tambahan tetap tersedia.
+- Foto tersembunyi tidak mendapat src/srcset sebelum dipilih; HTML tetap memuat caption dan schema gambar yang sesuai. Tidak ada preload seluruh galeri atau script pihak ketiga baru.
+- Entitas halaman, bakery, breadcrumb dan item menu memiliki relasi URL/ID yang konsisten. Lokasi Lippo Cikarang/Cikarang Selatan dan cara menghubungi WhatsApp tersedia di HTML awal, tanpa harga, minimum pesanan, jangkauan antar, atau ulasan rekaan.
+- robots.txt menggunakan satu kelompok aturan untuk semua crawler. Halaman publik tetap dapat dirayapi; /admin/, /staging/ dan jalur transaksi privat dikecualikan. Aturan ini bukan kontrol akses server.
+- Lulus tes carousel state/timer, HTTP/CMS/SEO, JSON-LD, FAQ, navigasi katalog dan galeri. Browser lokal diuji pada 320, 390 dan 1440 px: satu bingkai, tanpa overflow, unduhan foto sesuai slide, ID/EN, autoplay nyata, reduced motion, dan tanpa JavaScript. Safari perangkat nyata serta pengindeksan/ranking setelah rilis belum diverifikasi.
+- Rujukan: https://developers.google.com/search/docs/appearance/ai-features dan https://www.w3.org/WAI/ARIA/apg/patterns/carousel/. GEO tidak memerlukan schema khusus dan tidak menjamin website dikutip layanan AI.
+- Deployment memakai backup dan pull main; tidak ada migrasi database atau perubahan JSON hosting. Pengujian browser memakai dua foto detail fixture, bukan menambahkan foto baru ke menu.json hosting. Jika foto detail belum diisi admin, halaman tetap menampilkan satu foto tanpa kontrol carousel.
+
+### Fokus Snackbox dan penyempurnaan carousel
+
+Halaman Snackbox tidak lagi menampilkan tiga kartu rekomendasi. Tautan HTML sederhana “Lihat pilihan Platter →” hanya muncul jika produk dengan slug permanen platter masih terlihat. Tautan seluruh katalog tetap tersedia. Rekomendasi di halaman produk lainnya tetap mengikuti kategori.
+
+Kontrol carousel diperhalus dengan indikator aktif yang bisa dipilih, hitungan foto, tautan jeda/putar, transisi ringan dan gestur geser horizontal. Reduced motion menonaktifkan animasi, dan foto tetap dimuat sesuai pilihan. Tes HTTP mencakup Platter yang disembunyikan, sementara browser lokal 320/390/1440 px mencakup indikator, swipe sentuh nyata, ID/EN, autoplay dan fallback tanpa JavaScript.
+
+### Penyelarasan Platter
+
+Platter memakai carousel paket yang sama dengan Snackbox apabila foto detail tersedia. Breadcrumb HTML dan schema langsung Beranda → Platter di Cikarang, dengan terjemahan ID/EN yang konsisten. Rekomendasi kartu diganti tautan ke Snackbox jika masih ditampilkan admin; tautan katalog tetap terpisah. Tidak ada perubahan URL canonical, katalog hosting, atau migrasi data.
