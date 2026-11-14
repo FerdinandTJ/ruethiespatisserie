@@ -33,3 +33,11 @@
 @media(max-width:760px){.rp-brand-mark{width:132px;height:54px}}
 @media(max-width:400px){.rp-brand-mark{width:120px}}
 @supports not ((mask-image:url('')) or (-webkit-mask-image:url(''))){.rp-brand-mark{background:none;display:grid;place-items:center}.rp-brand-mark:before{content:'Ruethies Patisserie';font:italic 1.2rem 'Cormorant Garamond',Georgia,serif;color:var(--brand-ink);line-height:1.1}}
+
+/* Compact, balanced ID/EN segments shared by both public themes. */
+.profile-site .rp-languages{display:grid;grid-template-columns:repeat(2,44px);gap:3px;padding:4px;border:1px solid var(--wine-12);border-radius:14px;background:var(--paper);flex-shrink:0}
+.profile-site .rp-languages button{display:grid;place-items:center;min-width:44px;min-height:36px;padding:0;border:1px solid transparent;border-radius:10px;font-size:.72rem;font-weight:600;line-height:1;letter-spacing:.04em;color:var(--muted);transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.profile-site .rp-languages button:hover:not([aria-pressed=true]){background:var(--wine-08);color:var(--wine-ink)}
+.profile-site .rp-languages button[aria-pressed=true]{background:var(--brand-blue,var(--wine));color:var(--brand-ink,var(--paper));box-shadow:0 1px 3px var(--wine-12)}
+.profile-site .rp-languages button:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){.profile-site .rp-languages button{transition:none}}
