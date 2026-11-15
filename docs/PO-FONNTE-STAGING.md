@@ -14,7 +14,7 @@ Perubahan 8 November 2026, hanya branch `staging`. Midtrans/Paper.id belum diint
 
 Batas implementasi: belum ada unggah foto bukti, PDF yang dikirim sebagai lampiran, countdown/polling otomatis, maupun pencatatan refund/pembayaran terlambat. Invoice bisa dicetak/disimpan PDF melalui browser. Pembayaran terlambat diarahkan menghubungi toko; tidak menghidupkan kuota otomatis. Pembatalan biasa hanya untuk pesanan belum dibayar dan belum dilaporkan. Pesanan lunas tidak dapat dibatalkan melalui aksi tersebut.
 
-Rencana lama `PO-strategy.md` tanpa pihak ketiga diubah **khusus untuk notifikasi Fonnte**. Tahap unggah bukti gambar tetap terpisah; laporan teks bukan pengganti pemeriksaan mutasi bank. Semua transaksi staging memakai contoh, tanpa transfer nyata.
+Rencana lama pada catatan pribadi lokal `docs/local/PO-strategy.md` (tidak dilacak Git) tanpa pihak ketiga diubah **khusus untuk notifikasi Fonnte**. Tahap unggah bukti gambar tetap terpisah; laporan teks bukan pengganti pemeriksaan mutasi bank. Semua transaksi staging memakai contoh, tanpa transfer nyata.
 
 ## Sebelum pull
 

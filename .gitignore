@@ -34,3 +34,6 @@ po-config.php
 # Hosting-owned category content and shared catalogue lock
 /categories.json
 /.catalog.lock
+
+# Private local notes are never deployed or committed.
+/docs/local/

@@ -71,4 +71,4 @@ touch .htaccess
 restore_deleted_menu_images
 trap - EXIT
 echo "Kode staging diperbarui. Konten dan proteksi hPanel dipertahankan. Backup: $STAGING_BACKUP_DIR"
-echo 'Jangan stash pop. Jalankan categories-upgrade.php --check/--apply, lalu pemeriksaan sesuai STAGING-SYNC.md.'
+echo 'Jangan stash pop. Jalankan categories-upgrade.php --check/--apply, lalu pemeriksaan sesuai docs/STAGING-SYNC.md.'

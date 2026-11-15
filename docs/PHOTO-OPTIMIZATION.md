@@ -10,7 +10,7 @@ Foto hosting lama yang memakai nama upload sendiri tetap berfungsi dengan fallba
 
 ## Penerapan
 
-Backup konten hosting seperti panduan SEO-DEPLOYMENT.md, lalu pull main dengan umask 022. Tidak perlu CLI upgrade baru atau impor database. Jika pull menolak karena index.html sudah diperbarui CMS, simpan dan tinjau perubahan hosting terlebih dahulu; jangan reset --hard dan jangan menimpa JSON hosting.
+Backup konten hosting seperti panduan [SEO-DEPLOYMENT.md](SEO-DEPLOYMENT.md), lalu pull main dengan umask 022. Tidak perlu CLI upgrade baru atau impor database. Jika pull menolak karena index.html sudah diperbarui CMS, simpan dan tinjau perubahan hosting terlebih dahulu; jangan reset --hard dan jangan menimpa JSON hosting.
 
 ## Verifikasi
 

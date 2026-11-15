@@ -6,7 +6,7 @@ Integrasi dari main `ed29df3` ke staging `c68f576`. Branch main tidak diubah.
 
 - Halaman Beranda, Menu, produk, Snack Box, Tentang Kami, Lokasi/Kontak, serta Cara Pesan/FAQ mengikuti struktur dan renderer main saat ini.
 - Galeri/carousel, form pesan WhatsApp, pencarian/filter GET, ID/EN, menu mobile, breadcrumb, metadata, sitemap, dan jam buka 07.00–21.00 WIB ikut diselaraskan.
-- Warna staging tetap wine `#7A0000` dan cream `#FAF6F0`, termasuk tombol, logo, footer dan warna browser. Palet biru main tidak diterapkan. BLUE-CREAM-THEME.md mendeskripsikan main, bukan tema staging.
+- Warna staging tetap wine `#7A0000` dan cream `#FAF6F0`, termasuk tombol, logo, footer dan warna browser. Palet biru main tidak diterapkan. [BLUE-CREAM-THEME.md](BLUE-CREAM-THEME.md) mendeskripsikan main, bukan tema staging.
 - Pre-order tersedia pada navigasi desktop, mobile, dan footer. Routing `/pre-order/`, `/pre-order/status/`, `/pre-order/return/` dan webhook tetap terpisah dari renderer publik, termasuk body POST dan query magic link.
 - Seluruh controller/admin/schema PO, Midtrans, Fonnte, konfigurasi privat, pengecekan stok dan worker cron dipertahankan. Tidak ada migrasi database dalam sinkronisasi ini.
 - Tidak ada perubahan berkas gambar atau kompresi. Optimasi foto Lighthouse yang pernah dibatalkan tidak diterapkan kembali.
@@ -61,7 +61,7 @@ Pemulihan: gunakan backup deployment yang dicetak updater. Pemulihan kode/data p
 
 ## Pembaruan kategori — 15 November 2026
 
-Admin pemilik mendapat halaman Kategori. Setelah backup/pull lewat updater, hentikan sementara pengeditan lalu jalankan `php admin/categories-upgrade.php --check`, `php admin/categories-upgrade.php --apply`, dan check ulang. Tidak ada impor database atau perubahan pesanan. `categories.json` hosting merupakan data runtime yang tidak ditimpa Git; updater mem-backup/memulihkannya jika sudah ada dan tidak menyalin `.catalog.lock`. Pemilih produk PO memakai nama kategori, UID dan snapshot pesanan dipertahankan. Kategori coffee staging ikut migrasi. Panduan fitur, validasi dan rollback pasangan kategori/menu tersedia pada CATEGORY-MANAGEMENT.md.
+Admin pemilik mendapat halaman Kategori. Setelah backup/pull lewat updater, hentikan sementara pengeditan lalu jalankan `php admin/categories-upgrade.php --check`, `php admin/categories-upgrade.php --apply`, dan check ulang. Tidak ada impor database atau perubahan pesanan. `categories.json` hosting merupakan data runtime yang tidak ditimpa Git; updater mem-backup/memulihkannya jika sudah ada dan tidak menyalin `.catalog.lock`. Pemilih produk PO memakai nama kategori, UID dan snapshot pesanan dipertahankan. Kategori coffee staging ikut migrasi. Panduan fitur, validasi dan rollback pasangan kategori/menu tersedia pada [CATEGORY-MANAGEMENT.md](CATEGORY-MANAGEMENT.md).
 
 ## Foto lama yang telah dihapus lewat CMS
 
