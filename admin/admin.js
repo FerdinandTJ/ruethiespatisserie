@@ -24,6 +24,21 @@
     if (b && !window.confirm(b.getAttribute('data-confirm-btn'))) e.preventDefault();
   });
 
+  // Native category disclosures also work without JavaScript; enhance dismissal.
+  document.querySelectorAll('.category-delete').forEach(function (details) {
+    var cancel = details.querySelector('[data-category-cancel]');
+    if (cancel) { cancel.hidden = false; cancel.addEventListener('click', function () { details.open = false; details.querySelector('summary').focus(); }); }
+    details.addEventListener('toggle', function () {
+      if (details.open) document.querySelectorAll('.category-delete[open]').forEach(function (other) { if (other !== details) other.open = false; });
+    });
+  });
+  document.addEventListener('click', function (event) {
+    document.querySelectorAll('.category-delete[open]').forEach(function (details) { if (!details.contains(event.target)) details.open = false; });
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') document.querySelectorAll('.category-delete[open]').forEach(function (details) { details.open = false; details.querySelector('summary').focus(); });
+  });
+
   // Preview foto sebelum upload.
   document.querySelectorAll('input[type="file"][data-preview]').forEach(function (input) {
     var box = document.getElementById(input.getAttribute('data-preview'));
