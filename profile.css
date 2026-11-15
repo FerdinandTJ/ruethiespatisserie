@@ -24,3 +24,6 @@
 .profile-site .rp-languages button[aria-pressed=true]{background:var(--brand-blue,var(--wine));color:var(--brand-ink,var(--paper));box-shadow:0 1px 3px var(--wine-12)}
 .profile-site .rp-languages button:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
 @media(prefers-reduced-motion:reduce){.profile-site .rp-languages button{transition:none}}
+
+/* Hosting-managed category labels can be longer than the original defaults. */
+.rp-category{min-width:0}.rp-category>span,.rp-filter>a>span,.rp-card .rp-kicker,.rp-product-info>.rp-kicker{min-width:0;overflow-wrap:anywhere}.rp-category:after{flex-shrink:0}.rp-filter>a{max-width:100%}

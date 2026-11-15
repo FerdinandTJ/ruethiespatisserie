@@ -24,14 +24,14 @@ try {
   if(preg_match('~\A/(?:menu|tentang-kami|hubungi-kami|cara-pesan|snack-box-cikarang|menu/[a-z0-9]+(?:-[a-z0-9]+)*)\z~D',$path)){header('Location: '.$path.'/',true,301);exit;}
   $known=isset(PROFILE_PAGES[$path]) || in_array($path,['/','/sitemap.xml','/llms.txt','/snack-box-cikarang/'],true) || preg_match('~\A/menu/[a-z0-9]+(?:-[a-z0-9]+)*/\z~D',$path);
   if(!$known){http_response_code(404);header('Cache-Control: no-store');readfile(__DIR__.'/404.html');exit;}
-  $items=catalog_read_json(__DIR__.'/menu.json');catalog_validate($items);
+  $snapshot=catalog_snapshot();$items=$snapshot['menu'];
   $faq=catalog_read_json(__DIR__.'/faq.json');seo_faq($faq);
   $template=@file_get_contents(__DIR__.'/index.html');
   if($template===false)throw new RuntimeException('Template tidak tersedia.');
-  $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),filemtime(__DIR__.'/public-lib/profile.php'));
+  $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
   if($path==='/tentang-kami/')$modified=max($modified,filemtime(__DIR__.'/atmosphere.json'));
   if($path==='/sitemap.xml') {
-    $baseModified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/public-lib/profile.php'));
+    $baseModified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
     $pageModified=['/'=>max($baseModified,filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json')),'/menu/'=>max($baseModified,filemtime(__DIR__.'/menu.json')),'/tentang-kami/'=>max($baseModified,is_file(__DIR__.'/atmosphere.json')?filemtime(__DIR__.'/atmosphere.json'):0),'/hubungi-kami/'=>$baseModified,'/cara-pesan/'=>max($baseModified,filemtime(__DIR__.'/faq.json'))];
     seo_reply(seo_sitemap($items,$modified,$pageModified),'application/xml',max($modified,...array_values($pageModified)));exit;
   }

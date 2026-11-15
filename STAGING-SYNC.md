@@ -58,3 +58,7 @@ Bersihkan cache staging lalu cek halaman langsung/refresh, login admin, daftar P
 - Preview browser 320/390/1280/1440: tujuh tipe halaman tanpa overflow, wine–cream terjaga, menu mobile/ID–EN berfungsi, tidak ada exception JavaScript.
 
 Pemulihan: gunakan backup deployment yang dicetak updater. Pemulihan kode/data publik harus cocok; jangan memulihkan akun atau metadata keamanan lama. Database PO dan konfigurasi privat tidak berubah oleh integrasi ini.
+
+## Pembaruan kategori — 15 November 2026
+
+Admin pemilik mendapat halaman Kategori. Setelah backup/pull lewat updater, hentikan sementara pengeditan lalu jalankan `php admin/categories-upgrade.php --check`, `php admin/categories-upgrade.php --apply`, dan check ulang. Tidak ada impor database atau perubahan pesanan. `categories.json` hosting merupakan data runtime yang tidak ditimpa Git; updater mem-backup/memulihkannya jika sudah ada dan tidak menyalin `.catalog.lock`. Pemilih produk PO memakai nama kategori, UID dan snapshot pesanan dipertahankan. Kategori coffee staging ikut migrasi. Panduan fitur, validasi dan rollback pasangan kategori/menu tersedia pada CATEGORY-MANAGEMENT.md.

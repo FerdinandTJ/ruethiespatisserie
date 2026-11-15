@@ -7,18 +7,23 @@ function commit(message){git(['add','.']);git(['-c','user.name=Fixture','-c','us
 try{
  fs.mkdirSync(remote);git(['init','--initial-branch=staging']);
  for(const[file,body]of Object.entries({'.htaccess':'# old rules\n','menu.json':'[]','faq.json':'[]','atmosphere.json':'[]','index.html':'old template','llms.txt':'old llms','guard.php':'tracked code'}))fs.writeFileSync(path.join(remote,file),body);
+ fs.writeFileSync(path.join(remote,'.gitignore'),'categories.json\n.catalog.lock\n');
  commit('old release');fs.mkdirSync(path.dirname(site),{recursive:true});git(['clone',remote,site],root);
+ const categories='[{"key":"hosting-category","id":"Hosting"}]';fs.writeFileSync(path.join(site,'categories.json'),categories);fs.writeFileSync(path.join(site,'.catalog.lock'),'runtime lock');
  const original='[{"uid":"permanent-hosting-id","cat":"coffee"}]';fs.writeFileSync(path.join(site,'menu.json'),original);
  const auth='# DO NOT REMOVE THIS LINE AND THE LINES BELOW PWPROTECTID:test\nAuthType Basic\nAuthName "Test"\nAuthUserFile /private/test-passwords\nRequire valid-user\n';fs.appendFileSync(path.join(site,'.htaccess'),auth);
  fs.writeFileSync(path.join(site,'index.html'),'hosting FAQ generated template');
  fs.writeFileSync(path.join(remote,'.htaccess'),'# new rules\n<Files "midtrans-notify.php">\nRequire all granted\n</Files>\n');fs.writeFileSync(path.join(remote,'index.html'),'new SEO template');fs.writeFileSync(path.join(remote,'menu.json'),'[{"name":"repo default"}]');commit('new release');
  run('bash',[script],site);
  assert.equal(fs.readFileSync(path.join(site,'menu.json'),'utf8'),original);
+ assert.equal(fs.readFileSync(path.join(site,'categories.json'),'utf8'),categories);
  assert.equal(fs.readFileSync(path.join(site,'index.html'),'utf8'),'new SEO template');
  const access=fs.readFileSync(path.join(site,'.htaccess'),'utf8');assert(access.includes('# new rules')&&access.includes(auth)&&access.includes('<Files "midtrans-notify.php">'));
  assert(git(['stash','list'],site).includes('Hosting staging before update'));
  assert.equal(git(['rev-parse','HEAD'],site),git(['rev-parse','HEAD']));
  assert(fs.readdirSync(path.join(root,'site/deploy-backups')).length===1);
+ const backup=path.join(root,'site/deploy-backups',fs.readdirSync(path.join(root,'site/deploy-backups'))[0]);assert.equal(fs.readFileSync(path.join(backup,'categories.json'),'utf8'),categories);assert(!run('tar',['-tzf',path.join(backup,'staging.tgz')],site).includes('.catalog.lock'));
+ console.log('PASS: updater preserves hosting categories and excludes the runtime catalogue lock from archive');
  console.log('PASS: staging update preserves hosting UID/JSON and Basic Auth, updates templates/rules, retains stash and backup');
  fs.writeFileSync(path.join(site,'guard.php'),'local code edit');
  const unstaged=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});assert.notEqual(unstaged.status,0);assert((unstaged.stdout+unstaged.stderr).includes('perubahan lain perlu ditinjau: guard.php'));assert.equal(fs.readdirSync(path.join(root,'site/deploy-backups')).length,1);
@@ -33,6 +38,7 @@ try{
  const noAuth=run('bash',[script],site);
  assert(noAuth.includes('Staging tanpa password protection'));
  assert.equal(fs.readFileSync(path.join(site,'menu.json'),'utf8'),original);
+ assert.equal(fs.readFileSync(path.join(site,'categories.json'),'utf8'),categories);
  assert.equal(fs.readFileSync(path.join(site,'index.html'),'utf8'),'next SEO template');
  assert(!/AuthType|Require valid-user/.test(fs.readFileSync(path.join(site,'.htaccess'),'utf8')));
  console.log('PASS: staging without Basic Auth updates successfully without adding authentication or replacing hosting JSON');

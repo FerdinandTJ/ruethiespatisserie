@@ -28,8 +28,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   }
   if ($me && ruethies_csrf_ok() && in_array($aksi, [
     'save', 'toggle', 'hapus', 'galeri-save', 'galeri-gerak', 'galeri-hapus',
-    'faq-save', 'faq-gerak', 'faq-hapus',
-  ], true)) content_lock();
+    'faq-save', 'faq-gerak', 'faq-hapus', 'category-save', 'category-delete', 'category-move',
+  ], true)) content_lock(in_array($aksi,['save','toggle','hapus','category-save','category-delete','category-move'],true));
+  if($me && in_array($aksi,['save','toggle','hapus'],true)) {
+    $snapshot=catalog_snapshot(false);
+    if(is_file(RUETHIES_PUBLIC.'/categories.json'))catalog_revision_assert(security_input($_POST,'revision',64),$snapshot);
+  }
   // POST kosong padahal ada isi terkirim = ukuran melewati batas server (post_max_size).
   // Terjadi SEBELUM kode kita jalan — beri pesan yang bisa ditindaklanjuti.
   if ($aksi === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
@@ -65,6 +69,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
   // Semua aksi di bawah wajib login + CSRF.
   elseif (!$me || !ruethies_csrf_ok()) { http_response_code(403); die('Aksi ditolak.');
+  }
+  elseif (in_array($aksi,['category-save','category-delete','category-move'],true)) {
+    $me=current_user();if(!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
+    categories_mutate($_POST);ruethies_log($me['name'],$aksi,($_POST['key']??'baru').' '.($_POST['name_id']??''));header('Location: ?p=kategori&ok=simpan');exit;
   }
   elseif ($aksi === 'toggle') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
@@ -248,18 +256,19 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
  } catch (RuethiesReauthRequired $e) { header('Location: ?p=verifikasi',true,303);exit; }
  catch (RuethiesRateLimit $e) { http_response_code(429);header('Retry-After: 900');$err=$e->getMessage(); }
  catch (DomainException $e) { $err=$e->getMessage(); }
- catch (RuntimeException $e) { http_response_code(503);$err='Penyimpanan keamanan belum siap atau sedang sibuk. Hubungi pengelola.';error_log('Ruethies admin: security storage unavailable'); }
+ catch (RuntimeException $e) { http_response_code(503);$err='Penyimpanan data belum siap atau sedang sibuk. Periksa kategori/menu atau hubungi pengelola.';error_log('Ruethies admin: security storage unavailable'); }
 }
 
 /* ---------- tampilan ---------- */
 $p = is_string($_GET['p'] ?? null) ? $_GET['p'] : '';
 if (!$me && $p !== 'kode') $p = 'login';
 if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
-$area = str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu'));
-$labels = ['menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
-$intro = ['menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
+if($p==='kategori'&&!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
+$area = $p==='kategori' ? 'kategori' : (str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu')));
+$labels = ['kategori'=>'Kategori Menu', 'menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
+$intro = ['kategori'=>'Kelola nama dan urutan kategori sajian.', 'menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
 // Baca setiap sumber sekali untuk tampilan. Indeks asli dipertahankan saat memfilter.
-try { $_menu = $me ? menu_load() : []; } catch (RuntimeException $e) { http_response_code(503);$_menu=[];$err='Data menu tidak dapat dibaca. Pulihkan file menu sebelum menyimpan perubahan.'; }
+try { $_categorySnapshot=$me?catalog_snapshot(false):['menu'=>[],'categories'=>[],'revision'=>''];$_menu=$_categorySnapshot['menu']; } catch (RuntimeException $e) { http_response_code(503);$GLOBALS['catalog_category_rows'][catalog_root()]=[];$_menu=[];$_categorySnapshot=['menu'=>[],'categories'=>[],'revision'=>''];$err='Data kategori/menu tidak dapat dibaca. Periksa file atau jalankan pemeriksaan upgrade sebelum menyimpan perubahan.'; }
 $_gallery = $me ? atmos_load() : [];
 $_faqs = $me ? faq_load() : [];
 $_logs=[];
@@ -267,7 +276,7 @@ if ($p==='pengaturan' && is_owner($me)) {
   try { $_logs=ruethies_logs(); } catch (RuntimeException $e) { http_response_code(503); $err='Log aktivitas belum dapat dibaca. Coba lagi.'; }
 }
 $q = is_string($_GET['q'] ?? null) ? mb_substr(trim($_GET['q']),0,80) : '';
-$category = is_string($_GET['cat'] ?? null) && isset(RUETHIES_CATS[$_GET['cat']]) ? $_GET['cat'] : '';
+$category = is_string($_GET['cat'] ?? null) && isset(catalog_categories()[$_GET['cat']]) ? $_GET['cat'] : '';
 $availability = in_array($_GET['show'] ?? '', ['visible','hidden'], true) ? $_GET['show'] : '';
 $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availability) {
   $visible = ($m['available'] ?? true) !== false;
@@ -286,7 +295,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=20261109-upload-csp" defer></script>
-<link rel="stylesheet" href="admin.css?v=20261109-details" />
+<link rel="stylesheet" href="admin.css?v=categories-20261115" />
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
@@ -306,7 +315,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
 <a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check') ?> FAQ <span class="cnt"><?= count($_faqs) ?></span></a>
 <?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag') ?> Pre-order</a><?php endif; ?>
-<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
+<?php if (is_owner($me)): ?><a href="?p=kategori" class="<?= $area==='kategori'?'on':'' ?>" aria-current="<?= $area==='kategori'?'page':'false' ?>"><?= icon('menu',16) ?> Kategori</a><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
 <a href="../" target="_blank" rel="noopener"><?= icon('web') ?> Lihat web</a>
 </nav>
@@ -323,7 +332,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img', 16) ?> Galeri</a>
 <a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check', 16) ?> FAQ</a>
 <?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag', 16) ?> Pre-order</a><?php endif; ?>
-<?php if (is_owner($me)): ?><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
+<?php if (is_owner($me)): ?><a href="?p=kategori" class="<?= $area==='kategori'?'on':'' ?>" aria-current="<?= $area==='kategori'?'page':'false' ?>"><?= icon('menu',16) ?> Kategori</a><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
 <?php endif; ?>
 <?php if ($err): ?><p class="err" role="alert"><?= h($err) ?></p><?php endif; ?>
@@ -366,6 +375,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <div class="pagehead"><div><p class="eyebrow">RUETHIES · KONTEN WEBSITE</p><h1><?= h($labels[$area]) ?></h1><p class="sub"><?= h($intro[$area]) ?></p></div><span class="account-chip"><?= icon('user',16) ?> <?= h($me['name']) ?> · <?= is_owner($me) ? 'Pemilik' : 'Staf' ?></span></div>
 <?php if (in_array($p,['tambah','ubah','galeri-tambah','galeri-ubah','faq-tambah','faq-ubah'],true)): ?><a class="backlink" href="<?= $area === 'menu' ? '?' : '?p='.$area ?>"><?= icon('back',16) ?> Kembali ke <?= h($labels[$area]) ?></a><?php endif; ?>
 <?php if (is_owner($me) && is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Satu langkah terakhir:</b> buka File Manager hosting, hapus file <span class="mono">admin/setup.php</span>, lalu muat ulang halaman ini. Peringatan ini hilang sendiri setelah file dihapus.</p><?php endif; ?>
+<?php if($p==='kategori'&&$_categorySnapshot['revision']!=='')require __DIR__.'/category-view.php'; ?>
 <?php if ($area === 'menu' && !in_array($p,['tambah','ubah'],true)):
   $_vis = array_filter($_menu, fn($m) => ($m['available'] ?? true) !== false);
   $_sig = array_filter($_vis, fn($m) => !empty($m['signature'])); ?>
@@ -377,7 +387,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 </div>
 <div class="card menu-toolbar"><form method="get" class="menu-filter" role="search" aria-label="Cari dan filter menu">
 <label>Cari menu<input type="search" name="q" maxlength="80" placeholder="Nama atau deskripsi menu…" value="<?= h($q) ?>"></label>
-<label>Kategori<select name="cat"><option value="">Semua kategori</option><?php foreach (RUETHIES_CATS as $key=>$label): ?><option value="<?= h($key) ?>" <?= $category === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?></select></label>
+<label>Kategori<select name="cat"><option value="">Semua kategori</option><?php foreach (catalog_categories() as $key=>$label): ?><option value="<?= h($key) ?>" <?= $category === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?></select></label>
 <label>Status<select name="show"><option value="">Semua status</option><option value="visible" <?= $availability === 'visible' ? 'selected' : '' ?>>Tampil</option><option value="hidden" <?= $availability === 'hidden' ? 'selected' : '' ?>>Disembunyikan</option></select></label>
 <button type="submit">Terapkan</button></form>
 <div class="list-caption"><span><?= count($filtered) ?> dari <?= count($_menu) ?> menu</span><?php if ($q !== '' || $category || $availability): ?><a href="?">Reset filter</a><?php endif; ?><a class="btn" href="?p=tambah#formulir"><?= icon('plus',16) ?> Tambah menu</a></div></div>
@@ -460,9 +470,9 @@ if ($p === 'tambah' || $edit):
 <div class="card editor" id="formulir">
 <h2><?= icon("edit") ?> <?= $edit ? "Ubah menu" : "Tambah menu" ?></h2>
 <form method="post" enctype="multipart/form-data">
-<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="save" />
+<input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="save" /><input type="hidden" name="revision" value="<?= h($_categorySnapshot['revision']) ?>" />
 <input type="hidden" name="i" value="<?= $edit['_i'] ?? -1 ?>" />
-<label>Kategori<select name="cat"><?php foreach (RUETHIES_CATS as $k => $v): ?>
+<label>Kategori<select name="cat"><?php foreach (catalog_categories() as $k => $v): ?>
 <option value="<?= $k ?>" <?= (($edit['cat'] ?? '') === $k) ? 'selected' : '' ?>><?= h($v) ?></option><?php endforeach; ?></select></label>
 <label>Nama (Indonesia)<span class="count" id="c-n"></span><input name="n" maxlength="60" required data-count="c-n" value="<?= h($edit['id']['n'] ?? '') ?>" /></label>
 <label>Deskripsi (Indonesia)<span class="count" id="c-d"></span><input name="d" maxlength="160" data-count="c-d" value="<?= h($edit['id']['d'] ?? '') ?>" /></label>
@@ -490,7 +500,7 @@ if ($p === 'tambah' || $edit):
 </form>
 </div>
 <?php else: ?>
-<?php foreach (RUETHIES_CATS as $ck => $cv):
+<?php foreach (catalog_categories() as $ck => $cv):
   $items = $filtered; if (!array_filter($items, fn($m)=>($m['cat'] ?? '') === $ck)) continue; ?>
 <div class="card">
 <h2><?= icon("tag") ?> <?= h($cv) ?></h2>
@@ -501,10 +511,10 @@ if ($p === 'tambah' || $edit):
 <?php if (empty($m['available']) || $m['available'] === false): ?> <span class="badge hide">SEMBUNYI</span><?php endif; ?>
 <?php if (!empty($m['signature'])): ?> <span class="badge"><?= icon("star", 12) ?> SIGNATURE</span><?php endif; ?></span>
 <div class="actions">
-<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m["available"]) || $m["available"] === false ? icon("eye", 16) . " Tampilkan" : icon("eyeoff", 16) . " Sembunyikan" ?></button></form>
+<form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="revision" value="<?= h($_categorySnapshot['revision']) ?>" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m["available"]) || $m["available"] === false ? icon("eye", 16) . " Tampilkan" : icon("eyeoff", 16) . " Sembunyikan" ?></button></form>
 <a class="btn ghost" href="?p=ubah&i=<?= $i ?>#formulir"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
-<form method="post" data-confirm="Hapus menu permanen? Foto JPG/WebP yang tidak digunakan lagi juga dihapus. Backup JSON tidak menyimpan foto."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
+<form method="post" data-confirm="Hapus menu permanen? Foto JPG/WebP yang tidak digunakan lagi juga dihapus. Backup JSON tidak menyimpan foto."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="revision" value="<?= h($_categorySnapshot['revision']) ?>" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
 <?php endif; ?>
 </div>
 </div>

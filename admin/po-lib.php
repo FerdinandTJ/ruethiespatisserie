@@ -1,5 +1,6 @@
 <?php
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
+require_once __DIR__ . '/catalog.php';
 require_once __DIR__ . '/po-manual.php';
 require_once __DIR__ . '/po-whatsapp.php';
 require_once __DIR__ . '/po-manual-checkout.php';
@@ -109,9 +110,7 @@ function po_migrate_limits(PDO $db): void {
   if (!in_array('max_qty', $columns, true)) $db->exec('ALTER TABLE po_products ADD max_qty INT UNSIGNED NOT NULL DEFAULT 20');
 }
 function po_catalog(): array {
-  $raw = @file_get_contents(RUETHIES_PUBLIC . '/menu.json');
-  $items = $raw === false ? null : json_decode($raw,true);
-  if (!is_array($items) || !array_is_list($items)) throw new RuntimeException('Katalog menu tidak terbaca.');
+  $items = catalog_snapshot(false)['menu'];
   $out = [];
   foreach ($items as $item) {
     if (!is_array($item) || !preg_match('/\A[a-f0-9]{32}\z/', $item['uid'] ?? '') || isset($out[$item['uid']])) throw new RuntimeException('Jalankan migrasi UID menu dahulu.');

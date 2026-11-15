@@ -25,6 +25,9 @@ try{
  file_put_contents($private.'/po-config.php','<?php return '.var_export($config,true).';');
  file_put_contents($private.'/users.json',json_encode([['name'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'role'=>'owner','totp'=>'','auth_version'=>str_repeat('a',64),'last_totp_counter'=>-1]]));
  file_put_contents($public.'/menu.json',json_encode([['uid'=>str_repeat('a',32),'cat'=>'cakery','img'=>'images/menu/test.jpg','id'=>['n'=>'Kue Uji','d'=>'Uji'],'available'=>true]]));
+ $extraMenu=json_decode(file_get_contents($public.'/menu.json'),true);$extraMenu[]=['uid'=>str_repeat('b',32),'cat'=>'category-local-test','img'=>'images/menu/extra.jpg','id'=>['n'=>'Kue Tambahan','d'=>'Uji kategori'],'available'=>true];file_put_contents($public.'/menu.json',json_encode($extraMenu));
+ $categoryRows=catalog_defaults();$categoryRows[]=['key'=>'category-local-test','id'=>'Paket Uji','en'=>'Test Boxes','updated_at'=>'2026-01-01T00:00:00Z'];file_put_contents($public.'/categories.json',json_encode($categoryRows));
+
  foreach(explode(';',file_get_contents(dirname(__DIR__).'/admin/po-schema.sql'))as$sql)if(trim($sql)!=='')$db->exec($sql);
  po_migrate_manual($db);po_mt_migrate($db);po_mt_migrate($db);$settings=po_mt_settings($config);
  mt_denied(fn()=>po_mt_settings(['midtrans'=>['enabled'=>true,'environment'=>'production','server_key'=>'Mid-server-real']]),'production environment rejected');
@@ -108,6 +111,7 @@ try{
  [$code]=$http('/midtrans-notify.php',['signature_key'=>'invalid']);mt_check($code===403,'webhook refuses invalid payload over HTTP');
  [$code,$login]=$http('/admin/index.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$login,$loginMatch);
  [$code]=$http('/admin/index.php',['aksi'=>'login','csrf'=>$loginMatch[1],'u'=>'owner','p'=>'Demo-test-password']);mt_check($code===302,'owner login works with gateway release');
+ [$code,$categoryProducts]=$http('/admin/po.php?view=produk&product=new&slot='.$sid);mt_check($code===200&&str_contains($categoryProducts,'Paket Uji — Kue Tambahan'),'PO product selector reads dynamic category labels while retaining UID references');
  [$code,$publicHtml]=$http('/pre-order/');mt_check($code===200&&!str_contains($publicHtml,'Default Sandbox'),'open retired schedule is excluded from public catalog');
  [$code,$admin]=$http('/admin/po.php?view=jadwal');mt_check($code===200&&!str_contains($admin,'Default Sandbox'),'retired schedule is excluded from admin list');
  [$code]=$http('/admin/po.php?view=jadwal&edit=1&slot='.$defaultSlot);mt_check($code===404,'direct editing of retired schedule returns 404');

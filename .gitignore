@@ -30,3 +30,7 @@ PANDUAN-STAGING.md
 PANDUAN-PO-STAGING.md
 po-config.php
 /.htpasswd
+
+# Hosting-owned category content and shared catalogue lock
+/categories.json
+/.catalog.lock

@@ -4,8 +4,8 @@ if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 define('RUETHIES_ADMIN',true);require __DIR__.'/config.php';require __DIR__.'/lib.php';
 try{
  $mode=$argv[1]??'--check';if(count($argv)!==2||!in_array($mode,['--check','--apply'],true))throw new RuntimeException('Gunakan --check atau --apply.');
- if($mode==='--apply')content_lock();
- $items=catalog_read_json(RUETHIES_MENU);catalog_validate($items,false);catalog_validate(catalog_metadata($items,(int)filemtime(RUETHIES_MENU)));
+ if($mode==='--apply')content_lock(true);
+ $items=catalog_snapshot(false)['menu'];catalog_validate($items,false);catalog_validate(catalog_metadata($items,(int)filemtime(RUETHIES_MENU)));
  $patch=catalog_read_json(RUETHIES_PUBLIC.'/content/menu-copy-20261113.json');$new=$items;$changed=[];$missing=[];
  foreach($patch as$copy){
   if(!is_array($copy)||!is_string($copy['slug']??null)||!is_array($copy['aliases']??null))throw new RuntimeException('Patch tidak valid.');

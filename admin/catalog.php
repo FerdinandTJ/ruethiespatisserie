@@ -1,10 +1,96 @@
 <?php
-// Pure shared catalogue helpers. No session, account store, or private-data access.
+// Shared catalogue helpers. Public snapshots read only catalogue content; writes run through owner admin/CLI.
 if (!defined('RUETHIES_ADMIN') && !defined('RUETHIES_PUBLIC_RENDER')) { http_response_code(404); exit; }
 const CATALOG_ORIGIN = 'https://ruethiespatisserie.com';
-// Legacy coffee stays editable only inside the staging filesystem layout.
-define('CATALOG_CATEGORIES', ['cakery'=>'Kue & Jajanan','savoury'=>'Camilan Gurih','packages'=>'Paket & Sajian'] +
-  ((basename(dirname(__DIR__))==='staging' && basename(dirname(__DIR__,2))==='public_html') ? ['coffee'=>'Kopi & Minuman'] : []));
+// Category names are hosting content; keys remain stable when labels change.
+function catalog_root(): string { return defined('RUETHIES_PUBLIC') ? RUETHIES_PUBLIC : dirname(__DIR__); }
+function catalog_defaults(): array {
+  $names=['cakery'=>['Kue & Jajanan','Cakes & desserts'],'savoury'=>['Camilan Gurih','Savoury bites'],'packages'=>['Paket & Sajian','Boxes & platters']];
+  $root=catalog_root();
+  if(basename($root)==='staging' && basename(dirname($root))==='public_html')$names['coffee']=['Kopi & Minuman','Coffee & drinks'];
+  $out=[];foreach($names as$key=>$label)$out[]=['key'=>$key,'id'=>$label[0],'en'=>$label[1],'updated_at'=>'1970-01-01T00:00:00Z'];return $out;
+}
+function catalog_lock_run(bool $exclusive,callable $work) {
+  $root=catalog_root();$held=$GLOBALS['catalog_locks'][$root]??null;
+  if($held){if($exclusive&&!$held['exclusive'])throw new RuntimeException('Urutan lock katalog tidak valid.');return $work();}
+  $path=$root.'/.catalog.lock';if(is_link($path))throw new RuntimeException('Lock katalog tidak valid.');
+  $fh=@fopen($path,'c+');if(!$fh)throw new RuntimeException('Lock katalog tidak tersedia.');
+  try{if(!flock($fh,$exclusive?LOCK_EX:LOCK_SH))throw new RuntimeException('Katalog sedang tidak dapat dikunci.');$GLOBALS['catalog_locks'][$root]=['handle'=>$fh,'exclusive'=>$exclusive];return $work();}
+  finally{unset($GLOBALS['catalog_locks'][$root]);flock($fh,LOCK_UN);fclose($fh);}
+}
+function catalog_lock_hold(): void {
+  $root=catalog_root();if(isset($GLOBALS['catalog_locks'][$root])){if(!$GLOBALS['catalog_locks'][$root]['exclusive'])throw new RuntimeException('Lock katalog belum eksklusif.');return;}
+  $path=$root.'/.catalog.lock';if(is_link($path))throw new RuntimeException('Lock katalog tidak valid.');
+  $fh=@fopen($path,'c+');if(!$fh||!flock($fh,LOCK_EX)){if($fh)fclose($fh);throw new RuntimeException('Katalog sedang tidak dapat dikunci.');}
+  $GLOBALS['catalog_locks'][$root]=['handle'=>$fh,'exclusive'=>true];register_shutdown_function(static function()use($root,$fh){unset($GLOBALS['catalog_locks'][$root]);flock($fh,LOCK_UN);fclose($fh);});
+}
+function categories_validate(array $rows): void {
+  $keys=[];$names=[];
+  foreach($rows as$row){
+    if(!is_array($row)||!is_string($row['key']??null)||!preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/D',$row['key'])||strlen($row['key'])>80||isset($keys[$row['key']]))throw new RuntimeException('ID kategori tidak valid atau duplikat.');
+    foreach(['id','en']as$lang)if(!is_string($row[$lang]??null)||!mb_check_encoding($row[$lang],'UTF-8')||preg_match('/[\x00-\x1F\x7F]/u',$row[$lang])||mb_strlen($row[$lang])>60||strip_tags($row[$lang])!==$row[$lang]||trim($row[$lang])!==$row[$lang])throw new RuntimeException('Nama kategori harus teks biasa, maksimal 60 karakter.');
+    $name=mb_strtolower(trim($row['id']),'UTF-8');if($name===''||isset($names[$name]))throw new RuntimeException('Nama kategori Indonesia wajib dan tidak boleh duplikat.');
+    if(!is_string($row['updated_at']??null)||!preg_match('/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z/D',$row['updated_at'])||strtotime($row['updated_at'])===false)throw new RuntimeException('Waktu kategori tidak valid.');
+    $keys[$row['key']]=true;$names[$name]=true;
+  }
+}
+function categories_read(): array {
+  $path=catalog_root().'/categories.json';if(is_link($path)||(file_exists($path)&&!is_file($path)))throw new RuntimeException('File kategori tidak valid.');
+  $rows=is_file($path)?catalog_read_json($path):catalog_defaults();categories_validate($rows);clearstatcache(true,$path);$GLOBALS['catalog_category_mtime'][catalog_root()]=is_file($path)?filemtime($path):0;return $rows;
+}
+function catalog_categories(string $language='id',?array $publicItems=null): array {
+  $root=catalog_root();if(!isset($GLOBALS['catalog_category_rows'][$root]))$GLOBALS['catalog_category_rows'][$root]=catalog_lock_run(false,fn()=>categories_read());
+  $used=$publicItems===null?null:array_fill_keys(array_column(array_filter($publicItems,fn($m)=>($m['available']??true)!==false),'cat'),true);
+  $out=[];foreach($GLOBALS['catalog_category_rows'][$root]as$row)if($used===null||isset($used[$row['key']]))$out[$row['key']]=($language==='en'&&$row['en']!=='')?$row['en']:$row['id'];return $out;
+}
+function catalog_category_label(string $key,string $language='id'): string {
+  $names=catalog_categories($language);if(!isset($names[$key]))throw new RuntimeException('Kategori produk tidak dikenal.');return $names[$key];
+}
+function catalog_snapshot(bool $metadata=true): array {
+  return catalog_lock_run(false,static function()use($metadata){
+    $rows=categories_read();$GLOBALS['catalog_category_rows'][catalog_root()]=$rows;
+    $items=catalog_read_json(catalog_root().'/menu.json');catalog_validate($items,$metadata);
+    return ['menu'=>$items,'categories'=>$rows,'revision'=>hash('sha256',catalog_json([$rows,$items]))];
+  });
+}
+function catalog_revision_assert(string $revision,array $snapshot): void {
+  if(!preg_match('/\A[a-f0-9]{64}\z/D',$revision)||!hash_equals($snapshot['revision'],$revision))throw new DomainException('Data sudah berubah. Muat ulang halaman sebelum menyimpan.');
+}
+function catalog_category_modified(?string $key=null): int {
+  $root=catalog_root();catalog_categories();$time=0;foreach($GLOBALS['catalog_category_rows'][$root]as$row)if($key===null||$row['key']===$key)$time=max($time,strtotime($row['updated_at']));
+  // Reordering/deleting changes the file even if individual labels are unchanged.
+  if($key===null)$time=max($time,$GLOBALS['catalog_category_mtime'][$root]??0);return $time;
+}
+function catalog_backup_pair(): string {
+  $dir=ruethies_data_dir().'/backups/catalog-pair-'.gmdate('Ymd-His').'-'.bin2hex(random_bytes(5));
+  if(!is_dir(dirname($dir))&&!@mkdir(dirname($dir),0700,true))throw new RuntimeException('Backup gagal; data belum diubah.');
+  if(!@mkdir($dir,0700))throw new RuntimeException('Backup gagal; data belum diubah.');
+  foreach(['menu.json','categories.json']as$name){$path=catalog_root().'/'.$name;if(!file_exists($path))continue;if(!@copy($path,$dir.'/'.$name)||!@chmod($dir.'/'.$name,0600))throw new RuntimeException('Backup gagal; data belum diubah.');}return $dir;
+}
+function categories_mutate(array $input): void {
+  content_lock(true);if(!is_file(catalog_root().'/categories.json'))throw new DomainException('Jalankan upgrade kategori terlebih dahulu.');
+  $snapshot=catalog_snapshot(false);catalog_revision_assert($input['revision']??'',$snapshot);$rows=$snapshot['categories'];$key=$input['key']??'';$index=null;foreach($rows as$i=>$row)if($row['key']===$key)$index=$i;
+  $action=$input['aksi']??'';
+  if($action==='category-save'){
+    $name=trim($input['name_id']??'');$english=trim($input['name_en']??'');
+    if($key!==''&&$index===null)throw new DomainException('Kategori sudah tidak ada.');
+    $row=['key'=>$key!==''?$key:'category-'.bin2hex(random_bytes(8)),'id'=>$name,'en'=>$english,'updated_at'=>gmdate('Y-m-d\TH:i:s\Z')];
+    if($index===null)$rows[]=$row;else $rows[$index]=$row;
+  }elseif($action==='category-delete'){
+    if($index===null)throw new DomainException('Kategori sudah tidak ada.');
+    foreach($snapshot['menu']as$item)if($item['cat']===$key)throw new DomainException('Kategori masih dipakai produk, termasuk yang disembunyikan. Pindahkan semua produknya dahulu.');
+    if(($input['confirm']??'')!=='yes')throw new DomainException('Konfirmasi penghapusan diperlukan.');array_splice($rows,$index,1);
+  }elseif($action==='category-move'){
+    if($index===null||!in_array($input['direction']??'',['up','down'],true))throw new DomainException('Urutan kategori tidak valid.');
+    $target=$index+($input['direction']==='up'?-1:1);if(!isset($rows[$target]))throw new DomainException('Kategori sudah berada di batas urutan.');
+    [$rows[$index],$rows[$target]]=[$rows[$target],$rows[$index]];
+  }else throw new DomainException('Aksi kategori tidak dikenal.');
+  try{categories_validate($rows);}catch(RuntimeException $e){throw new DomainException($e->getMessage());}
+  if($rows===$snapshot['categories'])return;catalog_backup_pair();
+  if(!catalog_atomic_write(catalog_root().'/categories.json',$rows))throw new RuntimeException('Penyimpanan kategori gagal. Data sebelumnya dipertahankan.');
+  $GLOBALS['catalog_category_rows'][catalog_root()]=$rows;
+}
+
 function catalog_escape(string $text): string { return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
 function catalog_json($value): string { return json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_THROW_ON_ERROR); }
 function catalog_image($path): bool { return is_string($path) && (bool)preg_match('~\Aimages/menu/[a-z0-9]+(?:-[a-z0-9]+)*\.(?:jpg|png|webp)\z~D', $path); }
@@ -28,7 +114,7 @@ function catalog_read_json(string $path): array {
 function catalog_validate(array $items, bool $metadata = true): void {
   $ids = []; $slugs = [];
   foreach ($items as $item) {
-    if (!is_array($item) || !isset(CATALOG_CATEGORIES[$item['cat'] ?? '']) || !is_array($item['id'] ?? null)
+    if (!is_array($item) || (!is_string($item['cat']??null)||!isset(catalog_categories()[$item['cat']])) || !is_array($item['id'] ?? null)
       || !is_string($item['id']['n'] ?? null) || trim($item['id']['n']) === '' || !is_string($item['id']['d'] ?? null)
       || !catalog_image($item['img'] ?? null) || (isset($item['available']) && !is_bool($item['available']))) throw new RuntimeException('Produk tidak valid.');
     foreach (['id','en'] as $language) {
@@ -78,7 +164,11 @@ function catalog_atomic_text(string $path, string $encoded): bool {
 }
 
 function catalog_atomic_write(string $path, array $items): bool {
-  return catalog_atomic_text($path,json_encode(array_values($items),JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n");
+  return catalog_lock_run(true,static function()use($path,$items){
+    if(basename($path)==='categories.json')categories_validate($items);
+    if(basename($path)==='menu.json'){$GLOBALS['catalog_category_rows'][catalog_root()]=categories_read();catalog_validate($items,false);}
+    return catalog_atomic_text($path,json_encode(array_values($items),JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n");
+  });
 }
 
 // Copy describes the existing catalogue only; ordering terms stay on WhatsApp.

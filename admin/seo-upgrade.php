@@ -6,8 +6,8 @@ require __DIR__.'/lib.php';
 try {
   $args=array_slice($argv,1);
   if (count($args)!==1 || !in_array($args[0],['--check','--apply'],true)) throw new RuntimeException('Gunakan php admin/seo-upgrade.php --check atau --apply');
-  if ($args[0]==='--apply') content_lock();
-  $items=catalog_read_json(RUETHIES_MENU); catalog_validate($items,false);
+  if ($args[0]==='--apply') content_lock(true);
+  $items=catalog_snapshot(false)['menu']; catalog_validate($items,false);
   $new=catalog_metadata($items,(int)filemtime(RUETHIES_MENU)); catalog_validate($new);
   $changes=$new!==$items; $backup=null;
   if ($args[0]==='--apply' && $changes) {
