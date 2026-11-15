@@ -294,8 +294,8 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <meta name="robots" content="noindex, nofollow" />
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
-<script src="admin.js?v=20261109-upload-csp" defer></script>
-<link rel="stylesheet" href="admin.css?v=categories-20261115" />
+<script src="admin.js?v=category-toolbar-20261115" defer></script>
+<link rel="stylesheet" href="admin.css?v=category-toolbar-20261115" />
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
