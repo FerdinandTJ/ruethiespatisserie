@@ -53,8 +53,8 @@ function totp_at(string $secret, int $counter): string {
 /* ---------- menu ---------- */
 // Semua mutasi konten admin memakai lock ini sampai request selesai. Dengan begitu,
 // pemeriksaan referensi + unlink tidak bersaing dengan penyimpanan menu/galeri lain.
-function content_lock(): void {
-  static $locked=false;if($locked)return;
+function content_lock(bool $catalog=false): void {
+  static $locked=false;if($locked){if($catalog)catalog_lock_hold();return;}
   $fh = @fopen(ruethies_data_dir() . '/content.lock', 'c');
   if (!$fh || !flock($fh, LOCK_EX)) {
     if ($fh) fclose($fh);
@@ -64,7 +64,7 @@ function content_lock(): void {
   register_shutdown_function(static function () use ($fh) {
     flock($fh, LOCK_UN); fclose($fh);
   });
-  catalog_lock_hold();$locked=true;
+  $locked=true;if($catalog)catalog_lock_hold();
 }
 
 // Panggil hanya SETELAH menu berhasil disimpan, di dalam content_lock().
@@ -108,7 +108,7 @@ function menu_load(): array {
   return catalog_snapshot(false)['menu'];
 }
 function menu_save(array $items): bool {
-  content_lock();$GLOBALS['catalog_category_rows'][catalog_root()]=categories_read();catalog_validate($items,false);
+  content_lock(true);$GLOBALS['catalog_category_rows'][catalog_root()]=categories_read();catalog_validate($items,false);
   // Backup 5 versi terakhir sebelum tulis.
   $dir = ruethies_data_dir() . '/backups';
   if (!is_dir($dir)) @mkdir($dir, 0700, true);

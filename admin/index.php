@@ -29,7 +29,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   if ($me && ruethies_csrf_ok() && in_array($aksi, [
     'save', 'toggle', 'hapus', 'galeri-save', 'galeri-gerak', 'galeri-hapus',
     'faq-save', 'faq-gerak', 'faq-hapus', 'category-save', 'category-delete', 'category-move',
-  ], true)) content_lock();
+  ], true)) content_lock(in_array($aksi,['save','toggle','hapus','category-save','category-delete','category-move'],true));
   if($me && in_array($aksi,['save','toggle','hapus'],true)) {
     $snapshot=catalog_snapshot(false);
     if(is_file(RUETHIES_PUBLIC.'/categories.json'))catalog_revision_assert(security_input($_POST,'revision',64),$snapshot);
@@ -295,7 +295,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=20261109-upload-csp" defer></script>
-<link rel="stylesheet" href="admin.css?v=20261109-details" />
+<link rel="stylesheet" href="admin.css?v=categories-20261115" />
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>

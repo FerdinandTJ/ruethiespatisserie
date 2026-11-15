@@ -1,5 +1,5 @@
 <?php
-// Pure shared catalogue helpers. No session, account store, or private-data access.
+// Shared catalogue helpers. Public snapshots read only catalogue content; writes run through owner admin/CLI.
 if (!defined('RUETHIES_ADMIN') && !defined('RUETHIES_PUBLIC_RENDER')) { http_response_code(404); exit; }
 const CATALOG_ORIGIN = 'https://ruethiespatisserie.com';
 // Category names are hosting content; keys remain stable when labels change.
@@ -35,7 +35,7 @@ function categories_validate(array $rows): void {
   }
 }
 function categories_read(): array {
-  $path=catalog_root().'/categories.json';if(is_link($path))throw new RuntimeException('File kategori tidak valid.');
+  $path=catalog_root().'/categories.json';if(is_link($path)||(file_exists($path)&&!is_file($path)))throw new RuntimeException('File kategori tidak valid.');
   $rows=is_file($path)?catalog_read_json($path):catalog_defaults();categories_validate($rows);clearstatcache(true,$path);$GLOBALS['catalog_category_mtime'][catalog_root()]=is_file($path)?filemtime($path):0;return $rows;
 }
 function catalog_categories(string $language='id',?array $publicItems=null): array {
@@ -68,7 +68,7 @@ function catalog_backup_pair(): string {
   foreach(['menu.json','categories.json']as$name){$path=catalog_root().'/'.$name;if(!file_exists($path))continue;if(!@copy($path,$dir.'/'.$name)||!@chmod($dir.'/'.$name,0600))throw new RuntimeException('Backup gagal; data belum diubah.');}return $dir;
 }
 function categories_mutate(array $input): void {
-  catalog_lock_hold();if(!is_file(catalog_root().'/categories.json'))throw new DomainException('Jalankan upgrade kategori terlebih dahulu.');
+  content_lock(true);if(!is_file(catalog_root().'/categories.json'))throw new DomainException('Jalankan upgrade kategori terlebih dahulu.');
   $snapshot=catalog_snapshot(false);catalog_revision_assert($input['revision']??'',$snapshot);$rows=$snapshot['categories'];$key=$input['key']??'';$index=null;foreach($rows as$i=>$row)if($row['key']===$key)$index=$i;
   $action=$input['aksi']??'';
   if($action==='category-save'){

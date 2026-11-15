@@ -4,7 +4,7 @@ if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 define('RUETHIES_ADMIN',true);require __DIR__.'/config.php';require __DIR__.'/lib.php';
 try{
  $mode=$argv[1]??'--check';if(!in_array($mode,['--check','--apply'],true)||count($argv)>2)throw new RuntimeException('Gunakan --check atau --apply.');
- if($mode==='--apply')content_lock();
+ if($mode==='--apply')content_lock(true);
  $read=static function(){
   $rows=categories_read();$GLOBALS['catalog_category_rows'][catalog_root()]=$rows;$items=catalog_read_json(RUETHIES_MENU);
   $names=catalog_categories();$unknown=[];foreach($items as$item){$key=$item['cat']??null;if(!is_string($key)||!isset($names[$key]))$unknown[]=is_string($key)?$key:'(format tidak valid)';}
