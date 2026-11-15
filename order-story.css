@@ -1,0 +1,58 @@
+/* Homepage ordering section only. No photos, fonts or external dependencies. */
+.ow-story{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,7vw,100px);align-items:start;margin-top:42px}
+.ow-sticky{position:sticky;top:max(calc(var(--ow-header,96px) + 20px),18vh)}
+.ow-card{position:relative;isolation:isolate;height:420px;border:1px solid var(--wine-12);border-radius:28px;background:var(--beige);box-shadow:0 16px 48px #3d000009;overflow:hidden}
+.ow-card:before{content:"";position:absolute;width:250px;height:250px;right:-130px;bottom:-150px;border:1px solid var(--wine-12);border-radius:50%;pointer-events:none}
+.ow-card-top{position:absolute;left:26px;right:26px;top:26px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ow-status{display:grid;border:1px solid var(--wine-12);border-radius:30px;background:var(--paper);padding:8px 14px;color:var(--wine);font-size:11px;line-height:1.5}
+.ow-status-label{grid-area:1/1;white-space:nowrap;visibility:hidden;opacity:0;transition:opacity .4s}
+.ow-card-brand{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:22px;color:var(--wine)}
+.ow-state{position:absolute;inset:100px 30px 60px;display:flex;flex-direction:column;justify-content:center;visibility:hidden;opacity:0;transform:translateY(10px);transition:opacity .4s,transform .4s,visibility .4s}
+.ow-story[data-active-step="1"] .ow-sticky [data-visual-step="1"],.ow-story[data-active-step="2"] .ow-sticky [data-visual-step="2"],.ow-story[data-active-step="3"] .ow-sticky [data-visual-step="3"],.ow-mobile-card [data-visual-step]{visibility:visible;opacity:1;transform:none}
+.profile-site .ow-card-heading{font:italic 28px/1.15 "Cormorant Garamond",Georgia,serif;color:var(--wine-ink);text-align:center;margin:0 0 30px}
+.ow-menu-pills{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;max-width:370px;margin-inline:auto}
+.ow-menu-pill{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 17px;border:1px solid var(--wine-12);border-radius:28px;background:var(--paper);color:var(--wine);font-size:12px;line-height:1.5;max-width:100%}
+.ow-menu-pill svg{width:15px;height:15px}.ow-menu-pill.ow-selected{background:var(--wine);color:var(--paper);border-color:var(--wine);transform:scale(1.035)}
+.ow-chat-bubble{padding:20px 24px;border-radius:22px 22px 22px 5px;background:var(--paper);border:1px solid var(--wine-12);max-width:95%;color:var(--ink)}
+.ow-chat-out{align-self:flex-end;background:var(--wine);border:0;color:var(--paper);border-radius:22px 22px 5px 22px}
+.ow-sender{display:block;font-size:10px;font-weight:600;letter-spacing:.06em;margin-bottom:12px}.ow-chat-bubble p{font-size:14px;line-height:1.8;margin:0!important}
+.ow-message-mark{display:block;text-align:right;margin-top:8px}.ow-message-mark svg{display:inline-block;width:16px;height:16px}
+.ow-confirm{gap:20px;align-items:center}.ow-confirm .ow-chat-bubble{align-self:flex-start}
+.ow-confirm-seal{display:flex;align-items:center;justify-content:center;width:58px;height:58px;flex:0 0 58px;border-radius:50%;border:1px solid var(--wine-12);color:var(--wine);background:var(--paper)}
+.ow-confirm-seal svg{width:28px;height:28px}
+.ow-card-caption{position:absolute;bottom:22px;left:20px;right:20px;text-align:center;color:var(--muted);font-size:10px;letter-spacing:.04em}
+.ow-steps{list-style:none;margin:0;padding:0}
+.ow-step{min-height:78vh;display:flex;align-items:center;border-top:1px solid var(--wine-12);padding:48px 0}
+.ow-step:last-child{border-bottom:1px solid var(--wine-12)}
+.ow-copy{position:relative;max-width:420px}
+.ow-step-number{display:block;margin-bottom:22px;font-family:"Cormorant Garamond",Georgia,serif;font-size:28px;font-style:italic;color:var(--wine)}
+.profile-site .ow-copy h3{font-size:clamp(2.2rem,3.3vw,3.3rem);line-height:1.1;margin:0 0 22px;color:var(--wine-ink)}
+.profile-site .ow-copy p{font-size:15px;line-height:1.8;color:var(--muted);max-width:33ch}
+/* Keep body text opaque for AA. Only large headings and decorative numbers fade. */
+.ow-enhanced .ow-step h3{opacity:.6;transition:opacity .4s,color .4s}.ow-enhanced .ow-step-number{opacity:.4;transition:opacity .4s}
+.ow-story[data-active-step="1"] [data-order-step="1"] h3,.ow-story[data-active-step="2"] [data-order-step="2"] h3,.ow-story[data-active-step="3"] [data-order-step="3"] h3{opacity:1;color:var(--wine)}
+.ow-story[data-active-step="1"] [data-order-step="1"] .ow-step-number,.ow-story[data-active-step="2"] [data-order-step="2"] .ow-step-number,.ow-story[data-active-step="3"] [data-order-step="3"] .ow-step-number{opacity:1}
+.ow-mobile-card{display:none}
+@keyframes ow-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ow-letter{from{opacity:0}to{opacity:1}}
+@keyframes ow-check{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+.ow-enhanced .ow-visible.ow-card[data-card-step="1"] .ow-menu-pill,.ow-enhanced.ow-in-view[data-active-step="1"] .ow-sticky .ow-menu-pill{animation:ow-enter .55s both}
+.ow-menu-pill:nth-child(2){animation-delay:.1s!important}.ow-menu-pill:nth-child(3){animation-delay:.2s!important}.ow-menu-pill:nth-child(4){animation-delay:.3s!important}.ow-menu-pill:nth-child(5){animation-delay:.4s!important}
+.ow-chat-text.ow-typing .ow-word{display:inline-block}
+.ow-chat-text.ow-typing .ow-letter{animation:ow-letter .06s both;animation-delay:calc(var(--ow-letter)*24ms)}
+.ow-enhanced.ow-in-view[data-active-step="3"] .ow-sticky .ow-confirm-seal path,.ow-enhanced .ow-visible[data-card-step="3"] .ow-confirm-seal path{stroke-dasharray:30;animation:ow-check .7s .25s both}
+/* Short screens use the same compact flow as mobile; nothing obscures the text. */
+@media(max-width:899px),(max-height:699px){
+ .ow-story{display:block;margin-top:28px}.ow-sticky{display:none}.ow-step{display:block;min-height:0;padding:30px 0 40px}
+ .ow-mobile-card{display:block;margin:0 auto 26px;width:min(100%,460px)}.ow-card{height:290px;border-radius:22px}
+ .ow-card-top{left:18px;right:18px;top:20px}.ow-status{padding:7px 11px;font-size:10px}.ow-card-brand{font-size:20px}
+ .ow-state{inset:80px 22px 44px}.profile-site .ow-card-heading{font-size:24px;margin-bottom:18px}.ow-menu-pills{gap:8px;max-width:320px}.ow-menu-pill{font-size:11px;padding:8px 12px}
+ .ow-chat-bubble{padding:16px 18px}.ow-chat-bubble p{font-size:12px;line-height:1.7}.ow-sender{margin-bottom:8px}.ow-confirm{gap:12px}.ow-confirm-seal{width:42px;height:42px;flex-basis:42px}.ow-confirm-seal svg{width:22px;height:22px}
+ .ow-card-caption{bottom:16px;font-size:9px}.ow-step-number{margin-bottom:14px;font-size:25px}.profile-site .ow-copy h3{font-size:2.3rem}.profile-site .ow-copy p{max-width:40ch;font-size:14px}
+ .ow-enhanced .ow-step h3{opacity:1;color:var(--wine-ink)}.ow-enhanced .ow-step-number{opacity:1}
+ .ow-enhanced .ow-mobile-card{transition:transform .5s,opacity .5s}.ow-enhanced .ow-step:not(.ow-entered) .ow-mobile-card{opacity:.75;transform:translateY(8px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ow-story *{animation:none!important;transition:none!important}.ow-enhanced .ow-step h3,.ow-enhanced .ow-step-number{opacity:1}
+ .ow-enhanced .ow-step:not(.ow-entered) .ow-mobile-card{opacity:1;transform:none}
+}

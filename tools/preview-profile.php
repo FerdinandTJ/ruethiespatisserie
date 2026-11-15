@@ -10,7 +10,7 @@ function preview_remove(string $path):void{if(is_link($path)||!is_dir($path)){if
 register_shutdown_function(static function()use(&$process,$root){if(is_resource($process)){proc_terminate($process);proc_close($process);}if(is_dir($root))preview_remove($root);});
 try{
  mkdir($public.'/public-lib',0700,true);mkdir($public.'/admin',0700);
- foreach(['index.php','index.html','styles.css','profile.css','profile.js','carousel.js','faq.json','atmosphere.json','manifest.json','logo-wine.png','404.html','public-lib/seo.php','public-lib/profile.php','admin/catalog.php']as$file)if(!copy($source.'/'.$file,$public.'/'.$file))throw new RuntimeException('Unable to copy '.$file);
+ foreach(['index.php','index.html','styles.css','profile.css','profile.js','order-story.css','order-story.js','carousel.js','faq.json','atmosphere.json','manifest.json','logo-wine.png','404.html','public-lib/seo.php','public-lib/profile.php','admin/catalog.php']as$file)if(!copy($source.'/'.$file,$public.'/'.$file))throw new RuntimeException('Unable to copy '.$file);
  if(is_file($source.'/categories.json')&&!copy($source.'/categories.json',$public.'/categories.json'))throw new RuntimeException('Unable to copy categories.');
  if(!symlink($source.'/images',$public.'/images'))throw new RuntimeException('Unable to link public images.');
  file_put_contents($public.'/menu.json',catalog_json(catalog_metadata(catalog_read_json($source.'/menu.json'),filemtime($source.'/menu.json'))));
