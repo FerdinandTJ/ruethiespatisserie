@@ -56,3 +56,38 @@
  .ow-story *{animation:none!important;transition:none!important}.ow-enhanced .ow-step h3,.ow-enhanced .ow-step-number{opacity:1}
  .ow-enhanced .ow-step:not(.ow-entered) .ow-mobile-card{opacity:1;transform:none}
 }
+
+/* Enhanced tall phones/tablets: one shared card, then native scrolling chapters.
+   No-JS and short screens keep the three inline cards defined above. */
+.ow-progress{display:none}
+@media(max-width:899px) and (min-height:740px){
+ .ow-mobile-sticky .ow-sticky{display:block;position:sticky;top:calc(var(--ow-header,72px) + 12px);z-index:2;padding-bottom:8px;background:var(--beige-deep)}
+ .ow-mobile-sticky .ow-sticky .ow-card{height:240px;box-shadow:0 8px 24px #3d000007}
+ .ow-mobile-sticky .ow-mobile-card{display:none}
+ .ow-mobile-sticky .ow-card-top{top:14px;left:16px;right:16px}
+ .ow-mobile-sticky .ow-state{inset:62px 18px 30px}
+ .ow-mobile-sticky .ow-card-heading{display:none}
+ .ow-mobile-sticky .ow-card-caption{bottom:12px}
+ .ow-mobile-sticky .ow-chat-bubble{padding:12px 15px}
+ .ow-mobile-sticky .ow-confirm{gap:8px}
+ .ow-mobile-sticky .ow-confirm-seal{width:34px;height:34px;flex-basis:34px}
+ .ow-mobile-sticky .ow-confirm-seal svg{width:20px;height:20px}
+ .ow-mobile-sticky .ow-progress{height:32px;display:flex;justify-content:center;align-items:center;gap:10px;font-size:10px;letter-spacing:.08em;color:var(--muted)}
+ .ow-progress i{display:block;width:24px;height:1px;background:var(--wine-12)}
+ .ow-story[data-active-step="1"] [data-progress-step="1"],.ow-story[data-active-step="2"] [data-progress-step="2"],.ow-story[data-active-step="3"] [data-progress-step="3"]{color:var(--wine);font-weight:700}
+ .ow-mobile-sticky .ow-step{display:flex;min-height:55svh;align-items:center;padding:32px 0}
+ .ow-mobile-sticky .ow-copy{width:100%}
+ .ow-mobile-sticky .ow-step h3{opacity:.6}
+ .ow-mobile-sticky[data-active-step="1"] [data-order-step="1"] h3,.ow-mobile-sticky[data-active-step="2"] [data-order-step="2"] h3,.ow-mobile-sticky[data-active-step="3"] [data-order-step="3"] h3{opacity:1;color:var(--wine)}
+}
+@media(prefers-reduced-motion:reduce){.ow-mobile-sticky .ow-step h3{opacity:1}}
+
+@keyframes ow-picked{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1.035)}}
+@media(max-width:899px) and (min-height:740px){
+ .ow-mobile-sticky.ow-in-view[data-active-step="1"] .ow-sticky .ow-selected{animation-name:ow-picked}
+ .ow-mobile-sticky[data-active-step="2"] .ow-sticky .ow-selected{transform:scale(.9);opacity:0;transition:transform .3s,opacity .3s}
+ .ow-mobile-sticky[data-active-step="2"] .ow-sticky .ow-menu,.ow-mobile-sticky[data-active-step="3"] .ow-sticky .ow-message{transform:translateY(-8px) scale(.98)}
+}
+@media(max-width:899px) and (min-height:740px){
+ .ow-mobile-sticky .ow-sticky:before{content:"";position:absolute;inset:-12px 0 0;z-index:-1;background:var(--beige-deep);pointer-events:none}
+}
