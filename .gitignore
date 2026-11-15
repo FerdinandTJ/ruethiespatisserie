@@ -27,3 +27,7 @@ ruethies-data/
 
 # Panduan operasional lokal
 PANDUAN-STAGING.md
+
+# Hosting-owned category content and shared catalogue lock
+/categories.json
+/.catalog.lock

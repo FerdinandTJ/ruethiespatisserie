@@ -5,7 +5,7 @@ require_once __DIR__ . '/security.php';
 require_once __DIR__ . '/security-resources.php';
 require_once __DIR__ . '/catalog.php';
 
-const RUETHIES_CATS = ['cakery' => 'Kue & Jajanan', 'savoury' => 'Camilan Gurih', 'packages' => 'Paket & Sajian'];
+
 
 /* ---------- util ---------- */
 function h($s): string { return htmlspecialchars((string)($s ?? ''), ENT_QUOTES, 'UTF-8'); }
@@ -54,6 +54,7 @@ function totp_at(string $secret, int $counter): string {
 // Semua mutasi konten admin memakai lock ini sampai request selesai. Dengan begitu,
 // pemeriksaan referensi + unlink tidak bersaing dengan penyimpanan menu/galeri lain.
 function content_lock(): void {
+  static $locked=false;if($locked)return;
   $fh = @fopen(ruethies_data_dir() . '/content.lock', 'c');
   if (!$fh || !flock($fh, LOCK_EX)) {
     if ($fh) fclose($fh);
@@ -63,6 +64,7 @@ function content_lock(): void {
   register_shutdown_function(static function () use ($fh) {
     flock($fh, LOCK_UN); fclose($fh);
   });
+  catalog_lock_hold();$locked=true;
 }
 
 // Panggil hanya SETELAH menu berhasil disimpan, di dalam content_lock().
@@ -103,11 +105,10 @@ function menu_photo_delete_unused(string $image): string {
 }
 
 function menu_load(): array {
-  $d = catalog_read_json(RUETHIES_MENU);
-  catalog_validate($d,false);
-  return $d;
+  return catalog_snapshot(false)['menu'];
 }
 function menu_save(array $items): bool {
+  content_lock();$GLOBALS['catalog_category_rows'][catalog_root()]=categories_read();catalog_validate($items,false);
   // Backup 5 versi terakhir sebelum tulis.
   $dir = ruethies_data_dir() . '/backups';
   if (!is_dir($dir)) @mkdir($dir, 0700, true);
@@ -123,7 +124,7 @@ function menu_save(array $items): bool {
 }
 function menu_validate(array $in): ?array {
   $cat = $in['cat'] ?? '';
-  if (!isset(RUETHIES_CATS[$cat])) return null;
+  if (!is_string($cat) || !isset(catalog_categories()[$cat])) return null;
   $n = trim(strip_tags($in['n'] ?? '')); if ($n === '' || mb_strlen($n) > 60) return null;
   $d = trim(strip_tags($in['d'] ?? '')); if (mb_strlen($d) > 160) return null;
   $ne = trim(strip_tags($in['ne'] ?? '')); if (mb_strlen($ne) > 60) return null;

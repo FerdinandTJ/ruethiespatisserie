@@ -26,3 +26,6 @@ label{display:block;min-width:0;font-size:.85rem;font-weight:600;margin-top:18px
 .photo-details{min-width:0;margin:24px 0;padding:16px;border:1px solid var(--line,#e7d8c6);border-radius:16px}
 .photo-details legend{padding:0 8px;font-weight:700}
 .photo-details .sub{margin-top:0}
+
+/* Category management uses the existing lightweight admin cards. */
+.category-admin-row{display:flex;justify-content:space-between;gap:24px;border-top:1px solid var(--line,#e7daca);padding:22px 0;min-width:0}.category-admin-row>div{min-width:0}.category-admin-row h3,.category-admin-row p,.category-admin-row a{overflow-wrap:anywhere}.category-admin-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;max-width:55%}.category-admin-actions form{margin:0}.category-admin-actions .hint{flex-basis:100%;text-align:right}.category-confirm{font-size:.8rem;display:flex;align-items:center;gap:8px}.category-confirm input{width:auto;min-height:0;margin:0}.category-admin-row .sub{margin:8px 0}@media(max-width:640px){.category-admin-row{flex-direction:column;gap:14px}.category-admin-actions{max-width:none;justify-content:flex-start}.category-admin-actions .hint{text-align:left}}
