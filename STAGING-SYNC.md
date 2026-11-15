@@ -62,3 +62,7 @@ Pemulihan: gunakan backup deployment yang dicetak updater. Pemulihan kode/data p
 ## Pembaruan kategori — 15 November 2026
 
 Admin pemilik mendapat halaman Kategori. Setelah backup/pull lewat updater, hentikan sementara pengeditan lalu jalankan `php admin/categories-upgrade.php --check`, `php admin/categories-upgrade.php --apply`, dan check ulang. Tidak ada impor database atau perubahan pesanan. `categories.json` hosting merupakan data runtime yang tidak ditimpa Git; updater mem-backup/memulihkannya jika sudah ada dan tidak menyalin `.catalog.lock`. Pemilih produk PO memakai nama kategori, UID dan snapshot pesanan dipertahankan. Kategori coffee staging ikut migrasi. Panduan fitur, validasi dan rollback pasangan kategori/menu tersedia pada CATEGORY-MANAGEMENT.md.
+
+## Foto lama yang telah dihapus lewat CMS
+
+Updater menerima penghapusan file JPG/WebP terlacak hanya di `images/menu/`, mencatat path pada `deleted-menu-images.txt` dalam backup, dan mempertahankan status penghapusan setelah pull maupun saat pull gagal. Foto yang dimodifikasi/ditambahkan sebagai perubahan Git tetap perlu ditinjau; upload CMS yang tidak dilacak Git tetap berada di tempatnya. Jangan stash pop: dapat memunculkan kembali konflik JSON atau penghapusan foto. Ini mempertahankan kondisi hosting yang sudah ada, bukan pembersihan otomatis foto lainnya.

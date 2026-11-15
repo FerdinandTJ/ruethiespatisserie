@@ -8,7 +8,9 @@ try{
  fs.mkdirSync(remote);git(['init','--initial-branch=staging']);
  for(const[file,body]of Object.entries({'.htaccess':'# old rules\n','menu.json':'[]','faq.json':'[]','atmosphere.json':'[]','index.html':'old template','llms.txt':'old llms','guard.php':'tracked code'}))fs.writeFileSync(path.join(remote,file),body);
  fs.writeFileSync(path.join(remote,'.gitignore'),'categories.json\n.catalog.lock\n');
+ fs.mkdirSync(path.join(remote,'images/menu'),{recursive:true});for(const name of ['old.jpg','old.webp','keep.jpg'])fs.writeFileSync(path.join(remote,'images/menu',name),'tracked photo '+name);
  commit('old release');fs.mkdirSync(path.dirname(site),{recursive:true});git(['clone',remote,site],root);
+ fs.unlinkSync(path.join(site,'images/menu/old.jpg'));fs.unlinkSync(path.join(site,'images/menu/old.webp'));fs.writeFileSync(path.join(site,'images/menu/upload-new.jpg'),'new CMS upload');
  const categories='[{"key":"hosting-category","id":"Hosting"}]';fs.writeFileSync(path.join(site,'categories.json'),categories);fs.writeFileSync(path.join(site,'.catalog.lock'),'runtime lock');
  const original='[{"uid":"permanent-hosting-id","cat":"coffee"}]';fs.writeFileSync(path.join(site,'menu.json'),original);
  const auth='# DO NOT REMOVE THIS LINE AND THE LINES BELOW PWPROTECTID:test\nAuthType Basic\nAuthName "Test"\nAuthUserFile /private/test-passwords\nRequire valid-user\n';fs.appendFileSync(path.join(site,'.htaccess'),auth);
@@ -23,6 +25,11 @@ try{
  assert.equal(git(['rev-parse','HEAD'],site),git(['rev-parse','HEAD']));
  assert(fs.readdirSync(path.join(root,'site/deploy-backups')).length===1);
  const backup=path.join(root,'site/deploy-backups',fs.readdirSync(path.join(root,'site/deploy-backups'))[0]);assert.equal(fs.readFileSync(path.join(backup,'categories.json'),'utf8'),categories);assert(!run('tar',['-tzf',path.join(backup,'staging.tgz')],site).includes('.catalog.lock'));
+ assert(!fs.existsSync(path.join(site,'images/menu/old.jpg'))&&!fs.existsSync(path.join(site,'images/menu/old.webp')));assert.equal(fs.readFileSync(path.join(site,'images/menu/upload-new.jpg'),'utf8'),'new CMS upload');assert.equal(fs.readFileSync(path.join(site,'images/menu/keep.jpg'),'utf8'),'tracked photo keep.jpg');
+ assert.deepEqual(fs.readFileSync(path.join(backup,'deleted-menu-images.txt'),'utf8').trim().split('\n'),['images/menu/old.jpg','images/menu/old.webp']);assert.equal(git(['show','stash@{0}^:images/menu/old.jpg'],site),'tracked photo old.jpg');
+ console.log('PASS: tracked hosting photo deletions stay deleted, their manifest is backed up, existing photos and new CMS uploads are preserved');
+ fs.writeFileSync(path.join(site,'images/menu/keep.jpg'),'modified photo');const photoRejected=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});assert.notEqual(photoRejected.status,0);assert((photoRejected.stdout+photoRejected.stderr).includes('perubahan foto perlu ditinjau'));assert.equal(fs.readFileSync(path.join(site,'images/menu/keep.jpg'),'utf8'),'modified photo');git(['restore','--','images/menu/keep.jpg'],site);
+ console.log('PASS: modified photos remain blocked for review without overwriting hosting files');
  console.log('PASS: updater preserves hosting categories and excludes the runtime catalogue lock from archive');
  console.log('PASS: staging update preserves hosting UID/JSON and Basic Auth, updates templates/rules, retains stash and backup');
  fs.writeFileSync(path.join(site,'guard.php'),'local code edit');
@@ -42,6 +49,8 @@ try{
  assert.equal(fs.readFileSync(path.join(site,'index.html'),'utf8'),'next SEO template');
  assert(!/AuthType|Require valid-user/.test(fs.readFileSync(path.join(site,'.htaccess'),'utf8')));
  console.log('PASS: staging without Basic Auth updates successfully without adding authentication or replacing hosting JSON');
+ git(['remote','set-url','origin',path.join(root,'missing-remote')],site);const failed=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});assert.notEqual(failed.status,0);assert(!fs.existsSync(path.join(site,'images/menu/old.jpg'))&&!fs.existsSync(path.join(site,'images/menu/old.webp')));assert.equal(fs.readFileSync(path.join(site,'categories.json'),'utf8'),categories);assert.equal(fs.readFileSync(path.join(site,'menu.json'),'utf8'),original);assert.equal(fs.readFileSync(path.join(site,'images/menu/upload-new.jpg'),'utf8'),'new CMS upload');git(['remote','set-url','origin',remote],site);
+ console.log('PASS: failed deployment restores original JSON and photo-deletion state without touching new uploads');
  fs.appendFileSync(path.join(site,'.htaccess'),'AuthType Basic\nRequire valid-user\n');
  const unknown=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});
  assert.notEqual(unknown.status,0);assert((unknown.stdout+unknown.stderr).includes('tanpa penanda hPanel'));
