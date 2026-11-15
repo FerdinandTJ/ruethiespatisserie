@@ -66,3 +66,14 @@ Admin pemilik mendapat halaman Kategori. Setelah backup/pull lewat updater, hent
 ## Foto lama yang telah dihapus lewat CMS
 
 Updater menerima penghapusan file JPG/WebP terlacak hanya di `images/menu/`, mencatat path pada `deleted-menu-images.txt` dalam backup, dan mempertahankan status penghapusan setelah pull maupun saat pull gagal. Foto yang dimodifikasi/ditambahkan sebagai perubahan Git tetap perlu ditinjau; upload CMS yang tidak dilacak Git tetap berada di tempatnya. Jangan stash pop: dapat memunculkan kembali konflik JSON atau penghapusan foto. Ini mempertahankan kondisi hosting yang sudah ada, bukan pembersihan otomatis foto lainnya.
+
+
+## Shared UI synchronization — 16 November 2026
+
+Merged the current main history into staging. Common ordering-story typography/card sizing and the centered SVG gallery close button now match main. Staging retains its wine/cream tokens, existing logo, PO navigation/routes, security rules, Midtrans and Fonnte code. Main retains its blue/cream theme and has no PO functionality.
+
+The ordering card's sticky surface uses staging's own beige section background. Main-only blue surface compositing is not applied to staging. Hosting JSON, account/security metadata, product identities, photo binaries and payment settings are unchanged; no upgrade CLI or database migration is required.
+
+Deploy staging using the existing updater, which preserves hosting content and authentication rules. Check the three ordering states (including reverse scroll), ID/EN and short-screen fallback; open and close gallery photos on desktop/mobile. Verify the existing pre-order navigation remains available. Do not apply staging database or payment configuration to main.
+
+Validation for this synchronization: public/CMS HTTP regression, legacy staging catalogue and coffee UID preservation, observer/i18n/typing tests, WhatsApp form and carousel tests, Apache PO routing/access protection, PO UI and hosting updater tests passed. Desktop/mobile browser checks verified wine colours, PO navigation, reversible ordering states, fixed card dimensions, short-screen fallback, reduced motion, no-JavaScript content, and the gallery button's exact SVG centering/equal insets/click-to-close behavior. No live payment or WhatsApp request was made. Compared with the preceding staging commit, PO/admin backend files, content JSON, images and access rules are unchanged.
