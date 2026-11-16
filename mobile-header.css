@@ -1,0 +1,2 @@
+@media(max-width:760px){.rp-header{transition:transform .22s ease}.rp-header.ma-header-away:not(:focus-within):not(.rp-menu-open){transform:translateY(-100%)}}
+@media(prefers-reduced-motion:reduce){.rp-header{transition:none!important;transform:none!important}}

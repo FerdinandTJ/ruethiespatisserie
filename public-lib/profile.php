@@ -65,6 +65,7 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=staging-profile-20261114"',$head);
   if($noindex)$head=preg_replace('~<meta name="robots"[^>]*>~','<meta name="robots" content="noindex, follow">',$head);
   $head.='<link rel="stylesheet" href="/profile.css?v=shared-gallery-20261116"><script src="/carousel.js?v=20261112-profile" defer></script><script src="/profile.js?v=staging-profile-20261114" defer></script>';
+  $head.='<script src="/mobile-motion.js?v=20261116" defer></script><link rel="stylesheet" href="/mobile-header.css?v=20261116"><script src="/mobile-header.js?v=20261116" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/order-story.css?v=shared-story-20261116"><script src="/order-story.js?v=20261115-mobile-2" defer></script>';
   $nav=['/menu/'=>['Menu','Menu'],'/snack-box-cikarang/'=>['Snack Box','Snack Box'],'/tentang-kami/'=>['Tentang Kami','About'],'/hubungi-kami/'=>['Lokasi','Visit'],'/pre-order/'=>['Pre-order','Pre-order']];
   $links='';foreach($nav as$url=>$words){if($url==='/snack-box-cikarang/'&&($snapshot['hasSnackBox']??true)===false)continue;$active=$path===$url||($url==='/menu/'&&str_starts_with($path,'/menu/'));$links.='<a href="'.$url.'"'.($active?' aria-current="page"':'').'>'.profile_text(...$words).'</a>';}
