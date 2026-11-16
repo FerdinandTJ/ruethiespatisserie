@@ -25,6 +25,8 @@ try{
  $get=function(string $path,?array $post=null,array $extra=[])use($curl,$address,&$headers):array{$headers=[];curl_setopt_array($curl,[CURLOPT_URL=>'http://'.$address.$path,CURLOPT_POST=>$post!==null,CURLOPT_HTTPHEADER=>$extra]);if($post!==null)curl_setopt($curl,CURLOPT_POSTFIELDS,http_build_query($post));$body=curl_exec($curl);return[(int)curl_getinfo($curl,CURLINFO_RESPONSE_CODE),(string)$body,$headers];};
  for($i=0;$i<40;$i++){usleep(100000);[$code,$html]=$get('/');if($code)break;}
  $x=seo_test_xpath($html);seo_test($x->query('//section[@id="info"]//*[@data-order-step]')->length===3&&$x->query('//*[@data-order-story]')->length===1,'home enhances its existing three-step section without adding another section');
+ seo_test($x->query('//main[@id="home"]/section[@data-theme="wine" and @id="atmosphere"]')->length===1,'home declares its wine introduction theme without inventing content');
+ seo_test($x->query('//section[@id="menu"]//a[contains(@class,"rp-category") and starts-with(@href,"/menu/?kategori=")]')->length===3,'category stacking retains crawlable hosting-managed filter links');
  seo_test($x->query('//section[@id="info"]//img')->length===0&&str_contains($html,'order-story.js'),'ordering illustration uses no additional photographs and is enhanced separately');
  seo_test($code===200&&$x->query('//article[@class="rp-card"]')->length===3,'home presents three actual featured products without JavaScript');
  seo_test($x->query('//section[@id="faq"]//details')->length===count(json_decode(file_get_contents($public.'/faq.json'),true)),'home renders hosting FAQ as native expandable answers');

@@ -31,6 +31,7 @@ Dokumen upgrade mencatat perubahan rilis tertentu. Pemindahan dokumentasi ini ti
 - [Notifikasi Fonnte](PO-FONNTE-STAGING.md)
 - [Animasi pemesanan staging](ORDER-STORY-STAGING.md)
 - [Animasi mobile Fase A dan hasil pengujian](MOBILE-ANIMATIONS-A.md)
+- [Animasi mobile Fase B dan hasil pengujian](MOBILE-ANIMATIONS-B.md)
 
 Perintah untuk staging dijalankan dari root checkout staging (`public_html/staging`), bukan dari folder dokumentasi. Tema wine dan flow PO tetap khusus staging.
 
