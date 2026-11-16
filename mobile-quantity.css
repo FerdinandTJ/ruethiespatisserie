@@ -1,4 +1,5 @@
-/* C1 stays inside the existing field, keeping its original row height. */
+/* C1 reserves the final input geometry before the control is enhanced. */
+.profile-site .rp-order #order-quantity{min-height:48px;height:48px;padding:10px;line-height:1.5;font-size:1rem}
 .profile-site .mc-quantity{display:flex;align-items:center;gap:6px;margin-top:6px;min-height:48px}
 .profile-site .mc-quantity .mc-number-slot{position:relative;min-width:0;flex:1}
 .profile-site .mc-quantity input{margin:0;text-align:center;min-height:48px;appearance:textfield;-moz-appearance:textfield}
