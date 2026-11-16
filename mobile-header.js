@@ -6,5 +6,5 @@
   travel=delta*travel<0?delta:travel+delta;if(Math.abs(travel)>=8){header.classList.toggle('ma-header-away',travel>0);travel=0;}
  });
  header.addEventListener('focusin',()=>{header.classList.remove('ma-header-away');motion.schedule();});
- new MutationObserver(()=>motion.schedule()).observe(header,{attributes:true,attributeFilter:['class']});
+ const burger=header.querySelector('#rp-burger');if(burger)new MutationObserver(()=>motion.schedule()).observe(burger,{attributes:true,attributeFilter:['aria-expanded']});
 })();
