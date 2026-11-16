@@ -1,0 +1,5 @@
+/* C2 animates only transforms/opacity; retired cards are inert during their exit. */
+.rp-catalog-grid{position:relative}
+.mc-filter-exit{position:absolute;pointer-events:none;transform-origin:center;z-index:1}
+.profile-site .mc-filter-status{min-height:1.7em;margin:0 0 18px;color:var(--muted);font-size:.78rem}
+@media(prefers-reduced-motion:reduce){.mc-filter-exit{display:none}}
