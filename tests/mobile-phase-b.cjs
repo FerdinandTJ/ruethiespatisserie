@@ -12,16 +12,6 @@ function environment(){const frames=[],watches=new Map();const motion={mobile:{m
  motion.reduced.matches=true;frames[0]();cards.forEach(card=>assert.equal(card.style.value,null));
  cards.forEach((card,i)=>assert.equal(card.href,'/menu/?kategori=unchanged-'+i));
 }
-{
- const {motion,frames,watches}=environment();
- const section=(theme,top,bottom)=>({dataset:{theme},matches:()=>true,top,bottom,getBoundingClientRect(){return {top:this.top,bottom:this.bottom};}});
- const cream=section('cream',-500,-1),wine=section('wine',0,900),home={children:[cream,wine]},body={dataset:{}};
- vm.runInNewContext(fs.readFileSync('mobile-section-themes.js','utf8'),{window:{RuethiesMotion:motion},document:{querySelector:()=>home,body},innerHeight:844});
- watches.get(wine)({isIntersecting:true});frames[0]();assert.equal(body.dataset.sectionTheme,'wine');
- wine.top=900;wine.bottom=1800;cream.top=0;cream.bottom=900;watches.get(cream)({isIntersecting:true});frames[0]();assert.equal(body.dataset.sectionTheme,'cream');
- wine.top=0;wine.bottom=900;cream.bottom=-1;frames[0]();assert.equal(body.dataset.sectionTheme,'wine');
- motion.reduced.matches=true;frames[0]();assert.equal(body.dataset.sectionTheme,'cream');
-}
 function luminance(hex){const rgb=hex.match(/\w\w/g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;}
 for(const [ink,paper]of[['3D0000','FAF6F0'],['3D0000','F1E8DC'],['FFFDF9','7A0000'],['EAD9CC','7A0000'],['7A0000','FAF6F0']]){const values=[luminance(ink),luminance(paper)].sort((a,b)=>a-b);assert((values[1]+.05)/(values[0]+.05)>=4.5);}
-console.log('PASS: dynamic category count/order, reversible stack transforms, focus, reduced motion, reversible themes and AA palette');
+console.log('PASS: dynamic category count/order, reversible stack transforms, focus, reduced motion, AA palette');

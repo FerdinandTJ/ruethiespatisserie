@@ -12,24 +12,21 @@ Fase B menambahkan dua efek pada beranda saja. Fase C belum dikerjakan; lanjut s
 - Layout ditetapkan sejak CSS awal. JavaScript hanya menulis transform melalui custom property; pembacaan geometri dibatch sebelum penulisan. Kartu yang difokuskan muncul di atas tumpukan dan memiliki outline.
 - Jarak antarkartu menggunakan flex gap, agar margin bawah tidak memaksa kartu keluar sebelum tumpukan terbentuk. Tingkat top dibatasi untuk kategori ke-5 dan seterusnya agar daftar panjang tidak mendorong kartu keluar viewport.
 
-## B2 — Tema antarsection
+## B2 — Revisi 17 November 2026: wine lokal
 
-- File: `mobile-section-themes.js`, `mobile-section-themes.css`.
-- `public-lib/profile.php` menambahkan penanda `data-theme` pada section beranda. Bagian **Untuk dinikmati bersama.** memakai wine; bagian lain krem.
-- Modul mengikuti section pada garis baca 45% tinggi viewport. Berlaku di mobile dan desktop, dapat dibalik saat scroll naik, dan mengembalikan state setelah refresh di tengah halaman.
-- Canvas halaman bertransisi melalui opacity lapisan warna tetap selama 650ms. Header, menu mobile dan CTA memakai pasangan custom property warna yang sesuai tema.
-- Permukaan teks lokal tetap opak dan sudah memiliki pasangan warna yang benar sejak HTML/CSS awal. Warna teks/background UI diganti bersamaan, bukan dianimasikan silang, agar teks tidak sempat krem di atas krem pada pertengahan transisi.
-- Logo wine tetap memakai aset yang sama, diberi permukaan krem saat header wine; tidak ada gambar/font tambahan.
-- Bagian `#info` **Pesan dalam tiga langkah** tetap memiliki permukaan/warna aslinya; token `--wine`, `--beige`, `--ow-*` tidak diubah. File `order-story.js` dan `order-story.css` tidak disentuh.
-- Reduced motion mempertahankan canvas/header krem dan meniadakan transisi scroll. Bagian pengenalan wine tetap menjadi blok statis yang terbaca. Tanpa JavaScript, konten dan tautan tetap tersedia dengan tema lokal statis.
+- File aktif: `mobile-section-themes.css`. Skrip `mobile-section-themes.js` dihapus karena halaman tidak lagi mengganti tema global saat scroll.
+- Latar wine hanya untuk bagian **Untuk dinikmati bersama.**, dengan teks krem dan reveal kata yang tetap berkontras AA.
+- Header dan latar halaman tetap krem. Logo tidak memakai kotak krem tambahan.
+- Lokasi kembali memakai section bawaan dengan latar lembut, tanpa panel besar membulat atau lapisan wine di belakangnya.
+- Warna lokal ditentukan CSS sejak HTML awal, sehingga tetap bekerja tanpa JavaScript dan dengan reduced motion. Tidak menambah observer/scroll listener.
+- Kategori menumpuk, tiga langkah, bar WhatsApp, carousel, stepper dan filter tidak diubah oleh revisi ini.
+- Kode/warna `order-story.js`, `order-story.css`, dan bagian `#info` tetap dipertahankan.
 
 ## Integrasi dan mematikan efek
 
-Shell memuat pasangan CSS/JS masing-masing efek hanya di beranda. `tools/preview-profile.php` dan fixture `tests/seo-public.php` ikut menyediakan aset ini. Untuk menonaktifkan salah satu efek, hapus hanya pemuatan pasangan CSS/JS terkait dari shell, tanpa mengubah data kategori atau tautan. Runtime `mobile-motion.js` dari Fase A tetap dipakai; tidak menambah scroll listener atau IntersectionObserver terpisah.
+Shell memuat pasangan CSS/JS B1 dan CSS lokal B2 hanya di beranda. Preview dan fixture HTTP menyediakan aset aktif yang sama. Untuk menonaktifkan B1, hapus pemuatan pasangannya; untuk menonaktifkan warna lokal B2, hapus pemuatan stylesheet-nya. Data/tautan kategori tetap tersedia.
 
-Total JavaScript animasi A+B sekitar **5,1 KiB gzip** (penjumlahan kompresi setiap file), masih di bawah anggaran 10 KiB. Tidak ada dependency runtime, foto atau font baru; tidak ada perubahan kualitas gambar.
-
-## Pemeriksaan
+## Pemeriksaan versi awal, sebelum revisi 17 November
 
 - Browser Chrome terisolasi, CPU throttling 4x, lebar 360, 390, 768 dan 1440, tinggi 844 piksel.
 - Sticky stack, fokus kategori, pergantian tema maju/mundur, ID/EN, refresh di section wine, kembali ke atas, reduced motion dan JavaScript nonaktif lulus.
@@ -41,20 +38,19 @@ Total JavaScript animasi A+B sekitar **5,1 KiB gzip** (penjumlahan kompresi seti
 
 ## Uji di staging setelah pull
 
-1. Beranda pada 360/390px: scroll bagian **Manis, gurih, untuk berbagi.** Kartu sebelumnya mengecil di belakang kartu berikutnya. Scroll naik harus membuka kartu sebelumnya lagi.
-2. Buka tautan tiap kategori, termasuk lewat keyboard. Nama/urutan ID/EN harus sesuai admin. Pada 768/1440px kategori tetap grid.
-3. Scroll melewati tiga langkah ke **Untuk dinikmati bersama.** Latar wine dan teks krem, header mengikuti tema ketika muncul lagi. Scroll balik ke tiga langkah: permukaan dan animasi lama tetap sama.
-4. Refresh saat berada pada bagian pengenalan. Tema harus segera mengikuti posisi; di footer dan saat kembali ke atas harus krem lagi.
-5. Aktifkan reduced motion, lalu matikan JavaScript pada percobaan terpisah. Semua kategori/konten/tautan WA tetap dapat digunakan. Tidak ada sticky/scale pada mode reduced motion.
-6. Periksa menu burger, ID/EN, CTA, fokus dan teks pada kedua tema. Jangan menilai warna hanya dari `data-section-theme`: periksa tampilan/kontras aktual juga.
+1. Pada 360/390px, scroll kategori: tumpukan tetap bekerja. Pada 768/1440px, kategori tetap grid.
+2. Scroll ke pengenalan: wine hanya pada section tersebut, teks krem tetap terbaca dan reveal per kata tetap bekerja.
+3. Header harus tetap krem saat muncul, tanpa kotak baru di belakang logo. Latar halaman di luar pengenalan tidak berubah wine.
+4. Lokasi harus berbentuk section biasa dengan sudut lurus. Scroll balik ke tiga langkah: warna/animasi tetap sama.
+5. Ulangi ID/EN, reduced motion dan tanpa JavaScript. Uji Safari/iPhone asli setelah pull.
 
 ## Hal yang perlu diputuskan pemilik
 
-Tidak ada informasi usaha baru yang diperlukan untuk Fase B. Mohon tinjau kenyamanan panjang scroll kategori dan tampilan pengenalan wine di perangkat asli. Fase C (stepper jumlah dan filter FLIP) tetap menunggu persetujuan setelah uji ini.
+Tidak ada informasi usaha baru yang diperlukan untuk Fase B. Mohon tinjau kenyamanan panjang scroll kategori dan tampilan pengenalan wine di perangkat asli. Fase C sudah tersedia secara terpisah; lihat `MOBILE-ANIMATIONS-C.md`.
 
 ## Perbandingan Lighthouse
 
-Lighthouse 13.6.0 mobile, satu run cache dingin per versi, fixture lokal dan konfigurasi sama; baseline adalah Fase A (`bfcd340`).
+Angka historis versi awal B2, sebelum revisi lokal 17 November: Lighthouse 13.6.0 mobile, satu run cache dingin per versi, fixture lokal dan konfigurasi sama; baseline adalah Fase A (`bfcd340`).
 
 | Metrik | Sebelum B | Sesudah B |
 |---|---:|---:|
@@ -67,3 +63,9 @@ Lighthouse 13.6.0 mobile, satu run cache dingin per versi, fixture lokal dan kon
 Selisih satu poin pada satu run merupakan indikasi lab, bukan jaminan skor hosting. Pergeseran font kecil yang sudah ada pada baseline tetap terukur; tidak mengklaim CLS nol untuk seluruh halaman. Tidak dilakukan kompresi ulang gambar demi skor.
 
 Artefak sementara lokal: `/private/tmp/phase-b-before.lighthouse.json`, `/private/tmp/phase-b-after.lighthouse.json`, `/private/tmp/phase-b-results.json`, dan screenshot `/private/tmp/phase-b-stack-390.png`, `/private/tmp/phase-b-wine-390.png`. Tidak ikut deployment.
+
+## Verifikasi revisi lokal 17 November
+
+Chrome terisolasi pada 360/390/768/1440 piksel: header dan body tetap `#FAF6F0`, logo transparan, pengenalan `#7A0000` dengan tinta `#FFFDF9`, sudut Lokasi 0 dan tanpa pseudo-element panel. Tidak ada overflow atau runtime exception. ID/EN, reduced motion, tanpa JavaScript, filter dan stepper ikut diuji. Regresi HTTP/CMS serta animasi tiga langkah lulus. Lighthouse tidak diulang untuk revisi warna ini; angka historis di atas bukan pengukuran revisi terbaru.
+
+Artefak lokal: `/private/tmp/local-theme-results.json`, `/private/tmp/local-theme-1440.png`, `/private/tmp/local-theme-390.png`.

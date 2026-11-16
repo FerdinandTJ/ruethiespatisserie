@@ -1,21 +1,8 @@
-/* B2: local opaque text surfaces keep AA even while the page canvas crossfades.
-   Original brand tokens and #info / .ow-* are deliberately not redefined. */
-.profile-site[data-section-theme]{--mb-ui-surface:var(--beige);--mb-ui-ink:var(--wine);--mb-ui-line:var(--wine-12);--mb-action:var(--wine);--mb-action-ink:var(--paper);isolation:isolate}
-.profile-site[data-section-theme=wine]{--mb-ui-surface:var(--wine);--mb-ui-ink:var(--paper);--mb-ui-line:rgba(255,253,249,.4);--mb-action:var(--paper);--mb-action-ink:var(--wine)}
-.profile-site[data-section-theme]:before{content:"";position:fixed;inset:0;z-index:-1;background:var(--wine);opacity:0;transition:opacity .65s ease;pointer-events:none}
-.profile-site[data-section-theme=wine]:before{opacity:1}
-#home>section[data-theme]:where(:not(#info)){--mb-section-surface:var(--beige);--mb-section-ink:var(--wine-ink);--mb-section-muted:var(--muted);position:relative;isolation:isolate;background:transparent}
-#home>section[data-theme]:where(:not(#info)):before{content:"";position:absolute;inset:0 12px;z-index:-1;background:var(--mb-section-surface);border-radius:26px;pointer-events:none}
-#home>section[data-theme=wine]{--mb-section-surface:var(--wine);--mb-section-ink:var(--paper);--mb-section-muted:#EAD9CC;color:var(--mb-section-ink)}
-.profile-site #home>section[data-theme=wine] h2,.profile-site #home>section[data-theme=wine] .rp-kicker,.profile-site #home>section[data-theme=wine] a{color:var(--mb-section-ink)}
-.profile-site #home>section[data-theme=wine] p:not(.rp-kicker){color:var(--mb-section-muted)}
-#home>section[data-theme=wine] .ma-read-word{color:var(--mb-section-muted)}
-#home>section[data-theme=wine] .ma-read-ink{color:var(--mb-section-ink)}
-.profile-site[data-section-theme] .rp-header,.profile-site[data-section-theme] .rp-sticky,.profile-site[data-section-theme] .rp-mobile-menu{background:var(--mb-ui-surface);color:var(--mb-ui-ink);border-color:var(--mb-ui-line)}
-.profile-site[data-section-theme] .rp-header a:not(.rp-button),.profile-site[data-section-theme] .rp-header .rp-mobile-heading,.profile-site[data-section-theme] .rp-mobile-links>a:after{color:var(--mb-ui-ink)}
-.profile-site[data-section-theme] .rp-header .rp-burger{color:var(--mb-ui-ink);border-color:var(--mb-ui-line)}
-.profile-site[data-section-theme] .rp-header .rp-button,.profile-site[data-section-theme] .rp-sticky .rp-button,.profile-site[data-section-theme] .rp-header .rp-burger[aria-expanded=true]{background:var(--mb-action);color:var(--mb-action-ink);border-color:var(--mb-action)}
-.profile-site[data-section-theme] .rp-header a:focus-visible,.profile-site[data-section-theme] .rp-header .rp-burger:focus-visible,.profile-site[data-section-theme] .rp-sticky a:focus-visible{outline-color:var(--mb-ui-ink)}
-.profile-site[data-section-theme=wine] .rp-header .rp-brand{background:var(--beige);border-radius:10px}
-.profile-site #home>section[data-theme=wine] a:focus-visible{outline-color:var(--mb-section-ink)}
-@media(prefers-reduced-motion:reduce){.profile-site[data-section-theme]:before{transition:none;opacity:0}}
+/* B2 revision: a local wine introduction, with the page/header staying cream. */
+.profile-site .rp-header{background:var(--beige)}
+#home>#atmosphere[data-theme=wine]{--mb-section-ink:var(--paper);--mb-section-muted:#EAD9CC;position:relative;isolation:isolate;background:var(--wine);color:var(--mb-section-ink)}
+#home>#atmosphere[data-theme=wine]:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:100vw;z-index:-1;transform:translateX(-50%);background:var(--wine);pointer-events:none}
+.profile-site #home>#atmosphere[data-theme=wine] h2,.profile-site #home>#atmosphere[data-theme=wine] .rp-kicker,.profile-site #home>#atmosphere[data-theme=wine] a{color:var(--mb-section-ink)}
+.profile-site #home>#atmosphere[data-theme=wine] p:not(.rp-kicker),#home>#atmosphere[data-theme=wine] .ma-read-word{color:var(--mb-section-muted)}
+#home>#atmosphere[data-theme=wine] .ma-read-ink{color:var(--mb-section-ink)}
+.profile-site #home>#atmosphere[data-theme=wine] a:focus-visible{outline-color:var(--mb-section-ink)}
