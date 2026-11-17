@@ -71,6 +71,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   // Semua aksi di bawah wajib login + CSRF.
   elseif (!$me || !ruethies_csrf_ok()) { http_response_code(403); die('Aksi ditolak.');
   }
+  elseif ($aksi==='article-category-write') {
+    article_category_mutate($me,$_POST);header('Location: ?p=artikel-kategori&ok=simpan',true,303);exit;
+  }
   elseif ($aksi==='article-write') {
     $id=article_mutate($me,$_POST,$_FILES);header('Location: ?p=artikel'.(($_POST['article_action']??'')==='save'?'-ubah&id='.rawurlencode($id):'').'&ok=simpan',true,303);exit;
   }
@@ -267,7 +270,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 $p = is_string($_GET['p'] ?? null) ? $_GET['p'] : '';
 if (!$me && $p !== 'kode') $p = 'login';
 if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
-if($p==='kategori'&&!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
+if(in_array($p,['kategori','artikel-kategori'],true)&&!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
 $area = str_starts_with($p,'artikel') ? 'artikel' : ($p==='kategori' ? 'kategori' : (str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu'))));
 $labels = ['artikel'=>'Kelola Artikel', 'kategori'=>'Kategori Menu', 'menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
 $intro = ['artikel'=>'Susun draft, tinjau, dan kelola penerbitan artikel.', 'kategori'=>'Kelola nama dan urutan kategori sajian.', 'menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
@@ -300,7 +303,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=articles-20261117" defer></script>
 <link rel="stylesheet" href="admin.css?v=category-toolbar-20261115" />
-<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=20261117"><script src="articles.js?v=20261117" defer></script><?php endif; ?>
+<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=categories-20261117"><script src="articles.js?v=20261117" defer></script><?php endif; ?>
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
@@ -343,7 +346,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <?php if ($err): ?><p class="err" role="alert"><?= h($err) ?></p><?php endif; ?>
 <?php if ($ok === 'security'): ?><p class="okmsg" role="status">Keamanan akun diperbarui. Semua sesi sudah dicabut. Silakan masuk kembali.</p><?php endif; ?>
 <?php if ($ok === 'verified'): ?><p class="okmsg" role="status">Verifikasi berhasil. Tindakan keamanan tersedia selama 5 menit.</p><?php endif; ?>
-<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status"><?= $area==='artikel'?'Artikel tersimpan. Tampilan publik mengikuti status terbit dan flag fitur.':'Tersimpan dan langsung tampil di web.' ?></p><?php endif; ?>
+<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status"><?= $area==='artikel'?($p==='artikel-kategori'?'Kategori artikel tersimpan.':'Artikel tersimpan. Tampilan publik mengikuti status terbit dan flag fitur.'):'Tersimpan dan langsung tampil di web.' ?></p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg" role="status">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
 <?php if ($ok === 'hapus'): ?><p class="okmsg" role="status">Item dihapus permanen.</p><?php endif; ?>
 <?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg" role="status">Foto menu JPG/WebP sudah dibersihkan (atau sebelumnya sudah tidak ada).</p><?php endif; ?>
