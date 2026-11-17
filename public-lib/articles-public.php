@@ -3,9 +3,17 @@ if(!defined('RUETHIES_PUBLIC_RENDER')){http_response_code(404);exit;}
 require_once __DIR__.'/articles.php';
 function article_path(array $row): string{return '/artikel/'.$row['slug'].'/';}
 function article_date(string $date): string{return gmdate('d M Y',strtotime($date));}
+function article_card_image(array $row,string $sizes): string {
+ if($row['cover']===''||!($info=article_image_info($row['cover'])))return '';
+ $sources=[];foreach([480,800]as$width){$path=article_thumbnail_path($row['cover'],$width);$thumb=article_image_info($path);if($thumb&&$thumb[0]===$width)$sources[$width]='/'.$path;}
+ // Retain the original for small photos or an incomplete backfill: never stretch a tiny variant.
+ if(!$sources||max(array_keys($sources))<min(800,$info[0]))$sources[$info[0]]='/'.$row['cover'];
+ ksort($sources);$srcset=[];foreach($sources as$width=>$path)$srcset[]=$path.' '.$width.'w';
+ return '<img class="article-card-image" src="'.article_escape(reset($sources)).'" srcset="'.article_escape(implode(', ',$srcset)).'" sizes="'.article_escape($sizes).'" alt="" width="'.$info[0].'" height="'.$info[1].'" loading="lazy" decoding="async">';
+}
 function article_card(array $row,string $heading='h2'): string{
  $heading=$heading==='h3'?'h3':'h2';$url=article_path($row);$html='<article class="article-card" lang="'.$row['lang'].'">';
- if($row['cover']!=='')$html.='<a href="'.$url.'" tabindex="-1" aria-hidden="true"><img src="/'.$row['cover'].'" alt="" width="960" height="640" loading="lazy" decoding="async"></a>';
+ $html.=article_card_image($row,'(max-width: 600px) calc(100vw - 80px), (max-width: 900px) calc((100vw - 120px) / 2), 330px');
  return $html.'<p class="rp-kicker">'.profile_text(...ARTICLE_CATEGORIES[$row['category']]).'</p><'.$heading.'><a href="'.$url.'">'.article_escape($row['title']).'</a></'.$heading.'><p class="article-summary">'.article_escape($row['description']).'</p><p class="article-meta"><time datetime="'.$row['publishedAt'].'">'.article_date($row['publishedAt']).'</time> · '.article_minutes($row['body']).' '.profile_text('menit baca','min read').'</p></article>';
 }
 function article_listing(string $template,array $state,array $query): ?string{
@@ -28,7 +36,7 @@ function article_detail(string $template,array $row,array $items,array $publishe
  if($row['publishedAt']!==null)$body.=profile_text('Terbit','Published').' <time datetime="'.$row['publishedAt'].'">'.article_date($row['publishedAt']).'</time> · ';
  if($row['publishedAt']!==null&&$row['updatedAt']!==$row['publishedAt'])$body.=profile_text('Diperbarui','Updated').' <time datetime="'.$row['updatedAt'].'">'.article_date($row['updatedAt']).'</time> · ';
  $body.=article_minutes($row['body']).' '.profile_text('menit baca','min read').'</p><p class="rp-lead">'.article_escape($row['description']).'</p></header>';
- if($row['cover']!==''){ $dimensions=@getimagesize(dirname(__DIR__).'/'.$row['cover']);$width=$dimensions[0]??1200;$height=$dimensions[1]??800;$body.='<img class="article-cover" src="/'.$row['cover'].'" alt="'.article_escape($row['coverAlt']).'" width="'.$width.'" height="'.$height.'" decoding="async">';}
+ if($row['cover']!==''&&($dimensions=article_image_info($row['cover']))){$body.='<img class="article-cover" src="/'.$row['cover'].'" alt="'.article_escape($row['coverAlt']).'" width="'.$dimensions[0].'" height="'.$dimensions[1].'" decoding="async">';}
  if(count($rendered['toc'])>=3){$body.='<nav class="article-toc" aria-label="Daftar isi" data-article-label-id="Daftar isi" data-article-label-en="Table of contents"><h2>'.profile_text('Dalam artikel ini','In this article').'</h2><ol>';foreach($rendered['toc']as$heading)$body.='<li><a href="#'.article_escape($heading['id']).'">'.article_escape($heading['text']).'</a></li>';$body.='</ol></nav>';}
  foreach($published as$other)if($other['lang']!==$row['lang']&&($other['translationOf']===$row['id']||$row['translationOf']===$other['id']))$body.='<p><a href="'.article_path($other).'" hreflang="'.$other['lang'].'">'.($other['lang']==='en'?'Read the English version':'Baca versi bahasa Indonesia').'</a></p>';
  $message="Halo Ruethies Patisserie! Saya baru membaca artikel '".$row['title']."' dan ingin bertanya.";$wa='https://wa.me/6285139281257?text='.rawurlencode($message);

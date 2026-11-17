@@ -54,4 +54,5 @@
 .article-card,.rp-editorial-card{position:relative;isolation:isolate}
 .article-card h2 a::after,.article-card h3 a::after,.rp-editorial-card h3 a::after{content:"";position:absolute;inset:0;z-index:1;border-radius:20px}
 .article-card:focus-within,.rp-editorial-card:focus-within{outline:2px solid var(--wine);outline-offset:4px}
+.article-card .article-card-image,.rp-editorial-card .article-card-image{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:14px;margin-bottom:18px}
 @media(hover:hover){.article-card:hover h2 a,.article-card:hover h3 a,.rp-editorial-card:hover h3 a{text-decoration:underline;text-underline-offset:5px}}
