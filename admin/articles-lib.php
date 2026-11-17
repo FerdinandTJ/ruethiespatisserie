@@ -2,6 +2,22 @@
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 require_once dirname(__DIR__).'/public-lib/articles.php';
 function article_authorize(?array $actor,bool $owner=false): void{if(!$actor||!in_array($actor['role']??null,['owner','staff'],true)||$owner&&$actor['role']!=='owner'){http_response_code(403);throw new DomainException('Anda tidak memiliki izin untuk aksi artikel ini.');}}
+function article_remove_new_cover(string $cover): void {
+ foreach([$cover,article_thumbnail_path($cover,480),article_thumbnail_path($cover,800)]as$path)if(!is_link(RUETHIES_PUBLIC.'/'.$path))@unlink(RUETHIES_PUBLIC.'/'.$path);
+}
+// The decoded upload is reused; detail images are never resized or recompressed here.
+function article_make_thumbnails(GdImage $image,string $cover): int {
+ $created=[];$width=imagesx($image);$height=imagesy($image);
+ try{foreach([480,800]as$targetWidth){
+  if($width<=$targetWidth)continue;$path=article_thumbnail_path($cover,$targetWidth);$file=RUETHIES_PUBLIC.'/'.$path;
+  if(is_link($file))throw new RuntimeException('Thumbnail tidak dapat disimpan.');
+  if(is_file($file)){if(!article_image_info($path))throw new RuntimeException('Thumbnail tidak valid.');continue;}
+  $targetHeight=max(2,(int)round($height*$targetWidth/$width));$thumb=imagecreatetruecolor($targetWidth,$targetHeight);
+  imagealphablending($thumb,false);imagesavealpha($thumb,true);$tmp=$file.'.tmp.'.bin2hex(random_bytes(8));
+  try{if(!imagecopyresampled($thumb,$image,0,0,0,0,$targetWidth,$targetHeight,$width,$height)||!imagewebp($thumb,$tmp,86)||!chmod($tmp,0644)||!rename($tmp,$file))throw new RuntimeException('Thumbnail tidak dapat disimpan.');$created[]=$file;}
+  finally{unset($thumb);if(is_file($tmp))@unlink($tmp);}
+ }return count($created);}catch(Throwable $e){foreach($created as$file)@unlink($file);throw $e;}
+}
 function article_cover(array $file,array $actor,string $base64=''): string{
  if(($file['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE&&$base64==='')return '';
  security_rate_take('article-upload',$actor['name'],20,false);
@@ -13,7 +29,7 @@ function article_cover(array $file,array $actor,string $base64=''): string{
  }
  [$image,$error]=security_image_decode($raw,2*1024*1024);if($error)throw new DomainException($error);
  $dir=RUETHIES_PUBLIC.'/images/articles';if(is_link(RUETHIES_PUBLIC.'/images')||is_link($dir)||!is_dir($dir)&&!@mkdir($dir,0755,true)){unset($image);throw new RuntimeException('Direktori sampul tidak tersedia.');}
- $path='images/articles/'.bin2hex(random_bytes(16)).'.webp';try{if(!function_exists('imagewebp')||!imagewebp($image,RUETHIES_PUBLIC.'/'.$path,86)||!chmod(RUETHIES_PUBLIC.'/'.$path,0644))throw new RuntimeException('Sampul tidak dapat disimpan.');}catch(Throwable $e){@unlink(RUETHIES_PUBLIC.'/'.$path);throw $e;}finally{unset($image);}return $path;
+ $path='images/articles/'.bin2hex(random_bytes(16)).'.webp';try{if(!function_exists('imagewebp')||!imagewebp($image,RUETHIES_PUBLIC.'/'.$path,86)||!chmod(RUETHIES_PUBLIC.'/'.$path,0644))throw new RuntimeException('Sampul tidak dapat disimpan.');article_make_thumbnails($image,$path);}catch(Throwable $e){article_remove_new_cover($path);throw $e;}finally{unset($image);}return $path;
 }
 function article_mutate(array $actor,array $input,array $files=[]): string{
  article_authorize($actor);if(!ruethies_csrf_ok()){http_response_code(403);throw new DomainException('Aksi ditolak. Muat ulang formulir.');}
@@ -46,6 +62,6 @@ function article_mutate(array $actor,array $input,array $files=[]): string{
   $index=null;foreach($state['items']as$i=>$old)if($old['id']===$row['id'])$index=$i;if($index===null)$state['items'][]=$row;else $state['items'][$index]=$row;
   try{article_state_validate($state);}catch(RuntimeException $e){throw new DomainException('Slug harus unik dan referensi terjemahan harus valid. Slug artikel terhapus tetap dicadangkan.');}
   $state['audit'][]=['article'=>$row['id'],'actor'=>$actor['name'],'action'=>$action,'at'=>$now];$state['audit']=array_slice($state['audit'],-5000);$state['revision']=bin2hex(random_bytes(32));article_backup();article_write($state);return $row['id'];
- });});}catch(Throwable $e){if($createdCover!=='')@unlink(RUETHIES_PUBLIC.'/'.$createdCover);throw $e;}
+ });});}catch(Throwable $e){if($createdCover!=='')article_remove_new_cover($createdCover);throw $e;}
  try{ruethies_log($actor['name'],'article-'.$action,$id);}catch(RuntimeException $e){error_log('Ruethies: log artikel tersimpan pada audit privat.');}return $id;
 }

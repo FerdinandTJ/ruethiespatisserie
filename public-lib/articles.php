@@ -5,6 +5,17 @@ const ARTICLE_CATEGORIES=['panduan'=>['Panduan','Guides'],'ide-acara'=>['Ide Aca
 function article_escape(string $text): string{return htmlspecialchars($text,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 function article_directory(): string{return dirname(__DIR__,2).'/ruethies-data';}
 function article_file(): string{return article_directory().'/articles.json';}
+function article_thumbnail_path(string $cover,int $width): string {
+ if(!preg_match('~\Aimages/articles/[a-f0-9]{32}\.webp\z~D',$cover)||!in_array($width,[480,800],true))throw new DomainException('Foto artikel tidak valid.');
+ return substr($cover,0,-5).'-'.$width.'.webp';
+}
+function article_image_info(string $path): ?array {
+ if(!preg_match('~\Aimages/articles/[a-f0-9]{32}(?:-(?:480|800))?\.webp\z~D',$path))return null;
+ $root=dirname(__DIR__);$file=$root.'/'.$path;
+ if(is_link($root.'/images')||is_link($root.'/images/articles')||is_link($file)||!is_file($file))return null;
+ $info=@getimagesize($file);
+ return $info&&$info[2]===IMAGETYPE_WEBP&&$info[0]>=2&&$info[1]>=2&&$info[0]<=8192&&$info[1]<=8192&&$info[0]*$info[1]<=8000000?[$info[0],$info[1]]:null;
+}
 function article_empty(): array{return ['schema'=>1,'enabled'=>false,'revision'=>str_repeat('0',64),'items'=>[],'audit'=>[]];}
 function article_slug(string $title): string{$latin=iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$title);return trim(substr(preg_replace('/[^a-z0-9]+/','-',strtolower($latin===false?$title:$latin)),0,100),'-');}
 function article_text(array $input,string $key,int $limit): string{$v=$input[$key]??'';if(!is_string($v)||!mb_check_encoding($v,'UTF-8')||str_contains($v,"\0")||mb_strlen($v)>$limit)throw new DomainException('Isian '.$key.' tidak valid atau terlalu panjang.');return trim($v);}
