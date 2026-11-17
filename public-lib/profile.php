@@ -76,7 +76,7 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $prepared=seo_head($template,$title,$description,$path,$image,$schemas);preg_match('~<head>(.*?)</head>~s',$prepared,$head);
   if(!isset($head[1]))throw new RuntimeException('Template tidak lengkap.');
   $head=preg_replace('~<script src="[^\"]+"[^>]*></script>|<link rel="preload"[^>]*>~','',$head[1]);
-  $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=brand-blue-cream-20261113"',$head);
+  $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=profile-faq-consistency-20261117"',$head);
   if($noindex)$head=preg_replace('~<meta name="robots"[^>]*>~','<meta name="robots" content="noindex, follow">',$head);
   $head.='<link rel="stylesheet" href="/profile.css?v=article-card-link-20261117"><script src="/carousel.js?v=20261112-profile" defer></script><script src="/profile.js?v=brand-blue-cream-20261113" defer></script>';
   if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=20261117"><script src="/articles.js?v=20261117" defer></script>';
