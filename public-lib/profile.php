@@ -78,7 +78,7 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $head=preg_replace('~<script src="[^\"]+"[^>]*></script>|<link rel="preload"[^>]*>~','',$head[1]);
   $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=brand-blue-cream-20261113"',$head);
   if($noindex)$head=preg_replace('~<meta name="robots"[^>]*>~','<meta name="robots" content="noindex, follow">',$head);
-  $head.='<link rel="stylesheet" href="/profile.css?v=article-discovery-20261117"><script src="/carousel.js?v=20261112-profile" defer></script><script src="/profile.js?v=brand-blue-cream-20261113" defer></script>';
+  $head.='<link rel="stylesheet" href="/profile.css?v=article-card-link-20261117"><script src="/carousel.js?v=20261112-profile" defer></script><script src="/profile.js?v=brand-blue-cream-20261113" defer></script>';
   if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=20261117"><script src="/articles.js?v=20261117" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/order-story.css?v=20261115-main-blue-1"><script src="/order-story.js?v=20261115-mobile-2" defer></script>';
   $nav=['/menu/'=>['Menu','Menu'],'/snack-box-cikarang/'=>['Snack Box','Snack Box'],'/tentang-kami/'=>['Tentang Kami','About'],'/hubungi-kami/'=>['Lokasi','Visit']];
