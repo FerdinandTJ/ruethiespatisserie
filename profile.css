@@ -46,3 +46,6 @@
 .rp-category{min-width:0}.rp-category>span,.rp-filter>a>span,.rp-card .rp-kicker,.rp-product-info>.rp-kicker{min-width:0;overflow-wrap:anywhere}.rp-category:after{flex-shrink:0}.rp-filter>a{max-width:100%}
 
 #rp-gallery-close svg{display:block;pointer-events:none}
+
+/* Lightweight article discovery reuses the public card grid, without cover downloads. */
+.rp-editorial-card{min-width:0}.rp-editorial-card h3{overflow-wrap:anywhere}.rp-editorial-card .rp-muted{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.rp-editorial-meta{font-size:.85rem;color:var(--muted)}.rp-editorial-card .rp-link{display:inline-flex;align-items:center;min-height:44px}

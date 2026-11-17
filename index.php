@@ -30,6 +30,9 @@ try {
   $template=@file_get_contents(__DIR__.'/index.html');
   if($template===false)throw new RuntimeException('Template tidak tersedia.');
   $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
+  // Publishing/hiding also changes discovery links and sections on existing pages.
+  $articleFile=dirname(__DIR__).'/ruethies-data/articles.json';
+  if(is_file($articleFile))$modified=max($modified,(int)filemtime($articleFile));
   if($path==='/tentang-kami/')$modified=max($modified,filemtime(__DIR__.'/atmosphere.json'));
   if($isArticle){
     require __DIR__.'/public-lib/articles-public.php';$articleState=article_read();$published=article_published($articleState);$html=null;
