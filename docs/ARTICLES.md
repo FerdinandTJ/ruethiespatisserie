@@ -1,6 +1,6 @@
-# Artikel — tahap 1–5
+# Artikel — pengelolaan dan akses publik
 
-Implementasi lokal pada `main`, 17 November 2026. Belum di-push atau diterapkan ke hosting. Tidak ada artikel produksi yang diterbitkan.
+Implementasi pada `main`, 17 November 2026. Tahap 1–5 telah dirilis; penerbitan artikel dan aktivasi flag dilakukan pemilik melalui admin/SSH. Tahap 6 menambahkan akses publik atas persetujuan pemilik, tanpa mengubah data artikel hosting.
 
 ## Audit dan keputusan
 
@@ -11,7 +11,7 @@ Implementasi lokal pada `main`, 17 November 2026. Belum di-push atau diterapkan 
 - Flag `enabled` merupakan konfigurasi sederhana setara `ARTICLES_ENABLED`, dikelola lewat CLI. Default **false**. Artikel baru selalu draft. Tidak ada perubahan akun atau konfigurasi keamanan.
 - ID/EN tetap menggunakan URL yang sama seperti situs sekarang. UI diterjemahkan; isi artikel tetap dalam bahasa penulis. Tautan terjemahan hanya ditampilkan jika pasangan artikel benar-benar terbit. Tidak membuat URL Inggris baru atau terjemahan otomatis.
 
-**Tahap 6 belum dibuat:** tidak ada tautan Artikel pada footer, section beranda, atau blok Baca juga pada produk. Header juga tidak ditambah. Pengujian memastikan HTML beranda identik sebelum dan sesudah artikel fixture diterbitkan. File halaman lama, copy, nomor kontak, heading, dan foto lama dipertahankan.
+**Tahap 6:** footer memiliki tautan Artikel sebelum Cara Pesan & FAQ. Beranda menampilkan maksimal tiga artikel terbaru pada “Dari dapur Ruethies”, setelah perkenalan dan sebelum Lokasi. Halaman produk/Snack Box menampilkan maksimal tiga artikel “Baca juga” jika field halaman/produk terkait artikel mencantumkan URL produk tersebut. Semuanya hanya muncul jika flag aktif dan ada artikel published. Header tetap dipertahankan. Kartu berupa teks tanpa unduhan sampul atau skrip artikel tambahan pada halaman lama. Saat flag mati atau publikasi terakhir disembunyikan, seluruh tambahan hilang.
 
 ## Penggunaan admin
 
@@ -77,7 +77,7 @@ php admin/articles-upgrade.php --check
 
 `--check` hanya membaca. `--apply` aditif/idempoten, membuat tiga draft, mempertahankan flag yang ada, dan membuat backup jika data lama diubah. Pada pemasangan pertama flag tetap false. Tidak perlu phpMyAdmin.
 
-**Jangan menjalankan `--enable` atau menerbitkan artikel produksi sebelum persetujuan.** Setelah persetujuan, `php admin/articles-upgrade.php --enable` mengaktifkan URL publik untuk artikel yang berstatus published. `--disable` mematikan keterbukaan publik tanpa menghapus artikel. Tahap 6 masih memerlukan implementasi tersendiri meski flag aktif.
+Aktivasi dan penerbitan tetap merupakan tindakan pemilik. Setelah isi disetujui, `php admin/articles-upgrade.php --enable` mengaktifkan URL publik untuk artikel yang berstatus published. `--disable` mematikan keterbukaan publik tanpa menghapus artikel. Setelah kode tahap 6 di-pull, tautan serta blok artikel muncul otomatis sesuai publikasi. Tidak perlu mengulang seed atau migrasi untuk tahap 6; flag dan artikel hosting dipertahankan.
 
 Uji di hosting: login Pemilik/Staf, lihat tiga draft, pratinjau privat, pastikan URL draft 404 dan sitemap tidak memuatnya. Penerbitan/penghapusan agresif dilakukan pada fixture lokal, bukan konten produksi.
 
@@ -92,7 +92,7 @@ php admin/articles-upgrade.php --disable
 Untuk membatalkan kode, lakukan di checkout pengembangan bersih, setelah meninjau diff. Rentang berikut hanya mencakup implementasi artikel yang sekarang:
 
 ```sh
-git revert --no-commit 3be5e0d..8c7db9c
+git revert --no-commit 3be5e0d..6bcb291
 git commit -m "revert: disable article feature and restore previous public behavior"
 ```
 
@@ -123,6 +123,11 @@ Buka `http://127.0.0.1:9011/artikel/`. Akun **khusus fixture lokal**: `owner` at
 - `f17ddc4`: `admin/article-preview.php`, `admin/article-view.php`, `admin/articles.css`, `admin/articles.js`, `admin/index.php` — pengelolaan dan pratinjau.
 - `3540452`: `.htaccess`, `index.php` — routing dan sitemap.
 - `3037b6e`: `.gitignore`, `admin/articles-upgrade.php`, seed — CLI aditif. Seed akhirnya dipindahkan ke `admin/article-seeds.php` dengan penjagaan akses; tidak ada JSON draft yang dapat diunduh publik.
+- `6bcb291`: `public-lib/profile.php`, `profile.css`, `index.php`, `tests/articles.php` — akses footer/beranda, relevansi produk, revalidasi cache dan pengujian conditional. Untuk membatalkan hanya akses tambahan, revert commit ini; pengelolaan artikel tetap tersedia.
 - `8c7db9c`: penguatan unggahan/pratinjau, seed privat, metadata/i18n, `tests/articles.php`, adaptasi fixture regresi, dan `tools/preview-articles.php`. `admin/admin.js` hanya mengecualikan editor artikel dari konverter unggahan umum dan penguncian tombol pratinjau.
 
 Dokumen ini dan tautan indeks dokumentasi disimpan dalam commit dokumentasi terpisah. Lihat `git show --stat <commit>` untuk daftar berkas lengkap setiap commit.
+
+## Validasi akses publik tahap 6
+
+Pengujian fixture memastikan posisi section, maksimal tiga kartu, footer tanpa tautan header baru, relevansi URL produk, serta penghapusan tambahan saat flag mati/semua draft. Regresi artikel, kategori HTTP, dan SEO publik lulus. Browser diperiksa pada 360/390/768/1440 piksel, UI Inggris dan tanpa JavaScript: tautan dapat diakses, tidak overflow, dan halaman lama tidak memuat articles.css/articles.js tambahan. Data artikel rusak menyembunyikan tambahan tanpa membuat katalog/beranda gagal. Tidak ada perubahan akun, artikel hosting, atau foto lama.
