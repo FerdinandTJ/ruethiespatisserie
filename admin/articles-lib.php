@@ -22,7 +22,7 @@ function article_mutate(array $actor,array $input,array $files=[]): string{
   $now=gmdate('Y-m-d\TH:i:s\Z');
   if($action==='save'){
    if($row&&$row['deletedAt']!==null)throw new DomainException('Pulihkan artikel terlebih dahulu.');
-   $row=$row??['id'=>'article-'.bin2hex(random_bytes(12)),'status'=>'draft','createdAt'=>$now,'publishedAt'=>null,'createdBy'=>$actor['name'],'cover'=>'','deletedAt'=>null];
+   $row=$row??['id'=>'article-'.bin2hex(random_bytes(12)),'status'=>'draft','createdAt'=>$now,'updatedAt'=>$now,'updatedBy'=>$actor['name'],'publishedAt'=>null,'createdBy'=>$actor['name'],'cover'=>'','deletedAt'=>null];
    $title=article_text($input,'title',180);$slug=article_text($input,'slug',100);$related=[];for($i=0;$i<3;$i++){$url=article_text($input,'related'.$i,180);if($url!=='')$related[]=$url;}
    $row=array_merge($row,['title'=>$title,'slug'=>$slug!==''?$slug:article_slug($title),'description'=>article_text($input,'description',155),'category'=>article_text($input,'category',40),'body'=>article_text($input,'body',60000),'lang'=>article_text($input,'lang',2),'translationOf'=>article_text($input,'translationOf',80),'coverAlt'=>article_text($input,'coverAlt',180),'related'=>array_values(array_unique($related))]);
    if(($input['remove_cover']??'')==='yes')$row['cover']='';
