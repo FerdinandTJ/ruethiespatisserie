@@ -9,6 +9,7 @@ Implementasi pada `main`, 17 November 2026. Tahap 1–5 telah dirilis; penerbita
 - Halaman artikel mengikuti **biru–cream main**. Admin tetap memakai komponen admin yang ada. PO, Midtrans, Fonnte, dan staging tidak diubah.
 - Artikel tersimpan di `ruethies-data/articles.json`, di luar `public_html`. Berkas memuat artikel, flag `enabled`, revisi, dan audit perubahan. Lock bersama, validasi, backup sebelum perubahan, dan atomic rename melindungi penulisan. Sampul berada di `images/articles/`, diabaikan Git.
 - Flag `enabled` merupakan konfigurasi sederhana setara `ARTICLES_ENABLED`, dikelola lewat CLI. Default **false**. Artikel baru selalu draft. Tidak ada perubahan akun atau konfigurasi keamanan.
+- Kategori artikel dikelola Pemilik dari bagian Artikel, terpisah dari kategori menu. Data kategori tersimpan di berkas privat artikel yang sama agar artikel dan kategorinya memiliki satu lock/revisi.
 - ID/EN tetap menggunakan URL yang sama seperti situs sekarang. UI diterjemahkan; isi artikel tetap dalam bahasa penulis. Tautan terjemahan hanya ditampilkan jika pasangan artikel benar-benar terbit. Tidak membuat URL Inggris baru atau terjemahan otomatis.
 
 **Tahap 6:** footer memiliki tautan Artikel sebelum Cara Pesan & FAQ. Beranda menampilkan maksimal tiga artikel terbaru pada “Dari dapur Ruethies”, setelah perkenalan dan sebelum Lokasi. Halaman produk/Snack Box menampilkan maksimal tiga artikel “Baca juga” jika field halaman/produk terkait artikel mencantumkan URL produk tersebut. Semuanya hanya muncul jika flag aktif dan ada artikel published. Header tetap dipertahankan. Kartu memakai thumbnail jika ada sampul; jika tidak, kartu tetap berupa teks tanpa area gambar kosong. Tidak ada skrip artikel tambahan pada halaman lama. Saat flag mati atau publikasi terakhir disembunyikan, seluruh tambahan hilang.
@@ -161,3 +162,38 @@ git commit -m "revert: restore previous optional article cover behavior"
 ```
 
 Gambar asli dan thumbnail boleh dipertahankan; tidak perlu memulihkan JSON atau metadata keamanan. Push/deployment tetap dilakukan setelah hasil ditinjau.
+
+## Kategori Artikel melalui admin
+
+Buka **Artikel → Kategori Artikel** (khusus Pemilik), atau `/admin/?p=artikel-kategori`. Staf tetap dapat memilih kategori dalam editor dan filter artikel, tetapi akses langsung serta endpoint perubahan kategori ditolak server untuk Staf. Autentikasi/CSRF yang ada dipakai kembali, tanpa verifikasi ulang password untuk pengeditan konten.
+
+- Pemilik dapat menambah, mengubah nama Indonesia/Inggris, mengurutkan dengan Naik/Turun, dan menghapus kategori kosong dengan konfirmasi.
+- Nama Indonesia wajib, teks biasa maksimal 60 karakter. Nama Indonesia duplikat ditolak tanpa membedakan kapital dan spasi. Inggris opsional; kosong memakai nama Indonesia. Perubahan nama tidak mengganti ID kategori atau URL filter.
+- Kategori baru mendapat ID acak permanen. ID awal `panduan`, `ide-acara`, dan `tips-kue` tetap dipertahankan. Daftar dibatasi 100 kategori dan minimal satu kategori harus tersedia.
+- Jumlah seluruh artikel mencakup draft, terbit, tersembunyi, dan soft-delete. Penghapusan ditolak selama masih ada artikel yang memakai kategori. Tautan **Lihat artikelnya** membuka filter termasuk artikel terhapus. Untuk memindahkan artikel terhapus, Pemilik perlu memulihkannya sebagai draft, mengubah kategori, lalu menghapusnya kembali bila diperlukan.
+- Kategori kosong tetap dapat dipilih admin tetapi tidak muncul pada chip publik. Filter publik mengikuti urutan admin dan hanya memuat kategori dengan artikel published yang tidak dihapus. Artikel baru akan muncul sesuai status terbit serta flag, seperti sebelumnya.
+- Label ID/EN pada detail, kartu, beranda, Baca juga, serta `articleSection` pada schema berasal dari kategori yang sama. Metadata waktu berkas dan ETag yang ada memastikan perubahan admin direvalidasi.
+
+Data `categories` berupa daftar berurutan dengan ID, nama Indonesia, nama Inggris, dan waktu perubahan, dalam `ruethies-data/articles.json`. Tidak ada JSON publik baru atau database baru. Artikel tetap menyimpan ID kategori pada field `category`. Seluruh perubahan kategori dan artikel memakai exclusive lock dan revisi yang sama; penulis lama ditolak agar tidak membuat referensi putus. Keberadaan kategori dan penggunaannya diperiksa ulang di dalam lock. Backup privat dibuat sebelum penulisan atomik, aksi tercatat pada audit privat dan log aktivitas. Kegagalan backup/validasi menolak perubahan.
+
+### Upgrade hosting
+
+Sesudah persetujuan push/deployment, hentikan sementara pengeditan admin dan buat backup sesuai prosedur deployment di atas. Pull kode tanpa menimpa konten hosting, lalu dari `public_html` jalankan:
+
+```sh
+php admin/article-categories-upgrade.php --check
+php admin/article-categories-upgrade.php --apply
+php admin/article-categories-upgrade.php --check
+```
+
+CLI hanya menambahkan metadata kategori pada data artikel lama, membuat backup privat dan revisi baru. Ia tidak mengubah isi/slug/sampul/terjemahan/status/tanggal artikel, akun, flag, kategori menu, atau data pembayaran. Idempoten; data baru yang sudah memiliki kategori tidak ditimpa. Tidak perlu phpMyAdmin, mengulang seed, atau mengaktifkan flag kembali. Pembacaan data lama tetap kompatibel dan menggunakan tiga kategori awal di memori sampai upgrade atau penyimpanan pertama. Referensi kategori tak dikenal maupun metadata rusak ditolak, bukan dipindahkan atau ditebak.
+
+Uji setelah deployment: login Pemilik, buka Kategori Artikel dan editor; pastikan jumlah serta label lama tetap benar. Perubahan konten baru dilakukan setelah pemeriksaan. Login Staf harus tetap bisa menulis artikel dan tidak bisa mengelola kategori. Semua pengujian publikasi/penghapusan bersamaan dilakukan pada fixture lokal, bukan akun produksi.
+
+### Pengujian dan pemulihan
+
+`php tests/articles.php` kini mencakup `tests/article-category-cases.php`: migrasi read-only/idempoten, Pemilik/Staf dan CSRF, nama duplikat/tidak valid, referensi kategori baru, label ID/EN/schema, filter hanya kategori terbit, penghapusan dengan draft/soft-delete, formulir kedaluwarsa, race hapus kategori vs simpan artikel, kegagalan backup, dan metadata rusak. Regresi `tests/article-images.php`, `tests/seo-public.php`, `tests/categories-http.php`, serta `tests/admin-ui.php` lulus. Browser fixture diperiksa pada 320/390/768/1440 piksel, nama 60 karakter, bahasa ID/EN, dan filter; tanpa overflow atau error console.
+
+Commit model/CLI: `39ba441`. Commit admin/publik dan pengujian: `3e4753f`. Baseline sebelum fitur ini: `cb6196c`.
+
+**Jangan langsung rollback ke kode kategori tetap setelah kategori baru sudah dipakai artikel.** Kode lama tidak mengenali ID baru. Jika ingin kembali sebelum ada kategori baru dipakai, revert dua commit fitur di checkout pengembangan bersih, uji, lalu deploy dengan backup. Jika kategori baru sudah dipakai, pertahankan kode yang dapat membaca kategori dinamis; lakukan perbaikan kompatibel, atau pindahkan semua artikel (termasuk soft-delete) ke ID awal melalui admin sebelum rollback. Jangan memulihkan direktori privat atau akun lama untuk membatalkan kategori. Backup JSON artikel yang cocok dipulihkan hanya sebagai pemulihan data terencana, saat admin tidak mengedit, dengan lock yang sama dan memperhitungkan suntingan artikel setelah backup.
