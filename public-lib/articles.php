@@ -2,6 +2,27 @@
 // Shared article storage and safe Markdown. No sessions/accounts are read here.
 if(!defined('RUETHIES_ADMIN')&&!defined('RUETHIES_PUBLIC_RENDER')){http_response_code(404);exit;}
 const ARTICLE_CATEGORIES=['panduan'=>['Panduan','Guides'],'ide-acara'=>['Ide Acara','Occasion ideas'],'tips-kue'=>['Tips Kue','Cake tips']];
+// Legacy defaults are used only for stores created before category management.
+function article_default_categories(): array {
+ $rows=[];foreach(ARTICLE_CATEGORIES as$id=>$names)$rows[]=['id'=>$id,'name_id'=>$names[0],'name_en'=>$names[1],'updatedAt'=>'1970-01-01T00:00:00Z'];return $rows;
+}
+function article_categories(?array $state=null): array {
+ static $snapshot=null;if($state===null){if($snapshot!==null)return $snapshot;$snapshot=article_categories(article_read());return $snapshot;}
+ $map=[];foreach($state['categories']??article_default_categories()as$row)$map[$row['id']]=[$row['name_id'],$row['name_en']!==''?$row['name_en']:$row['name_id']];return $map;
+}
+function article_category_names(string $id,?array $categories=null): array {
+ $categories=$categories??article_categories();if(!isset($categories[$id]))throw new RuntimeException('Kategori artikel tidak dikenal.');return $categories[$id];
+}
+function article_category_name_key(string $name): string{return mb_strtolower(preg_replace('/\s+/u',' ',trim($name)),'UTF-8');}
+function article_categories_validate(array $rows): void {
+ if(!array_is_list($rows)||count($rows)<1||count($rows)>100)throw new RuntimeException('Daftar kategori artikel tidak valid.');$ids=[];$names=[];
+ foreach($rows as$row){
+  if(!is_array($row)||!is_string($row['id']??null)||!preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/D',$row['id'])||strlen($row['id'])>40)throw new RuntimeException('Identitas kategori artikel tidak valid.');
+  foreach(['name_id','name_en']as$key)if(!is_string($row[$key]??null)||!mb_check_encoding($row[$key],'UTF-8')||trim($row[$key])===''||mb_strlen($row[$key])>60||strip_tags($row[$key])!==$row[$key]||preg_match('/[\x00-\x1f\x7f]/',$row[$key]))throw new RuntimeException('Nama kategori artikel tidak valid.');
+  if(!is_string($row['updatedAt']??null)||!preg_match('/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z/D',$row['updatedAt'])||strtotime($row['updatedAt'])===false)throw new RuntimeException('Waktu kategori artikel tidak valid.');
+  $name=article_category_name_key($row['name_id']);if(isset($ids[$row['id']])||isset($names[$name]))throw new RuntimeException('Kategori artikel duplikat.');$ids[$row['id']]=true;$names[$name]=true;
+ }
+}
 function article_escape(string $text): string{return htmlspecialchars($text,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 function article_directory(): string{return dirname(__DIR__,2).'/ruethies-data';}
 function article_file(): string{return article_directory().'/articles.json';}
@@ -16,7 +37,7 @@ function article_image_info(string $path): ?array {
  $info=@getimagesize($file);
  return $info&&$info[2]===IMAGETYPE_WEBP&&$info[0]>=2&&$info[1]>=2&&$info[0]<=8192&&$info[1]<=8192&&$info[0]*$info[1]<=8000000?[$info[0],$info[1]]:null;
 }
-function article_empty(): array{return ['schema'=>1,'enabled'=>false,'revision'=>str_repeat('0',64),'items'=>[],'audit'=>[]];}
+function article_empty(): array{return ['schema'=>1,'enabled'=>false,'revision'=>str_repeat('0',64),'items'=>[],'audit'=>[],'categories'=>article_default_categories()];}
 function article_slug(string $title): string{$latin=iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$title);return trim(substr(preg_replace('/[^a-z0-9]+/','-',strtolower($latin===false?$title:$latin)),0,100),'-');}
 function article_text(array $input,string $key,int $limit): string{$v=$input[$key]??'';if(!is_string($v)||!mb_check_encoding($v,'UTF-8')||str_contains($v,"\0")||mb_strlen($v)>$limit)throw new DomainException('Isian '.$key.' tidak valid atau terlalu panjang.');return trim($v);}
 function article_link(string $url): bool{return !preg_match('/[\x00-\x20\x7f\\\\]/',$url)&&((str_starts_with($url,'/')&&!str_starts_with($url,'//'))||(preg_match('~\Ahttps?://~i',$url)&&is_string(parse_url($url,PHP_URL_HOST))));}
@@ -42,9 +63,10 @@ function article_markdown(string $body): array{
   if($list){$html.='</'.$list.'>';$list=null;}$paragraph[]=$line;
  }$flush();return ['html'=>$html,'toc'=>$toc];
 }
-function article_validate(array $row,bool $publishing=false): void{
+function article_validate(array $row,bool $publishing=false,?array $categories=null): void{
+ $categories=$categories??ARTICLE_CATEGORIES;
  foreach(['id','title','slug','description','category','body','status','createdBy','updatedBy','createdAt','updatedAt','cover','coverAlt','lang','translationOf']as$key)if(!is_string($row[$key]??null)||!mb_check_encoding($row[$key],'UTF-8')||str_contains($row[$key],"\0"))throw new DomainException('Format artikel tidak valid.');
- if(!preg_match('/\A[a-z0-9-]{1,80}\z/D',$row['id'])||!preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/D',$row['slug'])||strlen($row['slug'])>100||$row['title']===''||mb_strlen($row['title'])>180||mb_strlen($row['description'])>155||mb_strlen($row['body'])>60000||mb_strlen($row['coverAlt'])>180||!isset(ARTICLE_CATEGORIES[$row['category']])||!in_array($row['lang'],['id','en'],true)||!in_array($row['status'],['draft','published'],true))throw new DomainException('Periksa judul, slug, ringkasan (maksimal 155), kategori, bahasa, dan isi.');
+ if(!preg_match('/\A[a-z0-9-]{1,80}\z/D',$row['id'])||!preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/D',$row['slug'])||strlen($row['slug'])>100||$row['title']===''||mb_strlen($row['title'])>180||mb_strlen($row['description'])>155||mb_strlen($row['body'])>60000||mb_strlen($row['coverAlt'])>180||!isset($categories[$row['category']])||!in_array($row['lang'],['id','en'],true)||!in_array($row['status'],['draft','published'],true))throw new DomainException('Periksa judul, slug, ringkasan (maksimal 155), kategori, bahasa, dan isi.');
  foreach(['title','description','coverAlt']as$k)if(strip_tags($row[$k])!==$row[$k]||preg_match('/[\x00-\x1f\x7f]/',$row[$k]))throw new DomainException('Judul, ringkasan dan alt harus teks biasa.');
  foreach(['createdAt','updatedAt']as$k)if(!preg_match('/\A\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ\z/D',$row[$k])||strtotime($row[$k])===false)throw new DomainException('Waktu artikel tidak valid.');
  foreach(['publishedAt','deletedAt']as$k)if(!array_key_exists($k,$row))throw new DomainException('Metadata artikel tidak lengkap.');
@@ -58,11 +80,12 @@ function article_validate(array $row,bool $publishing=false): void{
 function article_state_validate(array $state): void{
  if(($state['schema']??null)!==1||!is_bool($state['enabled']??null)||!is_string($state['revision']??null)||!preg_match('/\A[a-f0-9]{64}\z/D',$state['revision'])||!is_array($state['items']??null)||!array_is_list($state['items'])||count($state['items'])>1000)throw new RuntimeException('Penyimpanan artikel tidak valid.');
  if(!is_array($state['audit']??[])||!array_is_list($state['audit']??[])||count($state['audit']??[])>5000)throw new RuntimeException('Audit artikel tidak valid.');
- $ids=[];$slugs=[];foreach($state['items']as$row){if(!is_array($row))throw new RuntimeException('Penyimpanan artikel tidak valid.');try{article_validate($row);}catch(DomainException $e){throw new RuntimeException('Penyimpanan artikel tidak valid.');}if(isset($ids[$row['id']])||isset($slugs[$row['slug']]))throw new RuntimeException('Identitas artikel ganda.');$ids[$row['id']]=$row;$slugs[$row['slug']]=true;}
+ $categoryRows=array_key_exists('categories',$state)?$state['categories']:article_default_categories();if(!is_array($categoryRows))throw new RuntimeException('Kategori artikel tidak valid.');article_categories_validate($categoryRows);$categories=article_categories($state);
+ $ids=[];$slugs=[];foreach($state['items']as$row){if(!is_array($row))throw new RuntimeException('Penyimpanan artikel tidak valid.');try{article_validate($row,false,$categories);}catch(DomainException $e){throw new RuntimeException('Penyimpanan artikel tidak valid.');}if(isset($ids[$row['id']])||isset($slugs[$row['slug']]))throw new RuntimeException('Identitas artikel ganda.');$ids[$row['id']]=$row;$slugs[$row['slug']]=true;}
  foreach($state['items']as$row)if($row['translationOf']!==''&&(!isset($ids[$row['translationOf']])||$row['translationOf']===$row['id']||$ids[$row['translationOf']]['lang']===$row['lang']))throw new RuntimeException('Referensi terjemahan tidak valid.');
 }
 function article_read_unlocked(): array{
- $file=article_file();if(is_link(article_directory())||is_link($file)||file_exists($file)&&!is_file($file))throw new RuntimeException('Penyimpanan artikel tidak tersedia.');if(!is_file($file))return article_empty();if(filesize($file)>16*1024*1024)throw new RuntimeException('Penyimpanan artikel terlalu besar.');$raw=@file_get_contents($file);if($raw===false)throw new RuntimeException('Penyimpanan artikel tidak tersedia.');$state=json_decode($raw,true,512,JSON_THROW_ON_ERROR);if(!is_array($state))throw new RuntimeException('Penyimpanan artikel tidak valid.');article_state_validate($state);return $state;
+ $file=article_file();if(is_link(article_directory())||is_link($file)||file_exists($file)&&!is_file($file))throw new RuntimeException('Penyimpanan artikel tidak tersedia.');if(!is_file($file))return article_empty();if(filesize($file)>16*1024*1024)throw new RuntimeException('Penyimpanan artikel terlalu besar.');$raw=@file_get_contents($file);if($raw===false)throw new RuntimeException('Penyimpanan artikel tidak tersedia.');$state=json_decode($raw,true,512,JSON_THROW_ON_ERROR);if(!is_array($state))throw new RuntimeException('Penyimpanan artikel tidak valid.');article_state_validate($state);if(!array_key_exists('categories',$state))$state['categories']=article_default_categories();return $state;
 }
 function article_lock(bool $write,callable $work){
  $dir=article_directory();if(!$write&&!is_file(article_file()))return $work();if($write&&!is_dir($dir)&&!@mkdir($dir,0700,true))throw new RuntimeException('Penyimpanan artikel tidak tersedia.');if(is_link($dir)||!is_dir($dir))throw new RuntimeException('Penyimpanan artikel tidak tersedia.');$path=$dir.'/articles.lock';if(is_link($path))throw new RuntimeException('Lock artikel tidak valid.');$fh=@fopen($path,'c');if(!$fh)throw new RuntimeException('Penyimpanan artikel tidak tersedia.');@chmod($path,0600);$until=microtime(true)+2;

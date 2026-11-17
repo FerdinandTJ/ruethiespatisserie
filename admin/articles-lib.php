@@ -49,7 +49,7 @@ function article_mutate(array $actor,array $input,array $files=[]): string{
    $validPaths=['/','/menu/','/snack-box-cikarang/','/tentang-kami/','/hubungi-kami/','/cara-pesan/'];foreach(catalog_snapshot()['menu']as$product)if(($product['available']??true)!==false)$validPaths[]=catalog_path($product);foreach($related as$url)if(!in_array($url,$validPaths,true))throw new DomainException('Produk/halaman terkait sudah tidak tersedia.');
    // Validate before decoding a new cover; preserve the existing path on errors.
    $upload=$files['article_cover']??['error'=>UPLOAD_ERR_NO_FILE];$base64=security_input($input,'article_cover_b64',2796400);if((($upload['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_NO_FILE||$base64!=='')&&$row['coverAlt']==='')throw new DomainException('Alt foto sampul wajib diisi.');
-   article_validate($row);$path=article_cover($upload,$actor,$base64);if($path!==''){$row['cover']=$path;$createdCover=$path;}
+   article_validate($row,false,article_categories($state));$path=article_cover($upload,$actor,$base64);if($path!==''){$row['cover']=$path;$createdCover=$path;}
   }else{
    if(!$row)throw new DomainException('Simpan draft terlebih dahulu.');if(($input['confirm']??'')!=='yes')throw new DomainException('Konfirmasi aksi diperlukan.');
    if($action==='restore'){if($row['deletedAt']===null)throw new DomainException('Artikel tidak dihapus.');$row['deletedAt']=null;$row['status']='draft';}
@@ -58,10 +58,37 @@ function article_mutate(array $actor,array $input,array $files=[]): string{
    elseif($action==='unpublish')$row['status']='draft';
    elseif($action==='delete'){$row['status']='draft';$row['deletedAt']=$now;}
   }
-  $row['updatedAt']=$now;$row['updatedBy']=$actor['name'];article_validate($row);
+  $row['updatedAt']=$now;$row['updatedBy']=$actor['name'];article_validate($row,false,article_categories($state));
   $index=null;foreach($state['items']as$i=>$old)if($old['id']===$row['id'])$index=$i;if($index===null)$state['items'][]=$row;else $state['items'][$index]=$row;
   try{article_state_validate($state);}catch(RuntimeException $e){throw new DomainException('Slug harus unik dan referensi terjemahan harus valid. Slug artikel terhapus tetap dicadangkan.');}
   $state['audit'][]=['article'=>$row['id'],'actor'=>$actor['name'],'action'=>$action,'at'=>$now];$state['audit']=array_slice($state['audit'],-5000);$state['revision']=bin2hex(random_bytes(32));article_backup();article_write($state);return $row['id'];
  });});}catch(Throwable $e){if($createdCover!=='')article_remove_new_cover($createdCover);throw $e;}
  try{ruethies_log($actor['name'],'article-'.$action,$id);}catch(RuntimeException $e){error_log('Ruethies: log artikel tersimpan pada audit privat.');}return $id;
+}
+function article_category_mutate(array $actor,array $input): void {
+ article_authorize($actor,true);if(!ruethies_csrf_ok()){http_response_code(403);throw new DomainException('Aksi ditolak. Muat ulang formulir.');}
+ security_rate_take('article-category-write',$actor['name'],60,false);$action=article_text($input,'category_action',20);if(!in_array($action,['save','delete','up','down'],true))throw new DomainException('Aksi kategori tidak dikenal.');
+ $id=article_text($input,'category_id',40);
+ security_lock('users',function()use($actor,$input,$action,&$id){security_actor(users_all(),$actor,true);article_lock(true,function()use($actor,$input,$action,&$id){
+  $state=article_read_unlocked();if(!hash_equals($state['revision'],article_text($input,'revision',64)))throw new DomainException('Artikel/kategori sudah berubah. Muat ulang halaman sebelum menyimpan.');
+  $rows=$state['categories'];$index=null;foreach($rows as$i=>$category)if($category['id']===$id)$index=$i;
+  if($id!==''&&$index===null||$id===''&&$action!=='save')throw new DomainException('Kategori tidak ditemukan.');$now=gmdate('Y-m-d\TH:i:s\Z');
+  if($action==='save'){
+   $name=article_text($input,'name_id',60);$en=article_text($input,'name_en',60);$name=preg_replace('/\s+/u',' ',$name);$en=preg_replace('/\s+/u',' ',$en);
+   if($name==='')throw new DomainException('Nama Indonesia wajib diisi.');
+   foreach($rows as$category)if($category['id']!==$id&&article_category_name_key($category['name_id'])===article_category_name_key($name))throw new DomainException('Nama kategori Indonesia sudah digunakan.');
+   $candidate=['id'=>$id?:'article-category-'.bin2hex(random_bytes(8)),'name_id'=>$name,'name_en'=>$en!==''?$en:$name,'updatedAt'=>$now];
+   try{article_categories_validate([$candidate]);}catch(RuntimeException $e){throw new DomainException('Nama kategori harus teks biasa, maksimal 60 karakter.');}
+   if($index===null){if(count($rows)>=100)throw new DomainException('Maksimal 100 kategori artikel.');$rows[]=$candidate;}else $rows[$index]=$candidate;$id=$candidate['id'];
+  }elseif($action==='delete'){
+   if(($input['confirm']??'')!=='yes')throw new DomainException('Konfirmasi hapus diperlukan.');
+   foreach($state['items']as$row)if($row['category']===$id)throw new DomainException('Pindahkan seluruh artikel dalam kategori ini terlebih dahulu, termasuk draft dan artikel terhapus.');
+   if(count($rows)<=1)throw new DomainException('Pertahankan minimal satu kategori artikel.');array_splice($rows,$index,1);
+  }else{
+   $next=$index+($action==='up'?-1:1);if(!isset($rows[$next]))throw new DomainException('Kategori sudah berada pada urutan paling '.($action==='up'?'atas.':'bawah.'));
+   [$rows[$index],$rows[$next]]=[$rows[$next],$rows[$index]];$rows[$index]['updatedAt']=$now;$rows[$next]['updatedAt']=$now;
+  }
+  $state['categories']=array_values($rows);$state['revision']=bin2hex(random_bytes(32));$state['audit'][]=['article'=>'','category'=>$id,'actor'=>$actor['name'],'action'=>'category-'.$action,'at'=>$now];$state['audit']=array_slice($state['audit'],-5000);article_state_validate($state);article_backup();article_write($state);
+ });});
+ try{ruethies_log($actor['name'],'article-category-'.$action,$id);}catch(RuntimeException $e){error_log('Ruethies: log kategori artikel tersimpan pada audit privat.');}
 }
