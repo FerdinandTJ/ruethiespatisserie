@@ -79,7 +79,7 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=profile-faq-consistency-20261117"',$head);
   if($noindex)$head=preg_replace('~<meta name="robots"[^>]*>~','<meta name="robots" content="noindex, follow">',$head);
   $head.='<link rel="stylesheet" href="/profile.css?v=article-responsive-images-20261117"><script src="/carousel.js?v=20261112-profile" defer></script><script src="/profile.js?v=brand-blue-cream-20261113" defer></script>';
-  if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=responsive-covers-20261117"><script src="/articles.js?v=20261117" defer></script>';
+  if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=related-page-links-20261117"><script src="/articles.js?v=20261117" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/order-story.css?v=20261115-main-blue-1"><script src="/order-story.js?v=20261115-mobile-2" defer></script>';
   $nav=['/menu/'=>['Menu','Menu'],'/snack-box-cikarang/'=>['Snack Box','Snack Box'],'/tentang-kami/'=>['Tentang Kami','About'],'/hubungi-kami/'=>['Lokasi','Visit']];
   $links='';foreach($nav as$url=>$words){if($url==='/snack-box-cikarang/'&&($snapshot['hasSnackBox']??true)===false)continue;$active=$path===$url||($url==='/menu/'&&str_starts_with($path,'/menu/'));$links.='<a href="'.$url.'"'.($active?' aria-current="page"':'').'>'.profile_text(...$words).'</a>';}

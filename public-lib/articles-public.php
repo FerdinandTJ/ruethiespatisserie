@@ -16,6 +16,16 @@ function article_card(array $row,string $heading='h2'): string{
  $html.=article_card_image($row,'(max-width: 600px) calc(100vw - 80px), (max-width: 900px) calc((100vw - 120px) / 2), 330px');
  return $html.'<p class="rp-kicker">'.profile_text(...ARTICLE_CATEGORIES[$row['category']]).'</p><'.$heading.'><a href="'.$url.'">'.article_escape($row['title']).'</a></'.$heading.'><p class="article-summary">'.article_escape($row['description']).'</p><p class="article-meta"><time datetime="'.$row['publishedAt'].'">'.article_date($row['publishedAt']).'</time> · '.article_minutes($row['body']).' '.profile_text('menit baca','min read').'</p></article>';
 }
+function article_related_choices(array $paths,array $items): string {
+ $products=[];$pages=[];
+ $names=['/'=>['Kembali ke beranda →','Back to home →'],'/menu/'=>['Jelajahi menu →','Explore the menu →'],'/tentang-kami/'=>['Kenali Ruethies →','Get to know Ruethies →'],'/cara-pesan/'=>['Cara pesan & FAQ →','Ordering & FAQ →'],'/hubungi-kami/'=>['Lihat lokasi & kontak →','Location & contact →']];
+ foreach($paths as$path){
+  $found=false;foreach($items as$product)if(catalog_path($product)===$path&&($product['available']??true)!==false){$products[]=profile_card($product);$found=true;break;}
+  if(!$found&&isset($names[$path]))$pages[]=profile_link($path,...$names[$path]);
+ }
+ if(!$products&&!$pages)return '';
+ return '<section class="rp-section article-related"><h2>'.profile_text('Pilihan terkait','Related choices').'</h2>'.($products?'<div class="rp-grid">'.implode('',$products).'</div>':'').($pages?'<div class="article-related-links">'.implode('',$pages).'</div>':'').'</section>';
+}
 function article_listing(string $template,array $state,array $query): ?string{
  $all=article_published($state);if(!$all)return null;$cat=is_string($query['kategori']??null)&&isset(ARTICLE_CATEGORIES[$query['kategori']])?$query['kategori']:'';
  $enhanced=($query['enhanced']??'')==='1';$items=$enhanced&&$cat!==''?array_values(array_filter($all,fn($r)=>$r['category']===$cat)):$all;
@@ -41,7 +51,7 @@ function article_detail(string $template,array $row,array $items,array $publishe
  foreach($published as$other)if($other['lang']!==$row['lang']&&($other['translationOf']===$row['id']||$row['translationOf']===$other['id']))$body.='<p><a href="'.article_path($other).'" hreflang="'.$other['lang'].'">'.($other['lang']==='en'?'Read the English version':'Baca versi bahasa Indonesia').'</a></p>';
  $message="Halo Ruethies Patisserie! Saya baru membaca artikel '".$row['title']."' dan ingin bertanya.";$wa='https://wa.me/6285139281257?text='.rawurlencode($message);
  $body.='<div class="article-body">'.$rendered['html'].'</div><aside class="article-cta"><h2>'.profile_text('Bicarakan kebutuhan Anda','Tell us what you have in mind').'</h2><a class="rp-button" href="'.article_escape($wa).'" target="_blank" rel="noopener" data-article-wa>'.profile_text('Tanyakan melalui WhatsApp','Ask us on WhatsApp').'</a></aside></article>';
- if($row['related']){$body.='<section class="rp-section"><h2>'.profile_text('Pilihan terkait','Related choices').'</h2><div class="rp-grid">';foreach($row['related']as$path){$found=false;foreach($items as$product)if(catalog_path($product)===$path&&($product['available']??true)!==false){$body.=profile_card($product);$found=true;break;}if(!$found&&in_array($path,['/','/menu/','/tentang-kami/','/cara-pesan/','/hubungi-kami/'],true)){$names=['/'=>['Beranda','Home'],'/menu/'=>['Menu','Menu'],'/tentang-kami/'=>['Tentang Kami','About'],'/cara-pesan/'=>['Cara Pesan & FAQ','Ordering & FAQ'],'/hubungi-kami/'=>['Lokasi & Kontak','Location & contact']];$body.='<article class="rp-card"><h3>'.profile_link($path,...$names[$path]).'</h3></article>';}}$body.='</div></section>';}
+ $body.=article_related_choices($row['related'],$items);
  $other=array_slice(array_values(array_filter($published,fn($r)=>$r['id']!==$row['id'])),0,3);if($other){$body.='<section class="rp-section"><h2>'.profile_text('Artikel lain','More articles').'</h2><div class="article-grid">';foreach($other as$r)$body.=article_card($r,'h3');$body.='</div></section>';}$body.='</main>';
  $crumbs=[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/'],['@type'=>'ListItem','position'=>2,'name'=>'Artikel','item'=>CATALOG_ORIGIN.'/artikel/'],['@type'=>'ListItem','position'=>3,'name'=>$row['title'],'item'=>CATALOG_ORIGIN.$url]];
  $schema=['@context'=>'https://schema.org','@type'=>'Article','headline'=>$row['title'],'description'=>$row['description'],'dateModified'=>$row['updatedAt'],'author'=>['@type'=>'Organization','name'=>'Ruethies Patisserie'],'publisher'=>['@type'=>'Organization','name'=>'Ruethies Patisserie'],'inLanguage'=>$row['lang'],'mainEntityOfPage'=>CATALOG_ORIGIN.$url];if($row['publishedAt']!==null)$schema['datePublished']=$row['publishedAt'];$image=$row['cover']?:'images/hero-marble-cake.jpg';$schema['image']=CATALOG_ORIGIN.'/'.$image;
