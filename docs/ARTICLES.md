@@ -11,14 +11,14 @@ Implementasi pada `main`, 17 November 2026. Tahap 1–5 telah dirilis; penerbita
 - Flag `enabled` merupakan konfigurasi sederhana setara `ARTICLES_ENABLED`, dikelola lewat CLI. Default **false**. Artikel baru selalu draft. Tidak ada perubahan akun atau konfigurasi keamanan.
 - ID/EN tetap menggunakan URL yang sama seperti situs sekarang. UI diterjemahkan; isi artikel tetap dalam bahasa penulis. Tautan terjemahan hanya ditampilkan jika pasangan artikel benar-benar terbit. Tidak membuat URL Inggris baru atau terjemahan otomatis.
 
-**Tahap 6:** footer memiliki tautan Artikel sebelum Cara Pesan & FAQ. Beranda menampilkan maksimal tiga artikel terbaru pada “Dari dapur Ruethies”, setelah perkenalan dan sebelum Lokasi. Halaman produk/Snack Box menampilkan maksimal tiga artikel “Baca juga” jika field halaman/produk terkait artikel mencantumkan URL produk tersebut. Semuanya hanya muncul jika flag aktif dan ada artikel published. Header tetap dipertahankan. Kartu berupa teks tanpa unduhan sampul atau skrip artikel tambahan pada halaman lama. Saat flag mati atau publikasi terakhir disembunyikan, seluruh tambahan hilang.
+**Tahap 6:** footer memiliki tautan Artikel sebelum Cara Pesan & FAQ. Beranda menampilkan maksimal tiga artikel terbaru pada “Dari dapur Ruethies”, setelah perkenalan dan sebelum Lokasi. Halaman produk/Snack Box menampilkan maksimal tiga artikel “Baca juga” jika field halaman/produk terkait artikel mencantumkan URL produk tersebut. Semuanya hanya muncul jika flag aktif dan ada artikel published. Header tetap dipertahankan. Kartu memakai thumbnail jika ada sampul; jika tidak, kartu tetap berupa teks tanpa area gambar kosong. Tidak ada skrip artikel tambahan pada halaman lama. Saat flag mati atau publikasi terakhir disembunyikan, seluruh tambahan hilang.
 
 ## Penggunaan admin
 
 1. Login seperti biasa, buka **Artikel** di navigasi admin (`/admin/index.php?p=artikel`).
 2. Pilih tambah artikel. Isi judul, slug, kategori, ringkasan maksimal 155 karakter, bahasa, isi Markdown, dan maksimal tiga halaman/produk terkait. Slug otomatis tersedia; sesudah terbit sebaiknya dipertahankan agar tautan tidak putus.
 3. **Simpan draft**. Judul dan slug harus valid; isi/ringkasan dapat dilengkapi kemudian. Gunakan H2 (`##`) dan H3 (`###`), paragraf, tebal/miring, tautan, daftar, kutipan, dan tabel Markdown. HTML mentah ditampilkan sebagai teks, bukan dijalankan.
-4. Sampul opsional: JPG/PNG/WebP maksimal **2 MiB**, minimal 2 piksel, maksimal 8 megapiksel dan sisi 8.192 piksel. Alt wajib jika memakai sampul. Server memvalidasi dan mengubahnya ke WebP dengan nama acak. Simpan dahulu untuk melihat sampul baru di pratinjau.
+4. Sampul opsional: JPG/PNG/WebP maksimal **2 MiB**, minimal 2 piksel, maksimal 8 megapiksel dan sisi 8.192 piksel. Alt wajib jika memakai sampul. Server memvalidasi dan mengubahnya ke WebP dengan nama acak. Sampul tetap opsional, dengan pengingat relevansi foto di editor. Unggahan menghasilkan thumbnail 480/800 piksel jika sumber lebih lebar; gambar kecil tidak diperbesar. Simpan dahulu untuk melihat sampul baru di pratinjau.
 5. **Pratinjau perubahan** membuka tab privat dengan template publik, tidak menyimpan perubahan. Hanya akun login dengan peran yang sesuai dapat mengaksesnya; respons `no-store` dan `noindex`.
 6. Setelah isi disetujui, simpan lalu konfirmasi **Terbitkan** pada daftar. Seluruh field wajib harus lengkap, slug unik, dan tidak boleh ada penanda `[PERLU KONFIRMASI`. H1 di isi dan H3 sebelum H2 pertama ditolak. Saat flag masih mati, status published tetap tidak terbuka ke publik.
 7. **Sembunyikan** mengembalikan ke draft. **Hapus** hanya Pemilik, berupa soft delete. Buka daftar terhapus untuk **Pulihkan**; hasil pemulihan selalu draft, bukan langsung terbit. Slug artikel terhapus tetap dicadangkan.
@@ -131,3 +131,33 @@ Dokumen ini dan tautan indeks dokumentasi disimpan dalam commit dokumentasi terp
 ## Validasi akses publik tahap 6
 
 Pengujian fixture memastikan posisi section, maksimal tiga kartu, footer tanpa tautan header baru, relevansi URL produk, serta penghapusan tambahan saat flag mati/semua draft. Regresi artikel, kategori HTTP, dan SEO publik lulus. Browser diperiksa pada 360/390/768/1440 piksel, UI Inggris dan tanpa JavaScript: tautan dapat diakses, tidak overflow, dan halaman lama tidak memuat articles.css/articles.js tambahan. Data artikel rusak menyembunyikan tambahan tanpa membuat katalog/beranda gagal. Tidak ada perubahan akun, artikel hosting, atau foto lama.
+
+
+## Sampul responsif pada seluruh kartu
+
+Sampul tampil pada detail, daftar Artikel, beranda, Baca juga, dan artikel lainnya. Detail mempertahankan proporsi sumber (`object-fit: contain`); thumbnail kartu mengikuti bingkai 4:3 (`object-fit: cover`). Area gambar tetap menjadi bagian dari tautan kartu. Tanpa sampul, artikel tetap dapat diterbitkan dan ditampilkan sebagai kartu teks. Tidak ada gambar pengganti otomatis atau foto tambahan di tengah tulisan.
+
+Gambar detail memakai pemrosesan unggahan yang sama seperti sebelumnya (WebP kualitas 86, dimensi tidak dikecilkan). Dua thumbnail dibuat dari gambar yang sudah didekode, dengan kualitas 86 dan proporsi sumber utuh; pemotongan hanya pada tampilan CSS kartu. Varian diturunkan dari lebar sumber, tidak di-upscale, dan memakai `srcset`/`sizes` serta lazy loading. Detail tidak memakai thumbnail. File foto dan konten lain tidak dikompres ulang.
+
+Setelah kode baru di-pull, unggahan baru langsung mendapat varian. Untuk sampul lama, dari root `public_html`, saat admin sementara tidak mengedit:
+
+```sh
+php admin/article-images.php --check
+php admin/article-images.php --apply
+php admin/article-images.php --check
+```
+
+CLI hanya membaca sampul yang direferensikan data artikel, termasuk draft/soft-delete agar dapat dipulihkan. `--check` melaporkan varian yang belum ada. `--apply` membuat varian tersebut secara atomik, di bawah lock artikel, dan tidak menimpa thumbnail yang sudah ada. Gambar asli, JSON artikel, status publikasi, flag, dan akun tidak berubah. Tidak perlu migrasi database, mengulang seed, atau mengunggah ulang sampul. Backup deployment normal tetap disarankan sebelum pull; backfill sendiri bersifat aditif dan tidak memerlukan pemulihan data lama.
+
+Jika sampul hilang/tidak valid atau thumbnail yang sudah ada rusak, CLI melaporkan `errors` dan exit nonzero untuk ditinjau melalui admin; tidak mencoba mengganti berkas tersebut. Symlink dan path di luar direktori sampul ditolak. Thumbnail belum tersedia tidak membuat artikel hilang: kartu memakai foto asli yang valid sampai backfill selesai. Foto kecil tetap memakai aslinya. Foto yang dilepas tidak otomatis dihapus dari disk, mengikuti perilaku pemulihan yang sudah ada.
+
+Pengujian: `php tests/article-images.php` mencakup backfill read-only/idempoten, proporsi, ukuran sumber, byte asli tetap, foto kecil, cleanup, symlink, fallback lama, serta renderer seluruh kartu. `php tests/articles.php` dan `php tests/seo-public.php` lulus. Browser fixture pada 360/390/768/1440 px memverifikasi rasio 4:3, thumbnail terpilih, foto detail asli, klik penuh kartu, tanpa overflow, dan dukungan tanpa JavaScript. Contoh foto uji: asli 127.968 byte, thumbnail 480 px 52.428 byte, thumbnail 800 px 106.626 byte; penghematan foto lain bergantung sumber dan ukuran layar.
+
+Commit gambar: `d83d0f1` (pemrosesan/CLI) dan `80892ea` (tampilan/admin). Jika perlu membatalkan khusus fitur gambar, lakukan di checkout pengembangan bersih dan uji hasilnya:
+
+```sh
+git revert --no-commit 80892ea d83d0f1
+git commit -m "revert: restore previous optional article cover behavior"
+```
+
+Gambar asli dan thumbnail boleh dipertahankan; tidak perlu memulihkan JSON atau metadata keamanan. Push/deployment tetap dilakukan setelah hasil ditinjau.
