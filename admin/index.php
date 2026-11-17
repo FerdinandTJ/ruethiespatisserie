@@ -298,7 +298,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <meta name="robots" content="noindex, nofollow" />
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
-<script src="admin.js?v=category-toolbar-20261115" defer></script>
+<script src="admin.js?v=articles-20261117" defer></script>
 <link rel="stylesheet" href="admin.css?v=category-toolbar-20261115" />
 <?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=20261117"><script src="articles.js?v=20261117" defer></script><?php endif; ?>
 </head>

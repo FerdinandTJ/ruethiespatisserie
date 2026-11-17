@@ -13,5 +13,5 @@ try{
  }
  if(!$row||$row['deletedAt']!==null){http_response_code(404);echo 'Artikel tidak ditemukan.';exit;}
  define('RUETHIES_PUBLIC_RENDER',true);require dirname(__DIR__).'/public-lib/seo.php';require dirname(__DIR__).'/public-lib/profile.php';require dirname(__DIR__).'/public-lib/articles-public.php';$template=file_get_contents(RUETHIES_PUBLIC.'/index.html');echo article_detail($template,$row,catalog_snapshot()['menu'],article_published($state),true);
-}catch(DomainException $e){if(http_response_code()<400)http_response_code(400);echo '<!doctype html><meta name="robots" content="noindex"><h1>Pratinjau belum tersedia</h1><p>'.htmlspecialchars($e->getMessage(),ENT_QUOTES,'UTF-8').'</p>';}
+}catch(RuethiesRateLimit $e){http_response_code(429);header('Retry-After: 900');echo 'Terlalu banyak percobaan. Coba lagi nanti.';}catch(DomainException $e){if(http_response_code()<400)http_response_code(400);echo '<!doctype html><meta name="robots" content="noindex"><h1>Pratinjau belum tersedia</h1><p>'.htmlspecialchars($e->getMessage(),ENT_QUOTES,'UTF-8').'</p>';}
 catch(Throwable $e){http_response_code(503);echo 'Pratinjau sementara tidak tersedia. Coba lagi.';}

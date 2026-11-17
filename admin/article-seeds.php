@@ -1,3 +1,7 @@
+<?php
+// Seed source must not be downloadable as public JSON.
+if(!defined('RUETHIES_ADMIN') && PHP_SAPI!=='cli'){http_response_code(404);exit;}
+return json_decode(<<<'JSON'
 [
   {
     "id": "seed-snack-portions",
@@ -27,3 +31,5 @@
     "body": "Memesan sajian dimulai dengan memilih menu dan menyampaikan kebutuhan Anda kepada tim Ruethies. Website membantu Anda mengenali pilihan serta menyusun pesan WhatsApp.\n\n## Pilih sajian di katalog\n\nBuka [Menu Ruethies](/menu/) untuk melihat kue, camilan gurih, dan paket yang ditampilkan. Untuk kebutuhan kotak per orang, Anda juga dapat membaca [halaman Snack Box](/snack-box-cikarang/).\n\n## Sampaikan jumlah dan tanggal\n\nDi halaman produk, Anda dapat mengisi jumlah, tanggal kebutuhan opsional, serta catatan atau pilihan varian yang ingin ditanyakan. Tombol WhatsApp membantu menyusun pesan untuk tim. Isian tersebut belum merupakan konfirmasi ketersediaan atau pemesanan.\n\n## Tunggu konfirmasi bersama tim\n\nHarga, pilihan, minimum pesanan, waktu persiapan, serta pengambilan atau pengantaran dikonfirmasi melalui percakapan WhatsApp. Pastikan kebutuhan Anda telah dibicarakan sebelum menganggap pesanan selesai.\n\n## Lokasi dan kontak\n\nRuethies Patisserie berada di Ruko The Neo Patio East No. 51, Lippo Cikarang, Cikarang Selatan. Informasi pada website mencantumkan jam buka setiap hari 07.00–21.00 WIB. Anda dapat menghubungi WhatsApp 0851-3928-1257 atau email info@ruethiespatisserie.com.\n\nLihat juga [Cara Pesan & FAQ](/cara-pesan/) untuk informasi yang tersedia.\n\n[PERLU KONFIRMASI: Tim Ruethies meninjau kembali alur pemesanan dan informasi jam buka sebelum artikel diterbitkan.]"
   }
 ]
+JSON
+,true,512,JSON_THROW_ON_ERROR);

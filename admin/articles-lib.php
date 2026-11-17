@@ -2,14 +2,18 @@
 defined('RUETHIES_ADMIN') or die('Langsung tidak diizinkan.');
 require_once dirname(__DIR__).'/public-lib/articles.php';
 function article_authorize(?array $actor,bool $owner=false): void{if(!$actor||!in_array($actor['role']??null,['owner','staff'],true)||$owner&&$actor['role']!=='owner'){http_response_code(403);throw new DomainException('Anda tidak memiliki izin untuk aksi artikel ini.');}}
-function article_cover(array $file,array $actor): string{
- if(($file['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE)return '';
- security_rate_take('article-upload',$actor['name'],20,false);security_upload_input([$file]);
- if($file['error']!==UPLOAD_ERR_OK||$file['size']>2*1024*1024||!is_uploaded_file($file['tmp_name']))throw new DomainException('Sampul harus JPG/PNG/WebP, maksimal 2 MB.');
- $raw=@file_get_contents($file['tmp_name'],false,null,0,2*1024*1024+1);if($raw===false)throw new DomainException('Foto sampul tidak dapat dibaca.');
+function article_cover(array $file,array $actor,string $base64=''): string{
+ if(($file['error']??UPLOAD_ERR_NO_FILE)===UPLOAD_ERR_NO_FILE&&$base64==='')return '';
+ security_rate_take('article-upload',$actor['name'],20,false);
+ if($base64!==''){
+  if(($file['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_NO_FILE||strlen($base64)>2796400||!preg_match('~\Adata:image/(?:jpeg|png|webp);base64,([A-Za-z0-9+/=]+)\z~D',$base64,$match)||($raw=base64_decode($match[1],true))===false)throw new DomainException('Data foto sampul tidak valid.');
+ }else{
+  security_upload_input([$file]);if($file['error']!==UPLOAD_ERR_OK||$file['size']>2*1024*1024||!is_uploaded_file($file['tmp_name']))throw new DomainException('Sampul harus JPG/PNG/WebP, maksimal 2 MB.');
+  $raw=@file_get_contents($file['tmp_name'],false,null,0,2*1024*1024+1);if($raw===false)throw new DomainException('Foto sampul tidak dapat dibaca.');
+ }
  [$image,$error]=security_image_decode($raw,2*1024*1024);if($error)throw new DomainException($error);
- $dir=RUETHIES_PUBLIC.'/images/articles';if(is_link(RUETHIES_PUBLIC.'/images')||is_link($dir)||!is_dir($dir)&&!@mkdir($dir,0755,true)){imagedestroy($image);throw new RuntimeException('Direktori sampul tidak tersedia.');}
- $path='images/articles/'.bin2hex(random_bytes(16)).'.webp';try{if(!function_exists('imagewebp')||!imagewebp($image,RUETHIES_PUBLIC.'/'.$path,86)||!chmod(RUETHIES_PUBLIC.'/'.$path,0644))throw new RuntimeException('Sampul tidak dapat disimpan.');}finally{imagedestroy($image);}return $path;
+ $dir=RUETHIES_PUBLIC.'/images/articles';if(is_link(RUETHIES_PUBLIC.'/images')||is_link($dir)||!is_dir($dir)&&!@mkdir($dir,0755,true)){unset($image);throw new RuntimeException('Direktori sampul tidak tersedia.');}
+ $path='images/articles/'.bin2hex(random_bytes(16)).'.webp';try{if(!function_exists('imagewebp')||!imagewebp($image,RUETHIES_PUBLIC.'/'.$path,86)||!chmod(RUETHIES_PUBLIC.'/'.$path,0644))throw new RuntimeException('Sampul tidak dapat disimpan.');}catch(Throwable $e){@unlink(RUETHIES_PUBLIC.'/'.$path);throw $e;}finally{unset($image);}return $path;
 }
 function article_mutate(array $actor,array $input,array $files=[]): string{
  article_authorize($actor);if(!ruethies_csrf_ok()){http_response_code(403);throw new DomainException('Aksi ditolak. Muat ulang formulir.');}
@@ -28,8 +32,8 @@ function article_mutate(array $actor,array $input,array $files=[]): string{
    if(($input['remove_cover']??'')==='yes')$row['cover']='';
    $validPaths=['/','/menu/','/snack-box-cikarang/','/tentang-kami/','/hubungi-kami/','/cara-pesan/'];foreach(catalog_snapshot()['menu']as$product)if(($product['available']??true)!==false)$validPaths[]=catalog_path($product);foreach($related as$url)if(!in_array($url,$validPaths,true))throw new DomainException('Produk/halaman terkait sudah tidak tersedia.');
    // Validate before decoding a new cover; preserve the existing path on errors.
-   $upload=$files['article_cover']??['error'=>UPLOAD_ERR_NO_FILE];if(($upload['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_NO_FILE&&$row['coverAlt']==='')throw new DomainException('Alt foto sampul wajib diisi.');
-   article_validate($row);$path=article_cover($upload,$actor);if($path!==''){$row['cover']=$path;$createdCover=$path;}
+   $upload=$files['article_cover']??['error'=>UPLOAD_ERR_NO_FILE];$base64=security_input($input,'article_cover_b64',2796400);if((($upload['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_NO_FILE||$base64!=='')&&$row['coverAlt']==='')throw new DomainException('Alt foto sampul wajib diisi.');
+   article_validate($row);$path=article_cover($upload,$actor,$base64);if($path!==''){$row['cover']=$path;$createdCover=$path;}
   }else{
    if(!$row)throw new DomainException('Simpan draft terlebih dahulu.');if(($input['confirm']??'')!=='yes')throw new DomainException('Konfirmasi aksi diperlukan.');
    if($action==='restore'){if($row['deletedAt']===null)throw new DomainException('Artikel tidak dihapus.');$row['deletedAt']=null;$row['status']='draft';}

@@ -14,7 +14,7 @@ if($editing&&($edit['deletedAt']??null)===null):
 ?>
 <p><a class="backlink" href="?p=artikel">← Kembali ke Artikel</a></p>
 <div class="card editor"><h2><?= $edit?'Ubah artikel':'Buat draft artikel' ?></h2>
-<form method="post" enctype="multipart/form-data" class="article-editor">
+<form method="post" enctype="multipart/form-data" class="article-editor" rel="noopener">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="article-write"><input type="hidden" name="article_action" value="save"><input type="hidden" name="article_id" value="<?= h($edit['id']??'') ?>"><input type="hidden" name="revision" value="<?= h($revision) ?>">
 <label>Judul<input id="article-title" name="title" maxlength="180" required value="<?= h($values['title']) ?>"></label>
 <label>Slug<input id="article-slug" name="slug" maxlength="100" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="<?= h($values['slug']) ?>"><small>Otomatis dari judul jika kosong. Setelah dipublikasikan, pertahankan slug agar tautan lama tetap berfungsi.</small></label>
@@ -30,7 +30,7 @@ if($editing&&($edit['deletedAt']??null)===null):
 <label>Sampul opsional (JPG/PNG/WebP, maksimal 2 MB)<input name="article_cover" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <label>Alt foto sampul<input name="coverAlt" maxlength="180" value="<?= h($values['coverAlt']) ?>"></label>
 <?php if($values['cover']!==''): ?><img class="article-admin-cover" src="/<?= h($values['cover']) ?>" alt="<?= h($values['coverAlt']) ?>"><label class="inline"><input type="checkbox" name="remove_cover" value="yes"> Lepas foto sampul</label><?php endif; ?>
-<div class="stickybar article-admin-actions"><button>Simpan <?= ($edit['status']??'draft')==='published'?'perubahan artikel terbit':'draft' ?></button><button type="submit" class="ghost" formaction="article-preview.php" formtarget="_blank">Pratinjau perubahan ↗</button></div>
+<div class="stickybar article-admin-actions"><button>Simpan <?= ($edit['status']??'draft')==='published'?'perubahan artikel terbit':'draft' ?></button><button type="submit" class="ghost" formaction="article-preview.php" formenctype="application/x-www-form-urlencoded" formtarget="_blank">Pratinjau perubahan ↗</button></div>
 <p class="sub">Pratinjau tidak menyimpan perubahan. Untuk melihat foto baru, simpan draft terlebih dahulu. Publikasi dilakukan lewat tombol terpisah setelah penyimpanan.</p>
 </form></div>
 <?php else:
