@@ -41,7 +41,7 @@ function article_listing(string $template,array $state,array $query): ?string{
 }
 function article_detail(string $template,array $row,array $items,array $published=[],bool $preview=false): string{
  $rendered=article_markdown($row['body']);$url=article_path($row);$body='<main id="home" class="container rp-page articles-page">';
- if($preview)$body.='<p class="article-preview">Pratinjau privat · '.article_escape($row['status']).' · <a href="/admin/?p=artikel-ubah&amp;id='.$row['id'].'">Kembali ke editor</a></p>';
+ if($preview)$body.='<p class="article-preview">Contoh tampilan · Hanya terlihat oleh tim pengelola · '.($row['status']==='published'?'Sudah diterbitkan':'Belum diterbitkan').' · <a href="/admin/?p=artikel-ubah&amp;id='.$row['id'].'">Kembali menulis artikel</a></p>';
  $body.='<nav class="rp-breadcrumb" aria-label="Breadcrumb">'.profile_link('/','Beranda','Home','').'<span aria-hidden="true">›</span>'.profile_link('/artikel/','Artikel','Articles','').'<span aria-hidden="true">›</span><span>'.article_escape($row['title']).'</span></nav><article class="article-reading" lang="'.$row['lang'].'"><header><p class="rp-kicker">'.profile_text(...article_category_names($row['category'])).'</p><h1>'.article_escape($row['title']).'</h1><p class="article-meta">';
  if($row['publishedAt']!==null)$body.=profile_text('Terbit','Published').' <time datetime="'.$row['publishedAt'].'">'.article_date($row['publishedAt']).'</time> · ';
  if($row['publishedAt']!==null&&$row['updatedAt']!==$row['publishedAt'])$body.=profile_text('Diperbarui','Updated').' <time datetime="'.$row['updatedAt'].'">'.article_date($row['updatedAt']).'</time> · ';

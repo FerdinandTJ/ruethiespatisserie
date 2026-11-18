@@ -5,10 +5,10 @@ $categoryReady=is_file(RUETHIES_PUBLIC.'/categories.json');$editing=null;
 foreach($_categorySnapshot['categories']as$row)if($row['key']===($_GET['edit']??''))$editing=$row;
 $categoryRevision=$_categorySnapshot['revision'];
 ?>
-<?php if(!$categoryReady): ?><p class="warn">Jalankan <span class="mono">php admin/categories-upgrade.php --apply</span> melalui SSH sebelum mengelola kategori.</p><?php endif; ?>
+<?php if(!$categoryReady): ?><p class="warn">Kategori belum siap dikelola. Minta pengelola website menyelesaikan penyiapan kategori. Menu yang ada tidak perlu dihapus.</p><?php endif; ?>
 <section class="card">
 <h2><?= $editing?'Ubah kategori':'Tambah kategori' ?></h2>
-<p class="sub">Nama dapat diganti tanpa mengubah ID kategori atau alamat produk. Terjemahan Inggris opsional.</p>
+<p class="sub">Mengganti nama kategori tidak mengubah alamat atau isi menu. Nama Inggris boleh dikosongkan; website akan memakai nama Indonesia.</p>
 <form method="post">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="category-save"><input type="hidden" name="revision" value="<?= h($categoryRevision) ?>"><input type="hidden" name="key" value="<?= h($editing['key']??'') ?>">
 <label>Nama Indonesia<input name="name_id" maxlength="60" required value="<?= h(($_POST['aksi']??'')==='category-save'?($_POST['name_id']??''):($editing['id']??'')) ?>"></label>
@@ -33,7 +33,7 @@ $categoryRevision=$_categorySnapshot['revision'];
 <details class="category-delete"><summary aria-label="<?= h('Hapus '.$row['id']) ?>" title="Hapus kategori kosong"><?= icon('trash',16) ?></summary>
 <div class="category-delete-panel"><p><b>Hapus kategori ini?</b></p><p class="sub"><?= h($row['id']) ?> belum memiliki produk.</p><form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="category-delete"><input type="hidden" name="revision" value="<?= h($categoryRevision) ?>"><input type="hidden" name="key" value="<?= h($row['key']) ?>"><label class="category-confirm"><input type="checkbox" name="confirm" value="yes" required> Ya, hapus kategori ini</label><div class="category-delete-buttons"><button type="button" class="ghost" data-category-cancel hidden>Batal</button><button class="danger">Hapus kategori</button></div></form></div>
 </details>
-<?php else: ?><span class="category-in-use" role="img" aria-label="<?= $products?'Kategori terpakai; pindahkan semua produk sebelum menghapus.':'Pengelolaan kategori belum diaktifkan.' ?>" title="<?= $products?'Kategori masih dipakai produk':'Jalankan upgrade kategori dahulu' ?>"><?= icon('lock',15) ?></span><?php endif; ?>
+<?php else: ?><span class="category-in-use" role="img" aria-label="<?= $products?'Kategori terpakai; pindahkan semua produk sebelum menghapus.':'Pengelolaan kategori belum diaktifkan.' ?>" title="<?= $products?'Kategori masih dipakai produk':'Minta pengelola website menyiapkan kategori dahulu' ?>"><?= icon('lock',15) ?></span><?php endif; ?>
 </div></article>
 <?php endforeach; ?>
 </section>

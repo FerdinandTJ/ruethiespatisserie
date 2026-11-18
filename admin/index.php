@@ -272,10 +272,10 @@ if (!$me && $p !== 'kode') $p = 'login';
 if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
 if(in_array($p,['kategori','artikel-kategori'],true)&&!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
 $area = str_starts_with($p,'artikel') ? 'artikel' : ($p==='kategori' ? 'kategori' : (str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu'))));
-$labels = ['artikel'=>'Kelola Artikel', 'kategori'=>'Kategori Menu', 'menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
-$intro = ['artikel'=>'Susun draft, tinjau, dan kelola penerbitan artikel.', 'kategori'=>'Kelola nama dan urutan kategori sajian.', 'menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
+$labels = ['artikel'=>'Kelola Artikel', 'kategori'=>'Kategori Menu', 'menu'=>'Kelola Menu', 'galeri'=>'Galeri Ruethies', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
+$intro = ['artikel'=>'Tulis artikel, periksa tampilannya, lalu terbitkan saat sudah siap.', 'kategori'=>'Kelompokkan menu agar pelanggan lebih mudah menemukan sajian.', 'menu'=>'Tambah menu, ganti foto, dan pilih menu yang ditampilkan di website.', 'galeri'=>'Tambah, ganti, dan atur urutan foto di galeri website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
 // Baca setiap sumber sekali untuk tampilan. Indeks asli dipertahankan saat memfilter.
-try { $_categorySnapshot=$me?catalog_snapshot(false):['menu'=>[],'categories'=>[],'revision'=>''];$_menu=$_categorySnapshot['menu']; } catch (RuntimeException $e) { http_response_code(503);$GLOBALS['catalog_category_rows'][catalog_root()]=[];$_menu=[];$_categorySnapshot=['menu'=>[],'categories'=>[],'revision'=>''];$err='Data kategori/menu tidak dapat dibaca. Periksa file atau jalankan pemeriksaan upgrade sebelum menyimpan perubahan.'; }
+try { $_categorySnapshot=$me?catalog_snapshot(false):['menu'=>[],'categories'=>[],'revision'=>''];$_menu=$_categorySnapshot['menu']; } catch (RuntimeException $e) { http_response_code(503);$GLOBALS['catalog_category_rows'][catalog_root()]=[];$_menu=[];$_categorySnapshot=['menu'=>[],'categories'=>[],'revision'=>''];$err='Daftar menu atau kategori belum dapat dibuka. Jangan mengubah data dahulu. Minta pengelola website memeriksa penyimpanannya.'; }
 $_gallery = $me ? atmos_load() : [];
 $_faqs = $me ? faq_load() : [];
 $_logs=[];
@@ -302,8 +302,8 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=articles-20261117" defer></script>
-<link rel="stylesheet" href="admin.css?v=blue-cream-20261118" />
-<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=categories-20261117"><script src="articles.js?v=20261117" defer></script><?php endif; ?>
+<link rel="stylesheet" href="admin.css?v=language-20261118" />
+<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=language-20261118"><script src="articles.js?v=language-20261118" defer></script><?php endif; ?>
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
@@ -321,7 +321,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <p class="navcap">Kelola</p>
 <a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
-<a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check') ?> FAQ <span class="cnt"><?= count($_faqs) ?></span></a>
+<a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check') ?> Tanya Jawab <span class="cnt"><?= count($_faqs) ?></span></a>
 <a href="?p=artikel" class="<?= $area==='artikel'?'on':'' ?>" aria-current="<?= $area==='artikel'?'page':'false' ?>"><?= icon('check',16) ?> Artikel</a>
 <?php if (is_owner($me)): ?><a href="?p=kategori" class="<?= $area==='kategori'?'on':'' ?>" aria-current="<?= $area==='kategori'?'page':'false' ?>"><?= icon('menu',16) ?> Kategori</a><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
@@ -330,7 +330,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <div class="who"><div class="who-id"><?= icon('user', 16) ?><div><b><?= h($me['name']) ?></b><small><?= is_owner($me) ? 'Pemilik' : 'Staf' ?></small></div></div>
 <form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="logout" /><button class="ghost w100 outbtn"><?= icon('out', 16) ?> Keluar</button></form>
 </div>
-<p class="sidefoot">Perubahan langsung tampil di web.<br />Ruethies Patisserie</p>
+<p class="sidefoot">Periksa kembali isi sebelum menyimpan.<br />Ruethies Patisserie</p>
 </aside>
 <div class="maincol">
 <header class="topbar"><span class="sealmini">N°51</span><b>Ruethies Admin</b><span class="sp"></span><a class="ticon" href="../" target="_blank" rel="noopener" aria-label="Lihat website"><?= icon('web',18) ?></a><form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="logout"><button class="ticon" aria-label="Keluar dari admin"><?= icon('out',18) ?></button></form></header>
@@ -338,20 +338,20 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <div class="mnav">
 <a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu', 16) ?> Menu</a>
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img', 16) ?> Galeri</a>
-<a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check', 16) ?> FAQ</a>
+<a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check', 16) ?> Tanya Jawab</a>
 <a href="?p=artikel" class="<?= $area==='artikel'?'on':'' ?>" aria-current="<?= $area==='artikel'?'page':'false' ?>"><?= icon('check',16) ?> Artikel</a>
 <?php if (is_owner($me)): ?><a href="?p=kategori" class="<?= $area==='kategori'?'on':'' ?>" aria-current="<?= $area==='kategori'?'page':'false' ?>"><?= icon('menu',16) ?> Kategori</a><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
 <?php endif; ?>
 <?php if ($err): ?><p class="err" role="alert"><?= h($err) ?></p><?php endif; ?>
-<?php if ($ok === 'security'): ?><p class="okmsg" role="status">Keamanan akun diperbarui. Semua sesi sudah dicabut. Silakan masuk kembali.</p><?php endif; ?>
+<?php if ($ok === 'security'): ?><p class="okmsg" role="status">Keamanan akun diperbarui. Semua perangkat sudah dikeluarkan dari akun. Silakan masuk kembali.</p><?php endif; ?>
 <?php if ($ok === 'verified'): ?><p class="okmsg" role="status">Verifikasi berhasil. Tindakan keamanan tersedia selama 5 menit.</p><?php endif; ?>
-<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status"><?= $area==='artikel'?($p==='artikel-kategori'?'Kategori artikel tersimpan.':'Artikel tersimpan. Tampilan publik mengikuti status terbit dan flag fitur.'):'Tersimpan dan langsung tampil di web.' ?></p><?php endif; ?>
+<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status"><?= $area==='artikel'?($p==='artikel-kategori'?'Kategori artikel tersimpan.':'Perubahan artikel tersimpan. Artikel yang belum diterbitkan belum terlihat oleh pengunjung. Perubahan pada artikel terbit langsung berlaku jika halaman Artikel sudah diaktifkan.'):'Perubahan tersimpan. Perubahan pada konten yang ditampilkan langsung terlihat di website.' ?></p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg" role="status">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
-<?php if ($ok === 'hapus'): ?><p class="okmsg" role="status">Item dihapus permanen.</p><?php endif; ?>
-<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg" role="status">Foto menu JPG/WebP sudah dibersihkan (atau sebelumnya sudah tidak ada).</p><?php endif; ?>
-<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'kept'): ?><p class="okmsg" role="status">Foto dipertahankan karena masih digunakan atau berada di luar folder upload menu yang diizinkan.</p><?php endif; ?>
-<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'failed'): ?><p class="warn">Menu sudah dihapus, tetapi pembersihan foto belum tuntas. Periksa referensi dan izin file melalui File Manager; jangan hapus foto yang masih digunakan.</p><?php endif; ?>
+<?php if ($ok === 'hapus'): ?><p class="okmsg" role="status">Konten sudah dihapus dan tidak dapat dikembalikan melalui halaman ini.</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg" role="status">Foto menu yang tidak digunakan lagi sudah dihapus, atau sebelumnya sudah tidak ada.</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'kept'): ?><p class="okmsg" role="status">Foto tetap disimpan karena masih digunakan atau dikelola di lokasi lain.</p><?php endif; ?>
+<?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'failed'): ?><p class="warn">Menu sudah dihapus, tetapi sebagian foto belum dapat dibersihkan. Minta bantuan pengelola website; jangan hapus foto yang masih digunakan.</p><?php endif; ?>
 <?php if ($ok === 'pw'): ?><p class="okmsg" role="status">Kata sandi diganti.</p><?php endif; ?>
 <?php if ($ok === '2fa'): ?><p class="okmsg" role="status">Kode OTP aktif. Setiap login pemilik wajib memasukkan kode.</p><?php endif; ?>
 <?php if ($ok === '2fa-mati'): ?><p class="okmsg" role="status">Kode OTP dimatikan. Tidak disarankan.</p><?php endif; ?>
@@ -360,7 +360,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <?php if ($p === 'login'): ?>
 <div class="card">
 <h2><?= icon('lock') ?> Selamat datang</h2>
-<p class="sub">Masuk untuk mengelola menu dan galeri.</p>
+<p class="sub">Masuk untuk mengelola isi website Ruethies.</p>
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="login" />
 <label>Nama pengguna<input name="u" required autocomplete="username" /></label>
@@ -375,7 +375,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <p class="sub"><b>Pemilik:</b> buka aplikasi Authenticator di HP, masukkan 6 digit kode yang tampil.</p>
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>"><input type="hidden" name="aksi" value="kode" />
-<label>Kode OTP<input name="c" class="otp" inputmode="numeric" maxlength="6" required autocomplete="one-time-code" /></label>
+<label>Kode keamanan 6 digit<input name="c" class="otp" inputmode="numeric" maxlength="6" required autocomplete="one-time-code" /></label>
 <button class="w100">Verifikasi</button>
 </form>
 </div>
@@ -392,15 +392,15 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <div class="stat"><span class="ic"><?= icon('menu',20) ?></span><div><b><?= count($_menu) ?></b><span>Total menu</span></div></div>
 <div class="stat"><span class="ic"><?= icon('eye',20) ?></span><div><b><?= count($_vis) ?></b><span>Tampil di web</span></div></div>
 <div class="stat"><span class="ic"><?= icon('eyeoff',20) ?></span><div><b><?= count($_menu)-count($_vis) ?></b><span>Disembunyikan</span></div></div>
-<div class="stat"><span class="ic"><?= icon('star',20) ?></span><div><b><?= count($_sig) ?></b><span>Signature</span></div></div>
+<div class="stat"><span class="ic"><?= icon('star',20) ?></span><div><b><?= count($_sig) ?></b><span>Menu pilihan</span></div></div>
 </div>
 <div class="card menu-toolbar"><form method="get" class="menu-filter" role="search" aria-label="Cari dan filter menu">
 <label>Cari menu<input type="search" name="q" maxlength="80" placeholder="Nama atau deskripsi menu…" value="<?= h($q) ?>"></label>
 <label>Kategori<select name="cat"><option value="">Semua kategori</option><?php foreach (catalog_categories() as $key=>$label): ?><option value="<?= h($key) ?>" <?= $category === $key ? 'selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?></select></label>
 <label>Status<select name="show"><option value="">Semua status</option><option value="visible" <?= $availability === 'visible' ? 'selected' : '' ?>>Tampil</option><option value="hidden" <?= $availability === 'hidden' ? 'selected' : '' ?>>Disembunyikan</option></select></label>
-<button type="submit">Terapkan</button></form>
-<div class="list-caption"><span><?= count($filtered) ?> dari <?= count($_menu) ?> menu</span><?php if ($q !== '' || $category || $availability): ?><a href="?">Reset filter</a><?php endif; ?><a class="btn" href="?p=tambah#formulir"><?= icon('plus',16) ?> Tambah menu</a></div></div>
-<?php if (!$filtered): ?><div class="empty"><b><?= $_menu ? 'Tidak ada menu yang cocok.' : 'Belum ada menu.' ?></b><p><?= $_menu ? 'Coba kata kunci lain atau reset filter.' : 'Tambahkan sajian pertama untuk ditampilkan di website.' ?></p></div><?php endif; ?>
+<button type="submit">Tampilkan hasil</button></form>
+<div class="list-caption"><span><?= count($filtered) ?> dari <?= count($_menu) ?> menu</span><?php if ($q !== '' || $category || $availability): ?><a href="?">Hapus penyaringan</a><?php endif; ?><a class="btn" href="?p=tambah#formulir"><?= icon('plus',16) ?> Tambah menu</a></div></div>
+<?php if (!$filtered): ?><div class="empty"><b><?= $_menu ? 'Tidak ada menu yang cocok.' : 'Belum ada menu.' ?></b><p><?= $_menu ? 'Coba kata kunci lain atau hapus penyaringan.' : 'Tambahkan sajian pertama untuk ditampilkan di website.' ?></p></div><?php endif; ?>
 <?php endif; ?>
 
 <?php if ($p === 'verifikasi'): ?>
@@ -415,10 +415,10 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <?php if (!$fresh): ?><p class="warn">Untuk mengubah keamanan atau akun staf, lakukan verifikasi ulang terlebih dahulu.</p><a class="btn" href="?p=verifikasi">Verifikasi keamanan</a><?php endif; ?>
 <fieldset class="security-fields" <?= $fresh ? '' : 'disabled' ?>>
 <div class="card">
-<h2><?= icon("shield") ?> Kode OTP pemilik</h2>
+<h2><?= icon("shield") ?> Keamanan tambahan pemilik (kode dari aplikasi)</h2>
 <?php if (!empty($me['totp'])): ?>
-<p class="sub">Status: <b>aktif</b>. Setiap login wajib kode 6 digit.</p>
-<form method="post" data-confirm="Matikan OTP? Tidak disarankan."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="2fa-mati" /><button class="danger">Matikan OTP</button></form>
+<p class="sub">Status: <b>aktif</b>. Setiap masuk memerlukan kode 6 digit dari aplikasi Authenticator.</p>
+<form method="post" data-confirm="Matikan kode keamanan tambahan? Akun akan dilindungi kata sandi saja."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="2fa-mati" /><button class="danger">Matikan keamanan tambahan</button></form>
 <?php else:
   if (empty($_SESSION['totp_baru'])) $_SESSION['totp_baru'] = b32enc(random_bytes(20));
   $sec = $_SESSION['totp_baru'];
@@ -426,11 +426,11 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 ?>
 <p class="sub">1. Buka aplikasi Authenticator di HP (Google/Microsoft/Apple) → tambah akun manual.<br />2. Ketik kode rahasia di bawah ini:</p>
 <p class="mono secret"><?= h(chunk_split($sec, 4, ' ')) ?></p>
-<details><summary>Butuh cara lain? (opsional)</summary><p class="sub">Tempel tautan ini di aplikasi yang mendukung impor URI:</p><p class="mono"><?= h($uri) ?></p></details>
+<details><summary>Butuh cara lain? (opsional)</summary><p class="sub">Salin tautan ini ke aplikasi Authenticator yang mendukung penambahan akun melalui tautan:</p><p class="mono"><?= h($uri) ?></p></details>
 <form method="post" autocomplete="off">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="2fa-aktif" />
 <label>Kode 6 digit dari aplikasi<input name="c" inputmode="numeric" maxlength="6" required /></label>
-<button>Aktifkan OTP</button>
+<button>Aktifkan keamanan tambahan</button>
 </form>
 <?php endif; ?>
 </div>
@@ -456,12 +456,12 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <label>Sandi awal (min. 12 karakter)<input name="np" type="password" required /></label>
 <button>Tambah staf</button>
 </form>
-<small>Staf bisa tambah/ubah/tampilkan menu + upload foto. Hapus permanen & pengaturan khusus pemilik.</small>
+<small>Staf dapat mengelola menu, foto, Tanya Jawab, serta menulis dan menerbitkan artikel. Penghapusan dan pemulihan artikel, pengelolaan kategori, serta pengaturan akun hanya untuk pemilik.</small>
 </div>
 </fieldset>
 <div class="card">
 <h2><?= icon("clock") ?> Log aktivitas</h2>
-<div class="table-scroll" tabindex="0" role="region" aria-label="Log aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Aksi</th><th>Detail</th></tr><?php foreach ($_logs as $l): ?>
+<div class="table-scroll" tabindex="0" role="region" aria-label="Riwayat aktivitas"><table><tr><th>Waktu</th><th>Oleh</th><th>Kegiatan</th><th>Detail</th></tr><?php foreach ($_logs as $l): ?>
 <tr><td><?= h(date('d M Y, H:i', strtotime($l['t']) ?: time())) ?></td><td><?= h($l['oleh']) ?></td><td><?= h($l['aksi']) ?></td><td><?= h($l['detail']) ?></td></tr>
 <?php endforeach; ?></table></div>
 </div>
@@ -491,13 +491,13 @@ if ($p === 'tambah' || $edit):
 <label>Deskripsi detail Inggris (opsional)<textarea name="detaile" maxlength="4000" rows="5"><?= h($edit['en']['detail'] ?? '') ?></textarea></label>
 </details>
 <label>Label <small class="hint">(mis. Best Seller — kosongkan bila tidak ada)</small><input name="badge" maxlength="24" value="<?= h($edit['badge'] ?? '') ?>" /></label>
-<label>Tag <small class="hint">(mis. Manis • Lembut)</small><input name="tag" maxlength="40" value="<?= h($edit['tag']['id'] ?? '') ?>" /></label>
-<label><input type="checkbox" name="signature" value="1" <?= !empty($edit['signature']) ? 'checked' : '' ?> /> Tampilkan di Signature <small class="hint">(maks 3)</small></label>
+<label>Keterangan singkat <small class="hint">(mis. Manis • Lembut)</small><input name="tag" maxlength="40" value="<?= h($edit['tag']['id'] ?? '') ?>" /></label>
+<label><input type="checkbox" name="signature" value="1" <?= !empty($edit['signature']) ? 'checked' : '' ?> /> Jadikan menu pilihan di beranda <small class="hint">(maksimal 3 menu)</small></label>
 <label><input type="checkbox" name="available" value="1" <?= !isset($edit) || !empty($edit['available']) ? 'checked' : '' ?> /> Tampilkan di web</label>
-<label>Foto display utama <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
+<label>Foto utama menu <small class="hint">(JPG/PNG/WebP, maks 5 MB<?= $edit && !empty($edit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="foto" accept="image/jpeg,image/png,image/webp" data-preview="prev-foto" /></label>
 <div class="preview" id="prev-foto"><?php if ($edit && !empty($edit['img'])): ?><img class="thumb-sm" src="../<?= h($edit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
 <fieldset class="photo-details"><legend>Foto detail (opsional, maksimal 2)</legend>
-<p class="sub">Ditampilkan saat pengunjung mengeklik foto menu. Kosongkan untuk mempertahankan foto lama. Foto pengganti akan menggantikan slot yang sama.</p>
+<p class="sub">Foto tambahan tampil di halaman detail menu. Tidak perlu memilih file jika foto lama tetap dipakai. Memilih foto baru akan mengganti foto pada bagian yang sama.</p>
 <?php for ($slot=1; $slot<=2; $slot++): $detail=$edit['detail_images'][$slot-1] ?? ''; ?>
 <label>Foto detail <?= $slot ?> <small class="hint">(JPG/PNG/WebP, maks 5 MB)</small><input type="file" name="detail<?= $slot ?>" accept="image/jpeg,image/png,image/webp" data-preview="prev-detail<?= $slot ?>"></label>
 <div class="preview" id="prev-detail<?= $slot ?>"><?php if ($detail): ?><img class="thumb-sm" src="../<?= h($detail) ?>" alt="Foto detail <?= $slot ?> saat ini"><?php endif; ?></div>
@@ -518,12 +518,12 @@ if ($p === 'tambah' || $edit):
 <?php if (!empty($m['img'])): ?><img class="thumb" src="../<?= h($m['img']) ?>" alt="" loading="lazy" /><?php endif; ?>
 <span class="grow"><b><?= h($m['id']['n'] ?? '-') ?></b><br /><small><?= h($m['id']['d'] ?? '') ?></small>
 <?php if (empty($m['available']) || $m['available'] === false): ?> <span class="badge hide">SEMBUNYI</span><?php endif; ?>
-<?php if (!empty($m['signature'])): ?> <span class="badge"><?= icon("star", 12) ?> SIGNATURE</span><?php endif; ?></span>
+<?php if (!empty($m['signature'])): ?> <span class="badge"><?= icon("star", 12) ?> MENU PILIHAN</span><?php endif; ?></span>
 <div class="actions">
 <form method="post"><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="toggle" /><input type="hidden" name="revision" value="<?= h($_categorySnapshot['revision']) ?>" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="ghost"><?= empty($m["available"]) || $m["available"] === false ? icon("eye", 16) . " Tampilkan" : icon("eyeoff", 16) . " Sembunyikan" ?></button></form>
 <a class="btn ghost" href="?p=ubah&i=<?= $i ?>#formulir"><?= icon("edit", 16) ?> Ubah</a>
 <?php if (is_owner($me)): ?>
-<form method="post" data-confirm="Hapus menu permanen? Foto JPG/WebP yang tidak digunakan lagi juga dihapus. Backup JSON tidak menyimpan foto."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="revision" value="<?= h($_categorySnapshot['revision']) ?>" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
+<form method="post" data-confirm="Hapus menu ini selamanya? Foto yang tidak digunakan menu lain juga akan dihapus. Tindakan ini tidak dapat dibatalkan melalui admin. Pilih Sembunyikan jika menu hanya ingin disimpan sementara."><input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="hapus" /><input type="hidden" name="revision" value="<?= h($_categorySnapshot['revision']) ?>" /><input type="hidden" name="i" value="<?= $i ?>" /><button class="danger"><?= icon("trash", 16) ?> Hapus</button></form>
 <?php endif; ?>
 </div>
 </div>
@@ -536,7 +536,7 @@ if ($p === 'tambah' || $edit):
 <?php if ($area === 'galeri'): ?>
 <?php if ($p === 'galeri'): ?>
 <div class="card" id="galeri">
-<h2><?= icon("img") ?> Galeri Suasana</h2>
+<h2><?= icon("img") ?> Galeri Ruethies</h2>
 <p class="sub">Foto tampil berurutan di web dan langsung tayang.</p>
 <?php $gal = $_gallery; foreach ($gal as $gi => $g): ?>
 <div class="item" id="gitem-<?= $gi ?>">
@@ -568,8 +568,8 @@ if ($p === 'galeri-tambah' || $gedit):
 <form method="post" enctype="multipart/form-data">
 <input type="hidden" name="csrf" value="<?= h(ruethies_csrf()) ?>" /><input type="hidden" name="aksi" value="galeri-save" />
 <input type="hidden" name="gi" value="<?= $gedit['_i'] ?? -1 ?>" />
-<label>Caption (Indonesia)<span class="count" id="c-cap"></span><input name="cap" maxlength="80" required data-count="c-cap" value="<?= h($gedit['id']['cap'] ?? '') ?>" /></label>
-<label>Caption (Inggris, opsional)<span class="count" id="c-cape"></span><input name="cape" maxlength="80" data-count="c-cape" value="<?= h($gedit['en']['cap'] ?? '') ?>" /></label>
+<label>Keterangan foto (Indonesia)<span class="count" id="c-cap"></span><input name="cap" maxlength="80" required data-count="c-cap" value="<?= h($gedit['id']['cap'] ?? '') ?>" /></label>
+<label>Keterangan foto (Inggris, opsional)<span class="count" id="c-cape"></span><input name="cape" maxlength="80" data-count="c-cape" value="<?= h($gedit['en']['cap'] ?? '') ?>" /></label>
 <label>Foto <small class="hint">(JPG/PNG/WebP, maks 8 MB<?= $gedit && !empty($gedit['img']) ? ' — kosongkan untuk pakai foto lama' : '' ?>)</small><input type="file" name="gfoto" accept="image/jpeg,image/png,image/webp" data-preview="prev-gfoto" /></label>
 <div class="preview" id="prev-gfoto"><?php if ($gedit && !empty($gedit['img'])): ?><img class="thumb-sm" src="../<?= h($gedit['img']) ?>" alt="Foto saat ini" /><?php endif; ?></div>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan foto</button></div>
@@ -582,7 +582,7 @@ if ($p === 'galeri-tambah' || $gedit):
 <?php if ($p === 'faq'): ?>
 <div class="card" id="faqman">
 <h2><?= icon("check") ?> Tanya-Jawab (FAQ)</h2>
-<p class="sub">Tampil di web sebagai daftar buka-tutup + dibaca Google & AI. Tautan format <span class="mono">[teks](https://...)</span>.</p>
+<p class="sub">Jawaban ini tampil di bagian Tanya Jawab website. Pengunjung dapat membuka pertanyaan untuk membaca jawabannya. Untuk menambahkan tautan, tulis <span class="mono">[teks](https://...)</span>.</p>
 <?php $faqs = $_faqs; foreach ($faqs as $fi => $f): ?>
 <div class="item" id="fitem-<?= $fi ?>">
 <span class="grow"><b><?= h($f['q']) ?></b><br /><small><?= h(mb_strimwidth(faq_plain($f['a']), 0, 90, '…')) ?></small></span>
