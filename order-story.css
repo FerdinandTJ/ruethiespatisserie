@@ -1,7 +1,7 @@
 /* Main homepage only. Uses the existing blue/cream palette; no photos, fonts or dependencies. */
-.ow-story{--ow-sticky-surface:#E5EBE5;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,7vw,100px);align-items:start;margin-top:42px}
+.ow-story{--ow-card-height:420px;--ow-sticky-surface:#E5EBE5;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(40px,7vw,100px);align-items:start;margin-top:28px}
 .ow-sticky{position:sticky;top:max(calc(var(--ow-header,96px) + 20px),18vh)}
-.ow-card{position:relative;isolation:isolate;height:420px;border:1px solid var(--wine-12);border-radius:28px;background:var(--beige);box-shadow:0 16px 48px rgba(20,62,85,.04);overflow:hidden}
+.ow-card{position:relative;isolation:isolate;height:var(--ow-card-height);border:1px solid var(--wine-12);border-radius:28px;background:var(--beige);box-shadow:0 16px 48px rgba(20,62,85,.04);overflow:hidden}
 .ow-card:before{content:"";position:absolute;width:250px;height:250px;right:-130px;bottom:-150px;border:1px solid var(--wine-12);border-radius:50%;pointer-events:none}
 .ow-card-top{position:absolute;left:26px;right:26px;top:26px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .ow-status{display:grid;border:1px solid var(--wine-12);border-radius:30px;background:var(--paper);padding:8px 14px;color:var(--wine);font-size:11px;line-height:1.5}
@@ -22,7 +22,9 @@
 .ow-confirm-seal svg{width:28px;height:28px}
 .ow-card-caption{position:absolute;bottom:22px;left:20px;right:20px;text-align:center;color:var(--muted);font-size:10px;letter-spacing:.04em}
 .ow-steps{list-style:none;margin:0;padding:0}
-.ow-step{min-height:78vh;display:flex;align-items:center;border-top:1px solid var(--wine-12);padding:48px 0}
+.ow-step{min-height:0;display:flex;align-items:center;border-top:1px solid var(--wine-12);padding:32px 0}
+.ow-enhanced .ow-step{min-height:clamp(360px,55svh,520px)}
+.ow-enhanced .ow-step:last-child{min-height:0;align-items:flex-start;padding-bottom:24px}
 .ow-step:last-child{border-bottom:1px solid var(--wine-12)}
 .ow-copy{position:relative;max-width:420px}
 .ow-step-number{display:block;margin-bottom:22px;font-family:"Cormorant Garamond",Georgia,serif;font-size:28px;font-style:normal;color:var(--wine)}
@@ -43,7 +45,7 @@
 .ow-enhanced.ow-in-view[data-active-step="3"] .ow-sticky .ow-confirm-seal path,.ow-enhanced .ow-visible[data-card-step="3"] .ow-confirm-seal path{stroke-dasharray:30;animation:ow-check .7s .25s both}
 /* Short screens use the same compact flow as mobile; nothing obscures the text. */
 @media(max-width:899px),(max-height:699px){
- .ow-story{display:block;margin-top:28px}.ow-sticky{display:none}.ow-step{display:block;min-height:0;padding:30px 0 40px}
+ .ow-story{display:block;margin-top:28px}.ow-sticky{display:none}.ow-step,.ow-enhanced .ow-step{display:block;min-height:0;padding:24px 0}
  .ow-mobile-card{display:block;margin:0 auto 26px;width:min(100%,460px)}.ow-card{height:290px;border-radius:22px}
  .ow-card-top{left:18px;right:18px;top:20px}.ow-status{padding:7px 11px;font-size:10px}.ow-card-brand{font-size:20px}
  .ow-state{inset:80px 22px 44px}.profile-site .ow-card-heading{font-size:24px;margin-bottom:18px}.ow-menu-pills{gap:8px;max-width:320px}.ow-menu-pill{font-size:11px;padding:8px 12px}
@@ -75,7 +77,7 @@
  .ow-mobile-sticky .ow-progress{height:32px;display:flex;justify-content:center;align-items:center;gap:10px;font-size:10px;letter-spacing:.08em;color:var(--muted)}
  .ow-progress i{display:block;width:24px;height:1px;background:var(--wine-12)}
  .ow-story[data-active-step="1"] [data-progress-step="1"],.ow-story[data-active-step="2"] [data-progress-step="2"],.ow-story[data-active-step="3"] [data-progress-step="3"]{color:var(--wine);font-weight:700}
- .ow-mobile-sticky .ow-step{display:flex;min-height:55svh;align-items:center;padding:32px 0}
+ .ow-mobile-sticky .ow-step{display:flex;min-height:clamp(260px,38svh,360px);align-items:center;padding:24px 0}
  .ow-mobile-sticky .ow-copy{width:100%}
  .ow-mobile-sticky .ow-step h3{opacity:.6}
  .ow-mobile-sticky[data-active-step="1"] [data-order-step="1"] h3,.ow-mobile-sticky[data-active-step="2"] [data-order-step="2"] h3,.ow-mobile-sticky[data-active-step="3"] [data-order-step="3"] h3{opacity:1;color:var(--wine)}
@@ -95,4 +97,18 @@
 /* Match the opaque composite of main's blue-tinted section over its cream page. */
 @supports(background:color-mix(in srgb,white,black)){
  .ow-story{--ow-sticky-surface:color-mix(in srgb,var(--brand-blue) 22%,var(--brand-cream))}
+}
+
+/* Keep the final 420px card below the header even in short desktop windows.
+   The observer centers the final step; reserve only its required trailing room. */
+@media(min-width:900px) and (min-height:700px) and (prefers-reduced-motion:no-preference){
+ .ow-enhanced .ow-step:last-child{min-height:max(0px,calc(var(--ow-card-height) + var(--ow-card-height) + var(--ow-header,96px) + var(--ow-header,96px) + 16px - 100svh))}
+}
+
+/* Reading mode needs no artificial scroll distance or repeated decorative cards. */
+@media(prefers-reduced-motion:reduce){
+ .ow-story{display:block}
+ .ow-story .ow-sticky,.ow-story .ow-mobile-card{display:none}
+ .ow-story .ow-step{display:block;min-height:0;padding:24px 0}
+ .ow-story .ow-copy{max-width:65ch}
 }

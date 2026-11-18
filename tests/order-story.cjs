@@ -30,3 +30,13 @@ vm.runInNewContext(source,{document:{querySelector:()=>null}});
 console.log('PASS: reduced motion skips typing and pages without the section are untouched');
 
 const tall=fixture({mobile:true});tall.focus(2);assert(tall.root.classList.contains('ow-mobile-sticky'));assert(tall.cardTexts[0].classList.contains('ow-typing'));assert(!tall.cardTexts[1].classList.contains('ow-typing'));tall.focus(3);tall.focus(1);assert.equal(tall.root.dataset.activeStep,'1');console.log('PASS: tall mobile uses one shared sticky card with reversible scroll states');
+
+// Changing the preference while reading must remove/reinstate the shared card.
+tall.focus(2);tall.motion.matches=true;tall.motion.change();
+assert(!tall.root.classList.contains('ow-mobile-sticky'));
+assert(!tall.cardTexts[0].classList.contains('ow-typing'));
+tall.motion.matches=false;tall.motion.change();
+assert(tall.root.classList.contains('ow-mobile-sticky'));
+const reducedPhone=fixture({mobile:true,reduced:true});
+assert(!reducedPhone.root.classList.contains('ow-mobile-sticky'));
+console.log('PASS: live reduced-motion changes switch tall phones to a compact reading layout and back');
