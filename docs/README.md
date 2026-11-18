@@ -4,6 +4,8 @@ Dokumentasi proyek disimpan di folder ini. Jalankan perintah PHP, Git, dan tool 
 
 ## Operasional dan deployment
 
+- [Perapian jarak halaman dan hasil pemeriksaan](SPACING-REFINEMENT.md)
+
 - [Panduan harian untuk pengelola website](ADMIN-PANDUAN.md)
 
 - [Sinkronisasi Artikel dan tema main–staging](ARTICLE-STAGING-SYNC.md)

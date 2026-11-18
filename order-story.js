@@ -6,8 +6,8 @@
  const steps=Array.from(root.querySelectorAll('[data-order-step]'));
  const desktop=matchMedia('(min-width:900px) and (min-height:700px)');
  const compact=matchMedia('(max-width:899px) and (min-height:740px)');
- const shared=()=>desktop.matches||compact.matches;
  const motion=matchMedia('(prefers-reduced-motion:reduce)');
+ const shared=()=>!motion.matches&&(desktop.matches||compact.matches);
  const active=new Set(),played=new WeakSet();
  const desktopText=root.querySelector('.ow-sticky .ow-chat-text');
  const mobileText=root.querySelector('[data-card-step="2"] .ow-chat-text');
@@ -57,12 +57,12 @@
  function resize(){
   const header=document.querySelector('.rp-header');
   root.style.setProperty('--ow-header',(header?.getBoundingClientRect().height||96)+'px');
-  root.classList.toggle('ow-mobile-sticky',compact.matches);
+  root.classList.toggle('ow-mobile-sticky',compact.matches&&!motion.matches);
   finishTyping();observeSteps();if(shared())select(current);
  }
  // The existing language renderer updates all data-id/data-en nodes synchronously.
  // Stop any partial typing on a language change; never leave mixed-language letters.
  new MutationObserver(finishTyping).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
- motion.addEventListener('change',finishTyping);desktop.addEventListener('change',resize);compact.addEventListener('change',resize);window.addEventListener('resize',resize,{passive:true});
+ motion.addEventListener('change',resize);desktop.addEventListener('change',resize);compact.addEventListener('change',resize);window.addEventListener('resize',resize,{passive:true});
  root.classList.add('ow-enhanced');steps.forEach(step=>reveal.observe(step));visibility.observe(root);resize();
 })();
