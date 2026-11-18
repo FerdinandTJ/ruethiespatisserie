@@ -24,7 +24,10 @@ function article_categories_validate(array $rows): void {
  }
 }
 function article_escape(string $text): string{return htmlspecialchars($text,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
-function article_directory(): string{return dirname(__DIR__,2).'/ruethies-data';}
+function article_directory(): string {
+ $public=dirname(__DIR__);$staging=basename($public)==='staging'&&basename(dirname($public))==='public_html';
+ return ($staging?dirname($public,2):dirname($public)).($staging?'/ruethies-data-staging':'/ruethies-data');
+}
 function article_file(): string{return article_directory().'/articles.json';}
 function article_thumbnail_path(string $cover,int $width): string {
  if(!preg_match('~\Aimages/articles/[a-f0-9]{32}\.webp\z~D',$cover)||!in_array($width,[480,800],true))throw new DomainException('Foto artikel tidak valid.');

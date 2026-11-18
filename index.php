@@ -3,6 +3,7 @@
 define('RUETHIES_PUBLIC_RENDER',true);
 require __DIR__.'/public-lib/seo.php';
 require __DIR__.'/public-lib/profile.php';
+require_once __DIR__.'/public-lib/articles.php';
 function seo_reply(string $body,string $type,int $modified): void {
   $etag='"'.hash('sha256',$body).'"';
   header('Content-Type: '.$type.'; charset=UTF-8');
@@ -31,7 +32,7 @@ try {
   if($template===false)throw new RuntimeException('Template tidak tersedia.');
   $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
   // Publishing/hiding also changes discovery links and sections on existing pages.
-  $articleFile=dirname(__DIR__).'/ruethies-data/articles.json';
+  $articleFile=article_file();
   if(is_file($articleFile))$modified=max($modified,(int)filemtime($articleFile));
   if($path==='/tentang-kami/')$modified=max($modified,filemtime(__DIR__.'/atmosphere.json'));
   if($isArticle){
