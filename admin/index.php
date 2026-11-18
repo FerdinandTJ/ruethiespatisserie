@@ -302,8 +302,8 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=articles-20261117" defer></script>
-<link rel="stylesheet" href="admin.css?v=language-20261118" />
-<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=language-20261118"><script src="articles.js?v=language-20261118" defer></script><?php endif; ?>
+<link rel="stylesheet" href="admin.css?v=buttons-20261118" />
+<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=buttons-20261118"><script src="articles.js?v=language-20261118" defer></script><?php endif; ?>
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>

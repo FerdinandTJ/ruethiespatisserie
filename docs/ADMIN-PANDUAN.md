@@ -17,18 +17,18 @@ Galeri dan Tanya Jawab dikelola melalui bagian masing-masing. Tombol panah menga
 1. Pilih **Artikel → Buat artikel**. Isi judul, ringkasan, kategori, bahasa, dan tulisan. Alamat artikel terisi otomatis; sebaiknya jangan diubah setelah artikel diterbitkan.
 2. Jika memakai foto sampul, isi juga Deskripsi foto. Gunakan foto JPG, PNG, atau WebP maksimal 2 MB.
 3. Pilih **Simpan artikel belum terbit**. Artikel baru belum terlihat oleh pengunjung.
-4. Pilih **Lihat contoh tampilan** untuk memeriksa. Ini tidak menyimpan perubahan. Simpan dahulu untuk melihat foto sampul baru.
+4. Pilih **Lihat tampilan** untuk memeriksa. Ini tidak menyimpan perubahan. Simpan dahulu untuk melihat foto sampul baru.
 5. Kembali ke daftar artikel, centang persetujuan di sebelah **Terbitkan**, lalu tekan tombol tersebut.
 
 Jika muncul pemberitahuan halaman Artikel belum aktif, hubungi pengelola website. Menerbitkan artikel saja belum membuat halaman publik aktif.
 
-**Sembunyikan** mengembalikan artikel ke status Belum diterbitkan. **Pindahkan ke tempat sampah** dan **Kembalikan ke belum terbit** hanya untuk pemilik. Pemulihan tidak langsung menerbitkan artikel. Menyimpan perubahan artikel yang sudah terbit langsung memperbarui isi publik jika halaman Artikel aktif.
+**Sembunyikan** mengembalikan artikel ke status Belum diterbitkan. **Hapus** dan **Kembalikan** hanya untuk pemilik. Pemulihan tidak langsung menerbitkan artikel. Menyimpan perubahan artikel yang sudah terbit langsung memperbarui isi publik jika halaman Artikel aktif.
 
 Untuk versi Inggris, buat artikel terpisah, pilih bahasa Inggris, dan pilih artikel Indonesia pada **Artikel asal yang diterjemahkan**. Isi terjemahan ditulis sendiri; pilihan bahasa tidak menerjemahkan tulisan secara otomatis.
 
 ## Kategori, keamanan dan bantuan
 
-Pemilik dapat mengubah nama dan urutan kategori. Kategori yang masih dipakai tidak dapat dihapus; pindahkan semua isinya dahulu, termasuk konten tersembunyi atau di tempat sampah.
+Pemilik dapat mengubah nama dan urutan kategori. Kategori yang masih dipakai tidak dapat dihapus; pindahkan semua isinya dahulu, termasuk konten tersembunyi atau yang dihapus.
 
 Pengaturan akun dan keamanan khusus pemilik. Kode keamanan 6 digit berasal dari aplikasi Authenticator di HP. Mengubah keamanan akun mengeluarkan akun dari semua perangkat; masuk kembali setelah selesai.
 
