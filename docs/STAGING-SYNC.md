@@ -1,4 +1,6 @@
-# Penyelarasan halaman main ke staging — 14 November 2026
+# Penyelarasan halaman main ke staging
+
+**Pembaruan 18 November 2026:** fitur Artikel mengikuti main dan tema publik/login/admin staging kini biru–krem, termasuk admin PO. Instruksi terbaru: [ARTICLE-STAGING-SYNC.md](ARTICLE-STAGING-SYNC.md). Catatan 14 November berikut mencatat tema lama.
 
 Integrasi dari main `ed29df3` ke staging `c68f576`. Branch main tidak diubah.
 

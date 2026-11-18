@@ -3,6 +3,7 @@
 define('RUETHIES_ADMIN', true);
 require __DIR__ . '/config.php';
 require __DIR__ . '/lib.php';
+require __DIR__ . '/articles-lib.php';
 foreach ($_GET as $value) if (!is_string($value) || str_contains($value,"\0") || !mb_check_encoding($value,'UTF-8')) { http_response_code(400); die('Format parameter tidak valid.'); }
 ruethies_session_start();
 header('X-Robots-Tag: noindex, nofollow', true);
@@ -69,6 +70,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
   // Semua aksi di bawah wajib login + CSRF.
   elseif (!$me || !ruethies_csrf_ok()) { http_response_code(403); die('Aksi ditolak.');
+  }
+  elseif ($aksi==='article-category-write') {
+    article_category_mutate($me,$_POST);header('Location: ?p=artikel-kategori&ok=simpan',true,303);exit;
+  }
+  elseif ($aksi==='article-write') {
+    $id=article_mutate($me,$_POST,$_FILES);header('Location: ?p=artikel'.(($_POST['article_action']??'')==='save'?'-ubah&id='.rawurlencode($id):'').'&ok=simpan',true,303);exit;
   }
   elseif (in_array($aksi,['category-save','category-delete','category-move'],true)) {
     $me=current_user();if(!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
@@ -263,10 +270,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 $p = is_string($_GET['p'] ?? null) ? $_GET['p'] : '';
 if (!$me && $p !== 'kode') $p = 'login';
 if (!$me && $p === 'kode' && empty($_SESSION['pending'])) $p = 'login';
-if($p==='kategori'&&!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
-$area = $p==='kategori' ? 'kategori' : (str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu')));
-$labels = ['kategori'=>'Kategori Menu', 'menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
-$intro = ['kategori'=>'Kelola nama dan urutan kategori sajian.', 'menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
+if(in_array($p,['kategori','artikel-kategori'],true)&&!is_owner($me)){http_response_code(403);die('Khusus pemilik.');}
+$area = str_starts_with($p,'artikel') ? 'artikel' : ($p==='kategori' ? 'kategori' : (str_starts_with($p, 'galeri') ? 'galeri' : (str_starts_with($p, 'faq') ? 'faq' : (in_array($p,['pengaturan','verifikasi'],true) ? 'pengaturan' : 'menu'))));
+$labels = ['artikel'=>'Kelola Artikel', 'kategori'=>'Kategori Menu', 'menu'=>'Kelola Menu', 'galeri'=>'Galeri Suasana', 'faq'=>'Tanya-Jawab', 'pengaturan'=>'Pengaturan'];
+$intro = ['artikel'=>'Susun draft, tinjau, dan kelola penerbitan artikel.', 'kategori'=>'Kelola nama dan urutan kategori sajian.', 'menu'=>'Atur sajian, foto, dan ketersediaan menu.', 'galeri'=>'Susun foto yang menyambut pengunjung website.', 'faq'=>'Bantu pengunjung menemukan jawaban dengan mudah.', 'pengaturan'=>'Kelola keamanan akun dan akses tim.'];
 // Baca setiap sumber sekali untuk tampilan. Indeks asli dipertahankan saat memfilter.
 try { $_categorySnapshot=$me?catalog_snapshot(false):['menu'=>[],'categories'=>[],'revision'=>''];$_menu=$_categorySnapshot['menu']; } catch (RuntimeException $e) { http_response_code(503);$GLOBALS['catalog_category_rows'][catalog_root()]=[];$_menu=[];$_categorySnapshot=['menu'=>[],'categories'=>[],'revision'=>''];$err='Data kategori/menu tidak dapat dibaca. Periksa file atau jalankan pemeriksaan upgrade sebelum menyimpan perubahan.'; }
 $_gallery = $me ? atmos_load() : [];
@@ -294,8 +301,9 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <meta name="robots" content="noindex, nofollow" />
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
-<script src="admin.js?v=category-toolbar-20261115" defer></script>
-<link rel="stylesheet" href="admin.css?v=category-toolbar-20261115" />
+<script src="admin.js?v=articles-20261117" defer></script>
+<link rel="stylesheet" href="admin.css?v=blue-cream-20261118" />
+<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=categories-20261117"><script src="articles.js?v=20261117" defer></script><?php endif; ?>
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>
@@ -314,6 +322,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu') ?> Menu <span class="cnt"><?= $_nm ?></span></a>
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img') ?> Galeri <span class="cnt"><?= $_ng ?></span></a>
 <a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check') ?> FAQ <span class="cnt"><?= count($_faqs) ?></span></a>
+<a href="?p=artikel" class="<?= $area==='artikel'?'on':'' ?>" aria-current="<?= $area==='artikel'?'page':'false' ?>"><?= icon('check',16) ?> Artikel</a>
 <?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag') ?> Pre-order</a><?php endif; ?>
 <?php if (is_owner($me)): ?><a href="?p=kategori" class="<?= $area==='kategori'?'on':'' ?>" aria-current="<?= $area==='kategori'?'page':'false' ?>"><?= icon('menu',16) ?> Kategori</a><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear') ?> Pengaturan</a><?php endif; ?>
 <p class="navcap">Lainnya</p>
@@ -331,6 +340,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <a href="?" class="<?= $area === 'menu' ? 'on' : '' ?>" aria-current="<?= $area === 'menu' ? 'page' : 'false' ?>"><?= icon('menu', 16) ?> Menu</a>
 <a href="?p=galeri#galeri" class="<?= $area === 'galeri' ? 'on' : '' ?>" aria-current="<?= $area === 'galeri' ? 'page' : 'false' ?>"><?= icon('img', 16) ?> Galeri</a>
 <a href="?p=faq#faqman" class="<?= $area === 'faq' ? 'on' : '' ?>" aria-current="<?= $area === 'faq' ? 'page' : 'false' ?>"><?= icon('check', 16) ?> FAQ</a>
+<a href="?p=artikel" class="<?= $area==='artikel'?'on':'' ?>" aria-current="<?= $area==='artikel'?'page':'false' ?>"><?= icon('check',16) ?> Artikel</a>
 <?php if (RUETHIES_STAGING): ?><a href="po.php"><?= icon('tag', 16) ?> Pre-order</a><?php endif; ?>
 <?php if (is_owner($me)): ?><a href="?p=kategori" class="<?= $area==='kategori'?'on':'' ?>" aria-current="<?= $area==='kategori'?'page':'false' ?>"><?= icon('menu',16) ?> Kategori</a><a href="?p=pengaturan" class="<?= $p === 'pengaturan' ? 'on' : '' ?>" aria-current="<?= $area === 'pengaturan' ? 'page' : 'false' ?>"><?= icon('gear', 16) ?> Pengaturan</a><?php endif; ?>
 </div>
@@ -338,7 +348,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <?php if ($err): ?><p class="err" role="alert"><?= h($err) ?></p><?php endif; ?>
 <?php if ($ok === 'security'): ?><p class="okmsg" role="status">Keamanan akun diperbarui. Semua sesi sudah dicabut. Silakan masuk kembali.</p><?php endif; ?>
 <?php if ($ok === 'verified'): ?><p class="okmsg" role="status">Verifikasi berhasil. Tindakan keamanan tersedia selama 5 menit.</p><?php endif; ?>
-<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status">Tersimpan dan langsung tampil di web.</p><?php endif; ?>
+<?php if ($ok === 'simpan'): ?><p class="okmsg" role="status"><?= $area==='artikel'?($p==='artikel-kategori'?'Kategori artikel tersimpan.':'Artikel tersimpan. Tampilan publik mengikuti status terbit dan flag fitur.'):'Tersimpan dan langsung tampil di web.' ?></p><?php endif; ?>
 <?php if ($ok === 'tampil'): ?><p class="okmsg" role="status">Status tampil/sembunyi diperbarui.</p><?php endif; ?>
 <?php if ($ok === 'hapus'): ?><p class="okmsg" role="status">Item dihapus permanen.</p><?php endif; ?>
 <?php if ($ok === 'hapus' && ($_GET['photo'] ?? '') === 'deleted'): ?><p class="okmsg" role="status">Foto menu JPG/WebP sudah dibersihkan (atau sebelumnya sudah tidak ada).</p><?php endif; ?>
@@ -375,6 +385,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <div class="pagehead"><div><p class="eyebrow">RUETHIES · KONTEN WEBSITE</p><h1><?= h($labels[$area]) ?></h1><p class="sub"><?= h($intro[$area]) ?></p></div><span class="account-chip"><?= icon('user',16) ?> <?= h($me['name']) ?> · <?= is_owner($me) ? 'Pemilik' : 'Staf' ?></span></div>
 <?php if (in_array($p,['tambah','ubah','galeri-tambah','galeri-ubah','faq-tambah','faq-ubah'],true)): ?><a class="backlink" href="<?= $area === 'menu' ? '?' : '?p='.$area ?>"><?= icon('back',16) ?> Kembali ke <?= h($labels[$area]) ?></a><?php endif; ?>
 <?php if (is_owner($me) && is_file(__DIR__ . '/setup.php')): ?><p class="warn"><b>Satu langkah terakhir:</b> buka File Manager hosting, hapus file <span class="mono">admin/setup.php</span>, lalu muat ulang halaman ini. Peringatan ini hilang sendiri setelah file dihapus.</p><?php endif; ?>
+<?php if($area==='artikel')require __DIR__.'/article-view.php'; ?>
 <?php if($p==='kategori'&&$_categorySnapshot['revision']!=='')require __DIR__.'/category-view.php'; ?>
 <?php if ($area === 'menu' && !in_array($p,['tambah','ubah'],true)):
   $_vis = array_filter($_menu, fn($m) => ($m['available'] ?? true) !== false);

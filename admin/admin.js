@@ -67,6 +67,8 @@
   // bahkan untuk file kecil — jalur base64 tidak cocok pola aturan itu.
   // Tanpa JS: form terkirim multipart seperti biasa (server tetap menerima).
   document.querySelectorAll('form[enctype="multipart/form-data"]').forEach(function (form) {
+    // Article forms own their bounded, unresized base64 upload and preview target.
+    if (form.matches && form.matches('.article-editor')) return;
     form.addEventListener('submit', async function (e) {
       var inputs = Array.from(form.querySelectorAll('input[type="file"]')).filter(function (input) { return input.files && input.files[0]; });
       if (!inputs.length) return;
@@ -131,6 +133,7 @@
   document.addEventListener('submit', function (e) {
     var f = e.target;
     if (!f || f.tagName !== 'FORM') return;
+    if (f.matches && f.matches('.article-editor') && e.submitter && e.submitter.getAttribute('formaction') === 'article-preview.php') return;
     setTimeout(function () {
       if (e.defaultPrevented) return;
       f.querySelectorAll('button:not([type]), button[type="submit"]').forEach(function (b) { b.disabled = true; });

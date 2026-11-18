@@ -20,6 +20,7 @@ $process=null;$curl=null;
 try{
  mkdir($public.'/admin',0700,true);mkdir($private,0700,true);mkdir($root.'/sessions',0700);
  foreach(glob(dirname(__DIR__).'/admin/*.php')as$f)copy($f,$public.'/admin/'.basename($f));
+ mkdir($public.'/public-lib',0700);foreach(glob(dirname(__DIR__).'/public-lib/*.php')as$f)copy($f,$public.'/public-lib/'.basename($f));
  foreach(['po.php','po.css','po.js','midtrans-notify.php','index.html','llms.txt','faq.json','atmosphere.json']as$f)copy(dirname(__DIR__).'/'.$f,$public.'/'.$f);
  $secret=bin2hex(random_bytes(32));$config=['dsn'=>$testDsn,'user'=>$user,'password'=>$password,'secret'=>$secret,'midtrans'=>['enabled'=>true,'environment'=>'sandbox','server_key'=>'SB-Mid-server-FAKE-TEST-ONLY'],'fonnte'=>['enabled'=>false]];
  file_put_contents($private.'/po-config.php','<?php return '.var_export($config,true).';');
@@ -111,6 +112,7 @@ try{
  [$code]=$http('/midtrans-notify.php',['signature_key'=>'invalid']);mt_check($code===403,'webhook refuses invalid payload over HTTP');
  [$code,$login]=$http('/admin/index.php');preg_match('/name="csrf" value="([a-f0-9]+)"/',$login,$loginMatch);
  [$code]=$http('/admin/index.php',['aksi'=>'login','csrf'=>$loginMatch[1],'u'=>'owner','p'=>'Demo-test-password']);mt_check($code===302,'owner login works with gateway release');
+ [$code,$articleAdmin]=$http('/admin/index.php?p=artikel');mt_check($code===200&&str_contains($articleAdmin,'Kelola Artikel'),'article admin and PO share the existing staging login');
  [$code,$categoryProducts]=$http('/admin/po.php?view=produk&product=new&slot='.$sid);mt_check($code===200&&str_contains($categoryProducts,'Paket Uji — Kue Tambahan'),'PO product selector reads dynamic category labels while retaining UID references');
  [$code,$publicHtml]=$http('/pre-order/');mt_check($code===200&&!str_contains($publicHtml,'Default Sandbox'),'open retired schedule is excluded from public catalog');
  [$code,$admin]=$http('/admin/po.php?view=jadwal');mt_check($code===200&&!str_contains($admin,'Default Sandbox'),'retired schedule is excluded from admin list');

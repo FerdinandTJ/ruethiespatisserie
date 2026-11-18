@@ -37,3 +37,6 @@ po-config.php
 
 # Private local notes are never deployed or committed.
 /docs/local/
+
+# Hosting-owned article cover uploads
+/images/articles/

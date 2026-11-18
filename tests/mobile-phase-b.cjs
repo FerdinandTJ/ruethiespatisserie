@@ -13,5 +13,5 @@ function environment(){const frames=[],watches=new Map();const motion={mobile:{m
  cards.forEach((card,i)=>assert.equal(card.href,'/menu/?kategori=unchanged-'+i));
 }
 function luminance(hex){const rgb=hex.match(/\w\w/g).map(x=>parseInt(x,16)/255).map(x=>x<=.04045?x/12.92:((x+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;}
-for(const [ink,paper]of[['3D0000','FAF6F0'],['3D0000','F1E8DC'],['FFFDF9','7A0000'],['EAD9CC','7A0000'],['7A0000','FAF6F0']]){const values=[luminance(ink),luminance(paper)].sort((a,b)=>a-b);assert((values[1]+.05)/(values[0]+.05)>=4.5);}
+for(const [ink,paper]of[['143E55','FFF3E1'],['143E55','F3E4CE'],['143E55','8ACEF1'],['1F4B62','8ACEF1'],['225C79','FFF3E1']]){const values=[luminance(ink),luminance(paper)].sort((a,b)=>a-b);assert((values[1]+.05)/(values[0]+.05)>=4.5);}
 console.log('PASS: dynamic category count/order, reversible stack transforms, focus, reduced motion, AA palette');

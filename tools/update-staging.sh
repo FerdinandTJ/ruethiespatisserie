@@ -23,8 +23,8 @@ for file in .htaccess menu.json faq.json atmosphere.json categories.json; do if 
 git rev-parse HEAD > "$STAGING_BACKUP_DIR/commit.txt"
 # Keep the hosting deletion state, not just the surviving photo files.
 git diff --diff-filter=D --name-only -- images/menu > "$STAGING_BACKUP_DIR/deleted-menu-images.txt"
-tar --exclude=.git --exclude=.catalog.lock -czf "$STAGING_BACKUP_DIR/staging.tgz" -C .. staging
-if [ -d ../../ruethies-data-staging ]; then tar -czf "$STAGING_BACKUP_DIR/private.tgz" -C ../.. ruethies-data-staging; fi
+tar --exclude=.git --exclude='*.lock' -czf "$STAGING_BACKUP_DIR/staging.tgz" -C .. staging
+if [ -d ../../ruethies-data-staging ]; then tar --exclude='*.lock' -czf "$STAGING_BACKUP_DIR/private.tgz" -C ../.. ruethies-data-staging; fi
 php -r '
 $s=file_get_contents(".htaccess");$i=strpos($s,"# DO NOT REMOVE THIS LINE AND THE LINES BELOW PWPROTECTID:");
 if($i===false){
@@ -71,4 +71,4 @@ touch .htaccess
 restore_deleted_menu_images
 trap - EXIT
 echo "Kode staging diperbarui. Konten dan proteksi hPanel dipertahankan. Backup: $STAGING_BACKUP_DIR"
-echo 'Jangan stash pop. Jalankan categories-upgrade.php --check/--apply, lalu pemeriksaan sesuai docs/STAGING-SYNC.md.'
+echo 'Jangan stash pop. Lanjutkan pemeriksaan dan upgrade artikel sesuai docs/ARTICLE-STAGING-SYNC.md serta docs/STAGING-SYNC.md.'

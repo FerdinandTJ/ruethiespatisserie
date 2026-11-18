@@ -95,10 +95,10 @@ function po_value(array $values, string $key): string { return is_string($values
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
-<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=20261111-presentation"><script src="/po.js?v=20261108-fonnte" defer></script></head>
+<title>Pre-order — Ruethies Patisserie</title><link rel="stylesheet" href="/po.css?v=blue-cream-20261118"><script src="/po.js?v=20261108-fonnte" defer></script></head>
 <body>
 <div class="sandbox-notice"><strong>Mode Sandbox</strong> · Pembayaran simulasi tanpa uang sungguhan.</div>
-<header class="po-header"><a href="/" aria-label="Beranda Ruethies"><img src="/logo-wine.png" alt="Ruethies Patisserie" width="130" height="52"></a><a href="/">Kembali ke website ↗</a></header>
+<header class="po-header"><a href="/" aria-label="Beranda Ruethies"><span class="po-brand-mark" aria-hidden="true"></span></a><a href="/">Kembali ke website ↗</a></header>
 <main class="po-wrap">
 <p class="eyebrow">DIPERSIAPKAN DENGAN KELEMBUTAN</p>
 <h1><?= $order ? 'Pesanan Anda' : 'Rencanakan momen manis Anda.' ?></h1>

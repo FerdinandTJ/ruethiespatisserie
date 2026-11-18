@@ -1,0 +1,35 @@
+<?php
+// Seed source must not be downloadable as public JSON.
+if(!defined('RUETHIES_ADMIN') && PHP_SAPI!=='cli'){http_response_code(404);exit;}
+return json_decode(<<<'JSON'
+[
+  {
+    "id": "seed-snack-portions",
+    "title": "Berapa jumlah snack box untuk 20, 50, dan 100 orang?",
+    "slug": "berapa-jumlah-snack-box-20-50-100-orang",
+    "description": "Panduan umum menghitung kebutuhan snack box untuk 20, 50, atau 100 tamu dan hal yang perlu Anda konfirmasikan melalui WhatsApp Ruethies.",
+    "category": "panduan",
+    "related": ["/snack-box-cikarang/", "/menu/", "/cara-pesan/"],
+    "body": "Menghitung kebutuhan snack box dapat dimulai dari jumlah orang yang akan menerima sajian. Panduan ini merupakan contoh perencanaan umum, bukan ketentuan paket atau janji ketersediaan produk Ruethies.\n\n## Mulai dari jumlah penerima\n\nJika Anda berencana menyediakan satu kotak untuk setiap penerima, contoh hitungannya seperti berikut.\n\n| Jumlah penerima | Contoh kebutuhan satu kotak per penerima |\n| --- | --- |\n| 20 orang | 20 kotak |\n| 50 orang | 50 kotak |\n| 100 orang | 100 kotak |\n\nAngka tersebut adalah hasil hitungan sederhana, bukan jumlah minimum pemesanan. Perhitungkan kembali siapa saja yang akan menerima sajian, termasuk panitia jika diperlukan.\n\n## Catat tanggal dan kebutuhan acara\n\nSebelum menghubungi tim, siapkan jumlah penerima, tanggal kebutuhan, serta catatan mengenai sajian yang Anda inginkan. Jangan menganggap jumlah tamu sebagai konfirmasi pesanan.\n\n## Konfirmasikan pilihan dengan Ruethies\n\nAnda dapat melihat [pilihan Snack Box Ruethies](/snack-box-cikarang/) dan [katalog menu](/menu/) sebelum bertanya melalui WhatsApp. Pilihan isi, harga, minimum pesanan, waktu persiapan, serta pengambilan atau pengantaran perlu dikonfirmasi bersama tim.\n\n[PERLU KONFIRMASI: Tim Ruethies meninjau panduan jumlah ini dan menentukan informasi paket yang boleh diterbitkan.]"
+  },
+  {
+    "id": "seed-snack-ideas",
+    "title": "Ide isi snack box untuk rapat kantor, arisan, dan pengajian",
+    "slug": "ide-isi-snack-box-rapat-arisan-pengajian",
+    "description": "Inspirasi umum merencanakan kudapan untuk rapat, arisan, dan pengajian, dengan pilihan menu Ruethies yang perlu dikonfirmasi melalui WhatsApp.",
+    "category": "ide-acara",
+    "related": ["/snack-box-cikarang/", "/menu/", "/menu/platter/"],
+    "body": "Rapat kantor, arisan, dan pengajian dapat memiliki kebutuhan sajian yang berbeda. Gagasan berikut adalah panduan umum untuk membicarakan kebutuhan Anda, bukan daftar paket snack box Ruethies yang sudah ditetapkan.\n\n## Untuk rapat kantor\n\nCatat jumlah peserta dan waktu sajian dibutuhkan. Anda dapat meninjau pilihan kue dan camilan gurih di [katalog Ruethies](/menu/), lalu bertanya pilihan mana yang tersedia untuk kebutuhan acara.\n\n## Untuk arisan\n\nPertimbangkan apakah sajian akan dibagikan per orang atau dinikmati bersama. [Snack Box](/snack-box-cikarang/) dan [Platter](/menu/platter/) dapat menjadi bahan konsultasi mengenai bentuk sajian yang Anda inginkan. Ketersediaan dan ketentuannya tetap perlu dikonfirmasi.\n\n## Untuk pengajian\n\nSiapkan jumlah penerima, tanggal kebutuhan, serta catatan acara agar pertanyaan Anda jelas. Jangan menyimpulkan sertifikasi, bahan, atau kesesuaian diet hanya dari nama produk maupun konteks acara.\n\n## Bicarakan isi dan kemasan\n\nKatalog memuat pilihan seperti Bolu Jadoel, brownies, Lapis Marble, Marble Cake, Jongkong, pastel, kroket, dan risol. Nama-nama tersebut adalah produk dalam katalog, bukan jaminan bahwa semuanya dapat dimasukkan ke satu paket.\n\n[PERLU KONFIRMASI: Pilihan produk yang benar-benar dapat dijadikan isi snack box, kombinasi paket dan informasi kemasan yang boleh diumumkan.]\n\nTanyakan harga, minimum pesanan, waktu persiapan, serta pilihan pengambilan atau pengantaran melalui WhatsApp sebelum memastikan rencana acara."
+  },
+  {
+    "id": "seed-order-guide",
+    "title": "Cara memesan di Ruethies: dari memilih menu hingga konfirmasi",
+    "slug": "cara-memesan-di-ruethies",
+    "description": "Kenali alur memilih sajian, menyampaikan jumlah dan tanggal kebutuhan, lalu mengonfirmasi ketersediaan serta harga melalui WhatsApp Ruethies.",
+    "category": "panduan",
+    "related": ["/menu/", "/snack-box-cikarang/", "/cara-pesan/"],
+    "body": "Memesan sajian dimulai dengan memilih menu dan menyampaikan kebutuhan Anda kepada tim Ruethies. Website membantu Anda mengenali pilihan serta menyusun pesan WhatsApp.\n\n## Pilih sajian di katalog\n\nBuka [Menu Ruethies](/menu/) untuk melihat kue, camilan gurih, dan paket yang ditampilkan. Untuk kebutuhan kotak per orang, Anda juga dapat membaca [halaman Snack Box](/snack-box-cikarang/).\n\n## Sampaikan jumlah dan tanggal\n\nDi halaman produk, Anda dapat mengisi jumlah, tanggal kebutuhan opsional, serta catatan atau pilihan varian yang ingin ditanyakan. Tombol WhatsApp membantu menyusun pesan untuk tim. Isian tersebut belum merupakan konfirmasi ketersediaan atau pemesanan.\n\n## Tunggu konfirmasi bersama tim\n\nHarga, pilihan, minimum pesanan, waktu persiapan, serta pengambilan atau pengantaran dikonfirmasi melalui percakapan WhatsApp. Pastikan kebutuhan Anda telah dibicarakan sebelum menganggap pesanan selesai.\n\n## Lokasi dan kontak\n\nRuethies Patisserie berada di Ruko The Neo Patio East No. 51, Lippo Cikarang, Cikarang Selatan. Informasi pada website mencantumkan jam buka setiap hari 07.00–21.00 WIB. Anda dapat menghubungi WhatsApp 0851-3928-1257 atau email info@ruethiespatisserie.com.\n\nLihat juga [Cara Pesan & FAQ](/cara-pesan/) untuk informasi yang tersedia.\n\n[PERLU KONFIRMASI: Tim Ruethies meninjau kembali alur pemesanan dan informasi jam buka sebelum artikel diterbitkan.]"
+  }
+]
+JSON
+,true,512,JSON_THROW_ON_ERROR);

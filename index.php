@@ -3,6 +3,7 @@
 define('RUETHIES_PUBLIC_RENDER',true);
 require __DIR__.'/public-lib/seo.php';
 require __DIR__.'/public-lib/profile.php';
+require_once __DIR__.'/public-lib/articles.php';
 function seo_reply(string $body,string $type,int $modified): void {
   $etag='"'.hash('sha256',$body).'"';
   header('Content-Type: '.$type.'; charset=UTF-8');
@@ -21,19 +22,32 @@ try {
   if(in_array(strtolower($path),['/menu/lapis-surabaya','/menu/lapis-surabaya/'],true)){http_response_code(404);header('Cache-Control: no-store');readfile(__DIR__.'/404.html');exit;}
   if(in_array($path,['/index.html','/index.php'],true)){header('Location: /',true,301);exit;}
   if(in_array($path,['/menu/snackbox','/menu/snackbox/','/menu/snack-box','/menu/snack-box/'],true)){header('Location: /snack-box-cikarang/',true,301);exit;}
-  if(preg_match('~\A/(?:menu|tentang-kami|hubungi-kami|cara-pesan|snack-box-cikarang|menu/[a-z0-9]+(?:-[a-z0-9]+)*)\z~D',$path)){header('Location: '.$path.'/',true,301);exit;}
-  $known=isset(PROFILE_PAGES[$path]) || in_array($path,['/','/sitemap.xml','/llms.txt','/snack-box-cikarang/'],true) || preg_match('~\A/menu/[a-z0-9]+(?:-[a-z0-9]+)*/\z~D',$path);
+  if(preg_match('~\A/(?:artikel|artikel/[a-z0-9]+(?:-[a-z0-9]+)*|menu|tentang-kami|hubungi-kami|cara-pesan|snack-box-cikarang|menu/[a-z0-9]+(?:-[a-z0-9]+)*)\z~D',$path)){header('Location: '.$path.'/',true,301);exit;}
+  $isArticle=preg_match('~\A/artikel/(?:[a-z0-9]+(?:-[a-z0-9]+)*/)?\z~D',$path)===1;
+  $known=$isArticle || isset(PROFILE_PAGES[$path]) || in_array($path,['/','/sitemap.xml','/llms.txt','/snack-box-cikarang/'],true) || preg_match('~\A/menu/[a-z0-9]+(?:-[a-z0-9]+)*/\z~D',$path);
   if(!$known){http_response_code(404);header('Cache-Control: no-store');readfile(__DIR__.'/404.html');exit;}
   $snapshot=catalog_snapshot();$items=$snapshot['menu'];
   $faq=catalog_read_json(__DIR__.'/faq.json');seo_faq($faq);
   $template=@file_get_contents(__DIR__.'/index.html');
   if($template===false)throw new RuntimeException('Template tidak tersedia.');
   $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
+  // Publishing/hiding also changes discovery links and sections on existing pages.
+  $articleFile=article_file();
+  if(is_file($articleFile))$modified=max($modified,(int)filemtime($articleFile));
   if($path==='/tentang-kami/')$modified=max($modified,filemtime(__DIR__.'/atmosphere.json'));
+  if($isArticle){
+    require __DIR__.'/public-lib/articles-public.php';$articleState=article_read();$published=article_published($articleState);$html=null;
+    if($path==='/artikel/')$html=article_listing($template,$articleState,$_GET);
+    else foreach($published as$row)if(article_path($row)===$path){$html=article_detail($template,$row,$items,$published);break;}
+    if($html===null){http_response_code(404);header('Cache-Control: no-store');header('X-Robots-Tag: noindex, nofollow');readfile(__DIR__.'/404.html');exit;}
+    seo_reply($html,'text/html',max($modified,filemtime(article_file()),filemtime(__DIR__.'/public-lib/articles-public.php')));exit;
+  }
   if($path==='/sitemap.xml') {
     $baseModified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
     $pageModified=['/'=>max($baseModified,filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json')),'/menu/'=>max($baseModified,filemtime(__DIR__.'/menu.json')),'/tentang-kami/'=>max($baseModified,is_file(__DIR__.'/atmosphere.json')?filemtime(__DIR__.'/atmosphere.json'):0),'/hubungi-kami/'=>$baseModified,'/cara-pesan/'=>max($baseModified,filemtime(__DIR__.'/faq.json'))];
-    seo_reply(seo_sitemap($items,$modified,$pageModified),'application/xml',max($modified,...array_values($pageModified)));exit;
+    $xml=seo_sitemap($items,$modified,$pageModified);require_once __DIR__.'/public-lib/articles.php';try{$articleState=article_read();$published=article_published($articleState);}catch(Throwable $e){$published=[];error_log('Ruethies: artikel tidak tersedia untuk sitemap.');}
+    if($published){$articleModified=filemtime(article_file());$extra='<url><loc>'.CATALOG_ORIGIN.'/artikel/</loc><lastmod>'.gmdate('c',$articleModified).'</lastmod></url>';foreach($published as$row)$extra.='<url><loc>'.CATALOG_ORIGIN.'/artikel/'.article_escape($row['slug']).'/</loc><lastmod>'.$row['updatedAt'].'</lastmod></url>';$xml=str_replace('</urlset>',$extra.'</urlset>',$xml);$modified=max($modified,$articleModified);}
+    seo_reply($xml,'application/xml',max($modified,...array_values($pageModified)));exit;
   }
   if($path==='/llms.txt') { seo_reply(seo_llms($template,$items,$faq),'text/plain',$modified);exit; }
   if($path==='/')$html=profile_home($template,$items,$faq);

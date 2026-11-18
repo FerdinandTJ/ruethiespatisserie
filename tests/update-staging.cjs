@@ -12,6 +12,7 @@ try{
  commit('old release');fs.mkdirSync(path.dirname(site),{recursive:true});git(['clone',remote,site],root);
  fs.unlinkSync(path.join(site,'images/menu/old.jpg'));fs.unlinkSync(path.join(site,'images/menu/old.webp'));fs.writeFileSync(path.join(site,'images/menu/upload-new.jpg'),'new CMS upload');
  const categories='[{"key":"hosting-category","id":"Hosting"}]';fs.writeFileSync(path.join(site,'categories.json'),categories);fs.writeFileSync(path.join(site,'.catalog.lock'),'runtime lock');
+ const privateData=path.join(root,'site/ruethies-data-staging');fs.mkdirSync(privateData,{recursive:true});const articles='{"enabled":true,"items":[{"id":"hosting-article"}],"categories":[{"id":"hosting-category"}]}';fs.writeFileSync(path.join(privateData,'articles.json'),articles);fs.writeFileSync(path.join(privateData,'articles.lock'),'runtime article lock');fs.mkdirSync(path.join(site,'images/articles'),{recursive:true});fs.writeFileSync(path.join(site,'images/articles/hosting.webp'),'hosting cover');
  const original='[{"uid":"permanent-hosting-id","cat":"coffee"}]';fs.writeFileSync(path.join(site,'menu.json'),original);
  const auth='# DO NOT REMOVE THIS LINE AND THE LINES BELOW PWPROTECTID:test\nAuthType Basic\nAuthName "Test"\nAuthUserFile /private/test-passwords\nRequire valid-user\n';fs.appendFileSync(path.join(site,'.htaccess'),auth);
  fs.writeFileSync(path.join(site,'index.html'),'hosting FAQ generated template');
@@ -30,6 +31,8 @@ try{
  console.log('PASS: tracked hosting photo deletions stay deleted, their manifest is backed up, existing photos and new CMS uploads are preserved');
  fs.writeFileSync(path.join(site,'images/menu/keep.jpg'),'modified photo');const photoRejected=cp.spawnSync('bash',[script],{cwd:site,encoding:'utf8'});assert.notEqual(photoRejected.status,0);assert((photoRejected.stdout+photoRejected.stderr).includes('perubahan foto perlu ditinjau'));assert.equal(fs.readFileSync(path.join(site,'images/menu/keep.jpg'),'utf8'),'modified photo');git(['restore','--','images/menu/keep.jpg'],site);
  console.log('PASS: modified photos remain blocked for review without overwriting hosting files');
+ assert.equal(fs.readFileSync(path.join(privateData,'articles.json'),'utf8'),articles);assert.equal(fs.readFileSync(path.join(site,'images/articles/hosting.webp'),'utf8'),'hosting cover');const privateListing=run('tar',['-tzf',path.join(backup,'private.tgz')],site);assert(privateListing.includes('articles.json')&&!privateListing.includes('articles.lock'));assert(run('tar',['-tzf',path.join(backup,'staging.tgz')],site).includes('images/articles/hosting.webp'));
+ console.log('PASS: updater preserves and backs up private article publications/categories and uploaded covers without copying runtime locks');
  console.log('PASS: updater preserves hosting categories and excludes the runtime catalogue lock from archive');
  console.log('PASS: staging update preserves hosting UID/JSON and Basic Auth, updates templates/rules, retains stash and backup');
  fs.writeFileSync(path.join(site,'guard.php'),'local code edit');
