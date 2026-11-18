@@ -36,3 +36,16 @@ label{display:block;min-width:0;font-size:.85rem;font-weight:600;margin-top:18px
 .category-delete-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:10;width:min(260px,calc(100vw - 68px));padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:0 12px 32px -12px #143e5533;overflow-wrap:anywhere}.category-delete-panel>p:first-child{margin:0 0 6px;font-size:.86rem}.category-delete-panel .sub{margin:0 0 12px;font-size:.78rem}.category-confirm{display:flex;align-items:center;gap:8px;margin:0 0 14px;font-size:.78rem;font-weight:500}.category-confirm input{width:16px;height:16px;min-height:0;margin:0;flex:none}.category-delete-buttons{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}.category-delete-buttons button{margin:0;min-height:38px;padding:8px 10px;font-size:.76rem}
 @media(max-width:760px){.category-admin-row{grid-template-columns:minmax(0,1fr);gap:12px;padding:18px 0}.category-admin-actions{justify-content:flex-start;width:100%;padding-left:44px}.category-delete-panel{right:0}.category-admin-copy h3{font-size:.94rem}}
 @media(max-width:360px){.category-admin-actions{padding-left:0}.category-admin-info{gap:10px}}
+
+/* Consistent action targets; form submit buttons retain their existing behavior. */
+button,.btn{line-height:1.35;text-align:center;max-width:100%;overflow-wrap:anywhere}
+.actions{gap:10px}
+.actions .danger,.item .actions .danger{margin-left:0;border-style:solid}
+.actions .btn,.actions button,.linkbtn{min-height:44px}
+.category-edit,.category-delete>summary{min-height:44px;min-width:44px}
+.category-order button{width:44px;min-height:44px}
+.category-confirm{min-height:44px}
+.category-delete-buttons button{min-height:44px;margin:0}
+.category-delete-buttons{gap:10px}
+@media(max-width:899px){.topbar .ticon{width:44px;height:44px;min-height:44px}}
+@media(max-width:620px){.item .actions{gap:10px}.item .actions>.btn,.item .actions>form{flex:1 1 auto}.item .actions>form>button{width:100%}}

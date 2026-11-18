@@ -60,7 +60,7 @@ function article_mutate(array $actor,array $input,array $files=[]): string{
   }
   $row['updatedAt']=$now;$row['updatedBy']=$actor['name'];article_validate($row,false,article_categories($state));
   $index=null;foreach($state['items']as$i=>$old)if($old['id']===$row['id'])$index=$i;if($index===null)$state['items'][]=$row;else $state['items'][$index]=$row;
-  try{article_state_validate($state);}catch(RuntimeException $e){throw new DomainException('Alamat artikel harus unik dan artikel asal terjemahan harus tersedia. Alamat yang dipakai artikel di tempat sampah belum dapat digunakan ulang.');}
+  try{article_state_validate($state);}catch(RuntimeException $e){throw new DomainException('Alamat artikel harus unik dan artikel asal terjemahan harus tersedia. Alamat yang dipakai artikel yang dihapus belum dapat digunakan ulang.');}
   $state['audit'][]=['article'=>$row['id'],'actor'=>$actor['name'],'action'=>$action,'at'=>$now];$state['audit']=array_slice($state['audit'],-5000);$state['revision']=bin2hex(random_bytes(32));article_backup();article_write($state);return $row['id'];
  });});}catch(Throwable $e){if($createdCover!=='')article_remove_new_cover($createdCover);throw $e;}
  try{ruethies_log($actor['name'],'article-'.$action,$id);}catch(RuntimeException $e){error_log('Ruethies: log artikel tersimpan pada audit privat.');}return $id;
@@ -82,7 +82,7 @@ function article_category_mutate(array $actor,array $input): void {
    if($index===null){if(count($rows)>=100)throw new DomainException('Maksimal 100 kategori artikel.');$rows[]=$candidate;}else $rows[$index]=$candidate;$id=$candidate['id'];
   }elseif($action==='delete'){
    if(($input['confirm']??'')!=='yes')throw new DomainException('Konfirmasi hapus diperlukan.');
-   foreach($state['items']as$row)if($row['category']===$id)throw new DomainException('Pindahkan seluruh artikel dalam kategori ini terlebih dahulu, termasuk artikel yang belum diterbitkan dan artikel di tempat sampah.');
+   foreach($state['items']as$row)if($row['category']===$id)throw new DomainException('Pindahkan seluruh artikel dalam kategori ini terlebih dahulu, termasuk artikel yang belum diterbitkan dan artikel yang dihapus.');
    if(count($rows)<=1)throw new DomainException('Pertahankan minimal satu kategori artikel.');array_splice($rows,$index,1);
   }else{
    $next=$index+($action==='up'?-1:1);if(!isset($rows[$next]))throw new DomainException('Kategori sudah berada pada urutan paling '.($action==='up'?'atas.':'bawah.'));
