@@ -4,6 +4,8 @@ Dokumentasi proyek disimpan di folder ini. Jalankan perintah PHP, Git, dan tool 
 
 ## Operasional dan deployment
 
+- [Animasi publik bersama main dan staging](PUBLIC-MOTION.md)
+
 - [Perapian jarak halaman dan hasil pemeriksaan](SPACING-REFINEMENT.md)
 
 - [Panduan harian untuk pengelola website](ADMIN-PANDUAN.md)

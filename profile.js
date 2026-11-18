@@ -17,7 +17,7 @@
   function updateOrder(report=false){
     if(!product)return true;
     date.min=todayWIB();const count=Number(quantity.value);
-    quantity.setCustomValidity(Number.isSafeInteger(count)&&count>0?'':phrase('Masukkan jumlah berupa bilangan bulat positif.','Enter a positive whole number.'));
+    quantity.setCustomValidity(Number.isSafeInteger(count)&&count>=1&&count<=999?'':phrase('Masukkan jumlah berupa bilangan bulat 1–999.','Enter a whole number from 1 to 999.'));
     date.setCustomValidity(date.value&&date.value<date.min?phrase('Tanggal kebutuhan tidak boleh sebelum hari ini (WIB).','The date cannot be before today in Jakarta time.'):'');
     note.setCustomValidity(note.value.length>500?phrase('Catatan maksimal 500 karakter.','Notes must be 500 characters or fewer.'):'');
     const fields=[quantity,date,note],invalid=fields.find(el=>!el.validity.valid);

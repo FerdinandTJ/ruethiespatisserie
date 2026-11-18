@@ -1,0 +1,8 @@
+/* Local brand-blue introduction; page and header stay cream. */
+.profile-site .rp-header{background:var(--beige)}
+#home>#atmosphere[data-theme=blue]{--mb-section-ink:var(--brand-ink);--mb-section-muted:#1F4B62;position:relative;isolation:isolate;background:var(--brand-blue);color:var(--mb-section-ink)}
+#home>#atmosphere[data-theme=blue]:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:100vw;z-index:-1;transform:translateX(-50%);background:var(--brand-blue);pointer-events:none}
+.profile-site #home>#atmosphere[data-theme=blue] h2,.profile-site #home>#atmosphere[data-theme=blue] .rp-kicker,.profile-site #home>#atmosphere[data-theme=blue] a{color:var(--mb-section-ink)}
+.profile-site #home>#atmosphere[data-theme=blue] p:not(.rp-kicker),#home>#atmosphere[data-theme=blue] .ma-read-word{color:var(--mb-section-muted)}
+#home>#atmosphere[data-theme=blue] .ma-read-ink{color:var(--mb-section-ink)}
+.profile-site #home>#atmosphere[data-theme=blue] a:focus-visible{outline-color:var(--mb-section-ink)}

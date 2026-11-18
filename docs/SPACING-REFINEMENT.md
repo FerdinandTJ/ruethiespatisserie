@@ -35,3 +35,7 @@ Pada fixture yang sama, tinggi viewport 844px. Angka mengukur jarak visual antar
 ## Deployment
 
 Tidak ada migrasi database atau CLI upgrade khusus perapian jarak. Gunakan prosedur backup/pull biasa yang mempertahankan konten hosting. PO tetap khusus staging. Periksa halaman artikel dan beranda setelah deployment; versi asset baru membantu browser mengambil CSS/JS terbaru.
+
+## Penyelarasan animasi publik ke main
+
+Stacking kategori dan modul publik tambahan kini juga dibawa ke main; lihat [PUBLIC-MOTION.md](PUBLIC-MOTION.md). Gap kategori tetap dibatasi 24–64px. Tabel perbandingan di atas mencatat rilis perapian jarak sebelum penyelarasan ini.

@@ -1,0 +1,5 @@
+@media(max-width:760px){.rp-header{transition:transform .22s ease}.rp-header.ma-header-away:not(:focus-within):not(.rp-menu-open){transform:translateY(-100%)}}
+@media(prefers-reduced-motion:reduce){.rp-header{transition:none!important;transform:none!important}}
+
+/* Reserve the enhanced navigation layout before deferred scripts run. No-JS links remain visible. */
+@media(scripting:enabled) and (max-width:1100px){.rp-header:not(.rp-nav-enhanced) .rp-mobile-menu{display:none}}

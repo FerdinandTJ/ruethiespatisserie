@@ -1,0 +1,9 @@
+[data-live-hours]{display:inline-flex;align-items:center;gap:8px;min-height:36px;min-width:224px;padding:4px 12px;border:1px solid var(--wine-12);border-radius:999px;font-size:.78rem;color:var(--wine-ink)}
+[data-live-hours]:before{content:"";flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:currentColor}
+.ma-hours-open:before{animation:ma-hours-pulse 2.8s ease-in-out infinite}
+@keyframes ma-hours-pulse{50%{opacity:.45;transform:scale(.85)}}
+#visit .rp-button{position:relative;padding-left:44px}
+#visit .rp-button:before{content:"";position:absolute;left:20px;width:10px;height:13px;border:1.5px solid currentColor;border-radius:8px 8px 8px 0;transform:rotate(-45deg)}
+#visit.ma-pin-played .rp-button:before{animation:ma-pin-bounce .65s ease 1}
+@keyframes ma-pin-bounce{40%{transform:translateY(-5px) rotate(-45deg)}70%{transform:translateY(1px) rotate(-45deg)}}
+@media(prefers-reduced-motion:reduce){[data-live-hours]:before,#visit .rp-button:before{animation:none!important}}

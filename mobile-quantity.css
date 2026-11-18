@@ -1,0 +1,13 @@
+/* C1 reserves the final input geometry before the control is enhanced. */
+.profile-site .rp-order #order-quantity{min-height:48px;height:48px;padding:10px;line-height:1.5;font-size:1rem}
+.profile-site .mc-quantity{display:flex;align-items:center;gap:6px;margin-top:6px;min-height:48px}
+.profile-site .mc-quantity .mc-number-slot{position:relative;min-width:0;flex:1}
+.profile-site .mc-quantity input{margin:0;text-align:center;min-height:48px;appearance:textfield;-moz-appearance:textfield}
+.mc-quantity input::-webkit-inner-spin-button,.mc-quantity input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.profile-site .mc-quantity-button{flex:0 0 44px;width:44px;height:48px;padding:0;border:1px solid var(--wine-12);border-radius:12px;background:var(--paper);color:var(--wine);font-size:1.25rem;line-height:1;cursor:pointer}
+.profile-site .mc-quantity-button:disabled{color:var(--muted);cursor:default}
+.mc-number-visual{position:absolute;inset:1px;display:grid;place-items:center;overflow:hidden;pointer-events:none;background:var(--paper);border-radius:9px}
+.mc-number-visual>span{grid-area:1/1;display:grid;place-items:center;width:100%;height:100%}
+.mc-number-moving input{color:transparent!important;caret-color:var(--wine)}
+.mc-quantity-live{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+@media(prefers-reduced-motion:reduce){.mc-number-visual{display:none!important}.mc-number-moving input{color:var(--ink)!important}}
