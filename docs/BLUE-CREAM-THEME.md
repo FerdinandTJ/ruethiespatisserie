@@ -16,3 +16,7 @@ Public CSS compatibility variables retain their legacy names, with blue/cream va
 Preview: `php tools/preview-profile.php --port=8901` from this branch, then http://127.0.0.1:8901/. The helper uses a disposable copy of public JSON; hosting data is untouched.
 
 Checks: seven public page types at 320/390/1440 px without horizontal overflow, exact computed background/button colors, mobile navigation and ID/EN, readable footer, SEO/public CMS and catalogue checks, and admin regression. Production/Safari physical-device checks remain pending release review.
+
+## Pembaruan 18 November 2026
+
+Palet ini kini juga berlaku pada staging, login dan admin kedua branch, termasuk admin PO staging. Keterangan admin tidak berubah di atas adalah catatan rilis awal. Lihat [ARTICLE-STAGING-SYNC.md](ARTICLE-STAGING-SYNC.md).
