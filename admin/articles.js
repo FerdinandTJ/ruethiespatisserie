@@ -5,6 +5,7 @@
 
  const form=title.closest('form'),file=form.querySelector('input[type=file]');let sending=false;
  form.addEventListener('submit',async event=>{
+  if(event.defaultPrevented)return;
   if(event.submitter?.getAttribute('formaction')==='article-preview.php'||!file.files[0])return;
   event.preventDefault();if(sending)return;const image=file.files[0];
   if(!['image/jpeg','image/png','image/webp'].includes(image.type)||image.size>2*1024*1024){alert('Sampul harus JPG/PNG/WebP, maksimal 2 MB.');return;}

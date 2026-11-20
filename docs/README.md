@@ -13,6 +13,7 @@ Dokumentasi proyek disimpan di folder ini. Jalankan perintah PHP, Git, dan tool 
 - [Sinkronisasi Artikel dan tema main–staging](ARTICLE-STAGING-SYNC.md)
 
 - [Artikel: admin, draft, pengujian dan rollback](ARTICLES.md)
+- [Editor visual Artikel, tabel dan bullet point](ARTICLE-VISUAL-EDITOR.md)
 - [Kategori melalui admin](CATEGORY-MANAGEMENT.md)
 - [Upgrade keamanan dan pemulihan akun](SECURITY-UPGRADE.md)
 - [Deployment SEO dan pemulihan](SEO-DEPLOYMENT.md)

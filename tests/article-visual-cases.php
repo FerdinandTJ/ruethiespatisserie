@@ -1,0 +1,15 @@
+<?php
+// Runs in isolated articles.php fixture, using existing owner/staff sessions.
+[$code]=$http('anon','/admin/article-editor.php',['body'=>'Hello']);at($code===403,'visual conversion rejects unauthenticated requests');
+[$code]=$http('staff','/admin/article-editor.php',['body'=>'Hello']);at($code===403,'visual conversion requires CSRF');
+[$code]=$http('staff','/admin/article-editor.php');at($code===405,'visual conversion rejects GET');
+[$code,$editorPage]=$http('staff','/admin/?p=artikel-tambah');$token=ar_field($editorPage,'csrf');
+if(!$stagingTest)at(!str_contains($editorPage,'href="po.php"'),'production admin editor does not expose staging pre-order navigation');
+at($code===200&&str_contains($editorPage,'id="article-visual"')&&str_contains($editorPage,'article-editor.js?v='),'existing staff editor includes visual controls and script');
+$visual=['csrf'=>$token,'body_mode'=>'visual','body'=>'Original Markdown','body_html'=>'<h2>Rapat kantor</h2><p>Pesan <b>snackbox</b>. <a href="/menu/">Menu</a><img src=x onerror=evil()></p><ul><li>Jumlah</li></ul>'];
+[$code,$converted]=$http('staff','/admin/article-editor.php',$visual);$converted=json_decode($converted,true);at($code===200&&str_contains($converted['body'],'**snackbox**')&&!str_contains($converted['html'],'onerror'),'authenticated visual conversion returns safe Markdown and HTML');
+[$code,$form]=$http('staff','/admin/?p=artikel-tambah');$create=$base;$create['article_id']='';$create['title']='Uji editor visual';$create['slug']='uji-editor-visual';$create['body_mode']='visual';$create['body_html']=$visual['body_html'];[$code,$_,$h]=$mutate('staff',$create);at($code===303,'staff saves visual body through existing write and revision checks');parse_str(parse_url($h['location'],PHP_URL_QUERY),$params);$visualId=$params['id'];
+$s=json_decode(file_get_contents($private.'/articles.json'),true);$v=array_values(array_filter($s['items'],fn($r)=>$r['id']===$visualId))[0];at($v['status']==='draft'&&str_contains($v['body'],'**snackbox**')&&!array_key_exists('body_html',$v),'visual save remains draft and stores original Markdown schema only');
+[$code,$page]=$http('staff','/admin/article-preview.php',array_merge($create,['csrf'=>$token,'article_id'=>$visualId,'body_html'=>'<h2>Pratinjau</h2><p>Belum disimpan</p>']));at($code===200&&str_contains($page,'Belum disimpan')&&!str_contains($v['body'],'Belum disimpan'),'unsaved visual changes preview without persistence');
+$savedVisual=file_get_contents($private.'/articles.json');$create['article_id']=$visualId;$create['body_html']='<ul><li>A<ul><li>B</li></ul></li></ul>';$create['csrf']=$token;$create['revision']=json_decode($savedVisual,true)['revision'];[$code,$error]=$http('staff','/admin/?p=artikel-ubah&id='.$visualId,$create);at($code===200&&str_contains($error,'Daftar bertingkat')&&str_contains($error,'Salinan isi visual')&&file_get_contents($private.'/articles.json')===$savedVisual,'unsupported content rejected with escaped recovery copy and no data loss');
+[$code,$home]=$http('anon','/');at(!str_contains($home,'article-editor.js'),'visual editor assets never load on public home');
