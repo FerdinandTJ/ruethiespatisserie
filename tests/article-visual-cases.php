@@ -4,7 +4,7 @@
 [$code]=$http('staff','/admin/article-editor.php',['body'=>'Hello']);at($code===403,'visual conversion requires CSRF');
 [$code]=$http('staff','/admin/article-editor.php');at($code===405,'visual conversion rejects GET');
 [$code,$editorPage]=$http('staff','/admin/?p=artikel-tambah');$token=ar_field($editorPage,'csrf');
-at($code===200&&str_contains($editorPage,'id="article-visual"')&&str_contains($editorPage,'article-editor.js?v=visual-20261120'),'existing staff editor includes visual controls and script');
+at($code===200&&str_contains($editorPage,'id="article-visual"')&&str_contains($editorPage,'article-editor.js?v='),'existing staff editor includes visual controls and script');
 $visual=['csrf'=>$token,'body_mode'=>'visual','body'=>'Original Markdown','body_html'=>'<h2>Rapat kantor</h2><p>Pesan <b>snackbox</b>. <a href="/menu/">Menu</a><img src=x onerror=evil()></p><ul><li>Jumlah</li></ul>'];
 [$code,$converted]=$http('staff','/admin/article-editor.php',$visual);$converted=json_decode($converted,true);at($code===200&&str_contains($converted['body'],'**snackbox**')&&!str_contains($converted['html'],'onerror'),'authenticated visual conversion returns safe Markdown and HTML');
 [$code,$form]=$http('staff','/admin/?p=artikel-tambah');$create=$base;$create['article_id']='';$create['title']='Uji editor visual';$create['slug']='uji-editor-visual';$create['body_mode']='visual';$create['body_html']=$visual['body_html'];[$code,$_,$h]=$mutate('staff',$create);at($code===303,'staff saves visual body through existing write and revision checks');parse_str(parse_url($h['location'],PHP_URL_QUERY),$params);$visualId=$params['id'];

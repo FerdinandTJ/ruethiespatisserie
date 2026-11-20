@@ -10,4 +10,4 @@ try{
  $body=article_input_body($_POST);echo json_encode(['body'=>$body,'html'=>article_markdown($body)['html']],JSON_THROW_ON_ERROR);
 }catch(RuethiesRateLimit $e){http_response_code(429);echo json_encode(['error'=>'Terlalu banyak percobaan. Tunggu sebentar.']);}
 catch(DomainException $e){if(http_response_code()<400)http_response_code(400);echo json_encode(['error'=>$e->getMessage()]);}
-catch(Throwable $e){http_response_code(503);echo json_encode(['error'=>'Editor belum dapat memproses isi. Tulisan Anda belum disimpan.']);}
+catch(Throwable $e){http_response_code(503);echo json_encode(['error'=>'Tulisan belum bisa diproses. Belum ada perubahan yang disimpan.']);}
