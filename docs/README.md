@@ -18,6 +18,7 @@ Dokumentasi proyek disimpan di folder ini. Jalankan perintah PHP, Git, dan tool 
 - [Upgrade keamanan dan pemulihan akun](SECURITY-UPGRADE.md)
 - [Deployment SEO dan pemulihan](SEO-DEPLOYMENT.md)
 - [Validasi SEO](SEO-VALIDATION.md)
+- [SEO lokal dan draft artikel Indonesia](SEO-LOCAL-20261120.md)
 
 Dokumen upgrade mencatat perubahan rilis tertentu. Pemindahan dokumentasi ini tidak memerlukan CLI upgrade atau impor database, dan tidak mengubah konten CMS.
 

@@ -180,10 +180,10 @@ function seo_assets(string $html): string {
     return $m[1].'="'.$value.'"';
   },$html);
 }
-function seo_sitemap(array $items,int $homeModified,array $pageModified=[]): string {
+function seo_sitemap(array $items,int $homeModified,array $pageModified=[],int $productTemplateModified=0): string {
   $xml='<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>'.CATALOG_ORIGIN.'/</loc><lastmod>'.gmdate('c',$pageModified['/']??$homeModified).'</lastmod></url>';
   foreach(['/menu/','/tentang-kami/','/hubungi-kami/','/cara-pesan/'] as $path)$xml.='<url><loc>'.CATALOG_ORIGIN.$path.'</loc><lastmod>'.gmdate('c',$pageModified[$path]??$homeModified).'</lastmod></url>';
-  foreach($items as $m) if(($m['available'] ?? true)!==false) $xml.='<url><loc>'.CATALOG_ORIGIN.catalog_path($m).'</loc><lastmod>'.gmdate('Y-m-d\TH:i:s\Z',max(strtotime($m['updated_at']),catalog_category_modified($m['cat']))).'</lastmod></url>';
+  foreach($items as $m) if(($m['available'] ?? true)!==false) $xml.='<url><loc>'.CATALOG_ORIGIN.catalog_path($m).'</loc><lastmod>'.gmdate('Y-m-d\TH:i:s\Z',max(strtotime($m['updated_at']),catalog_category_modified($m['cat']),$productTemplateModified)).'</lastmod></url>';
   return $xml.'</urlset>';
 }
 function seo_llms(string $template,array $items,array $faq): string {
