@@ -14,6 +14,7 @@ Dokumentasi proyek disimpan di folder ini. Jalankan perintah PHP, Git, dan tool 
 
 - [Artikel: admin, draft, pengujian dan rollback](ARTICLES.md)
 - [Editor visual Artikel, tabel dan bullet point](ARTICLE-VISUAL-EDITOR.md)
+- [Pasangan artikel Indonesia–Inggris dan satu kartu publik](ARTICLE-TRANSLATIONS.md)
 - [Kategori melalui admin](CATEGORY-MANAGEMENT.md)
 - [Upgrade keamanan dan pemulihan akun](SECURITY-UPGRADE.md)
 - [Deployment SEO dan pemulihan](SEO-DEPLOYMENT.md)

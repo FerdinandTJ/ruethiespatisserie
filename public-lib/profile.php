@@ -29,7 +29,7 @@ function profile_articles(): array {
 function profile_article_section(array $rows,bool $home=false): string {
   if(!$rows)return '';
   $html='<section class="'.($home?'container ':'').'rp-section rp-editorial" aria-labelledby="rp-editorial-title"><div class="rp-section-heading"><div>'.profile_text('ARTIKEL RUETHIES','RUETHIES ARTICLES','p',' class="rp-kicker"').'<h2 id="rp-editorial-title">'.profile_text($home?'Dari dapur Ruethies':'Baca juga',$home?'From the Ruethies kitchen':'Read also').'</h2></div>'.profile_link('/artikel/','Lihat semua artikel →','Explore all articles →').'</div><div class="rp-grid">';
-  foreach(array_slice($rows,0,3)as$row)$html.='<article class="rp-card rp-editorial-card" lang="'.$row['lang'].'">'.article_card_image($row,'(max-width: 400px) calc(100vw - 36px), (max-width: 760px) calc((100vw - 66px) / 2), 365px').'<div class="rp-card-content">'.profile_text(article_category_names($row['category'])[0],article_category_names($row['category'])[1],'p',' class="rp-kicker"').'<h3><a href="'.article_path($row).'">'.article_escape($row['title']).'</a></h3><p class="rp-muted">'.article_escape($row['description']).'</p><p class="rp-editorial-meta"><time datetime="'.$row['publishedAt'].'">'.article_date($row['publishedAt']).'</time> · '.article_minutes($row['body']).' '.profile_text('menit baca','min read').'</p>'.profile_link(article_path($row),'Baca artikel →','Read article →').'</div></article>';
+  foreach(array_slice(article_groups($rows),0,3)as$group)$html.=article_group_card($group,true,'h3');
   return $html.'</div></section>';
 }
 function profile_has_snack(array $items): bool {foreach($items as $m)if(($m['slug']??'')==='snackbox'&&($m['available']??true)!==false)return true;return false;}
@@ -79,7 +79,8 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=profile-faq-consistency-20261117"',$head);
   if($noindex)$head=preg_replace('~<meta name="robots"[^>]*>~','<meta name="robots" content="noindex, follow">',$head);
   $head.='<link rel="stylesheet" href="/profile.css?v=spacing-20261118"><script src="/carousel.js?v=20261112-profile" defer></script><script src="/profile.js?v=public-motion-20261118" defer></script>';
-  if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=spacing-20261118"><script src="/articles.js?v=20261117" defer></script>';
+  if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=spacing-20261118"><script src="/articles.js?v=translation-groups-20261120" defer></script>';
+  if(str_contains($body,'data-article-group=')||str_contains($body,'id="article-list-region"'))$head.='<script src="/article-cards.js?v=translation-groups-20261120" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/order-story.css?v=spacing-20261118"><script src="/order-story.js?v=spacing-20261118" defer></script>';
   $head.='<script src="/mobile-motion.js?v=20261116" defer></script><link rel="stylesheet" href="/mobile-header.css?v=20261116"><script src="/mobile-header.js?v=20261116" defer></script>';
   $head.='<link rel="stylesheet" href="/mobile-whatsapp.css?v=20261116"><script src="/mobile-whatsapp.js?v=20261116" defer></script>';
@@ -153,7 +154,7 @@ function profile_product(string $template,array $m,array $items): string {
   $public=profile_public($items);
   if($package){$alternate=$snack?'platter':'snackbox';foreach($public as$r)if($r['slug']===$alternate){$body.='<aside class="product-alternative">'.profile_link(catalog_path($r),$snack?'Lihat pilihan Platter →':'Lihat pilihan Snackbox →',$snack?'Explore Platter options →':'Explore Snackbox options →').'</aside>';break;}}
   else{$related=array_values(array_filter($public,fn($r)=>$r['uid']!==$m['uid']));usort($related,fn($a,$b)=>(int)($b['cat']===$m['cat'])<=>(int)($a['cat']===$m['cat']));$body.='<section class="rp-section"><h2>'.profile_text('Temukan sajian lainnya','Explore more treats').'</h2><div class="rp-grid">'.implode('',array_map('profile_card',array_slice($related,0,3))).'</div></section>';}
-  $body.=profile_article_section(array_values(array_filter(profile_articles(),fn($article)=>in_array($path,$article['related'],true))));
+  $publishedArticles=profile_articles();if($publishedArticles)$body.=profile_article_section(article_for_related_path($publishedArticles,$path));
   $body.='<p class="rp-back-catalog">'.profile_link('/menu/','Lihat seluruh menu →','Explore all menu items →').'</p></main>';
   $crumbs=[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/']];if(!$package)$crumbs[]=['@type'=>'ListItem','position'=>2,'name'=>'Menu','item'=>CATALOG_ORIGIN.'/menu/'];$crumbs[]=['@type'=>'ListItem','position'=>count($crumbs)+1,'name'=>$package?$heading:$name,'item'=>CATALOG_ORIGIN.$path];
   $schemas=[seo_business($template),['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>$crumbs],['@context'=>'https://schema.org','@type'=>'WebPage','url'=>CATALOG_ORIGIN.$path,'name'=>$heading,'inLanguage'=>'id','mainEntity'=>['@type'=>'MenuItem','name'=>$name,'description'=>$m['id']['d'],'url'=>CATALOG_ORIGIN.$path,'image'=>array_map(fn($p)=>CATALOG_ORIGIN.'/'.$p,$photos)]],seo_faq_schema($faq)];
