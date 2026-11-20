@@ -14,6 +14,7 @@ if(!$articleState['enabled']): ?><p class="warn">Artikel belum ditampilkan kepad
 if($editing&&($edit['deletedAt']??null)===null):
  $values=$edit??['title'=>'','slug'=>'','description'=>'','category'=>array_key_first($articleCategories),'body'=>'','lang'=>'id','translationOf'=>'','related'=>[],'cover'=>'','coverAlt'=>''];
  if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['article_action']??'')==='save')foreach(['title','slug','description','category','body','lang','translationOf','coverAlt']as$key)if(is_string($_POST[$key]??null))$values[$key]=$_POST[$key];
+if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['article_action']??'')==='save'){try{$values['body']=article_input_body($_POST);}catch(DomainException $e){$visualRecovery=true;}}
 ?>
 <p><a class="backlink" href="?p=artikel">← Kembali ke Artikel</a></p>
 <div class="card editor"><h2><?= $edit?'Ubah artikel':'Tulis artikel baru' ?></h2>
@@ -25,10 +26,24 @@ if($editing&&($edit['deletedAt']??null)===null):
 <div class="article-admin-grid"><label>Kategori<select name="category"><?php foreach($articleCategories as$key=>$names): ?><option value="<?= h($key) ?>" <?= $values['category']===$key?'selected':'' ?>><?= h($names[0]) ?></option><?php endforeach; ?></select></label>
 <label>Bahasa konten<select name="lang"><option value="id" <?= $values['lang']==='id'?'selected':'' ?>>Indonesia</option><option value="en" <?= $values['lang']==='en'?'selected':'' ?>>Inggris</option></select></label></div>
 <label>Artikel asal yang diterjemahkan (opsional)<select name="translationOf"><option value="">Bukan terjemahan artikel lain</option><?php foreach($articleState['items']as$other)if($other['id']!==($edit['id']??'')): ?><option value="<?= h($other['id']) ?>" <?= $values['translationOf']===$other['id']?'selected':'' ?>><?= h($other['title'].' · '.($other['lang']==='en'?'Inggris':'Indonesia')) ?></option><?php endif; ?></select></label>
-<label>Isi artikel<textarea id="article-body" name="body" rows="20" maxlength="60000"><?= h($values['body']) ?></textarea></label>
-<details class="article-help"><summary>Cara memberi judul bagian, tulisan tebal, dan tautan</summary><p>Ketik isi seperti biasa; pisahkan paragraf dengan satu baris kosong. Untuk memberi format, gunakan <code>## Judul bagian</code>, <code>### Subbagian</code>, paragraf kosong, <code>**tebal**</code>, <code>*miring*</code>, <code>[teks](/menu/)</code>, daftar <code>- isi</code> atau <code>1. isi</code>, dan kutipan <code>&gt; isi</code>. Tidak perlu menulis kode HTML.</p><pre>| Kolom A | Kolom B |
-| --- | --- |
-| Isi A | Isi B |</pre><p>Tulisan [PERLU KONFIRMASI] menandakan informasi belum pasti. Lengkapi dan hapus penanda tersebut sebelum menerbitkan artikel.</p></details>
+<?php if(!empty($visualRecovery)): ?><details class="article-help" open><summary>Isi visual belum dapat disimpan</summary><p>Perbaiki format yang disebutkan pada pesan kesalahan. Salinan masukan tersedia di bawah agar tulisan tidak hilang. Editor menampilkan isi terakhir yang dapat dibaca.</p><textarea readonly rows="8" aria-label="Salinan isi visual yang belum tersimpan"><?= h(is_string($_POST['body_html']??null)?$_POST['body_html']:'') ?></textarea></details><?php endif; ?>
+<div class="article-body-field">
+<label for="article-body">Isi artikel</label>
+<p class="sub" id="article-editor-help">Tulis seperti biasa. Blok teks yang ingin diubah, lalu pilih format. Gunakan Judul bagian untuk topik baru dan Subbagian untuk penjelasannya.</p>
+<div id="article-visual-shell" hidden>
+<div class="article-visual-toolbar" role="group" aria-label="Format isi artikel">
+<label class="article-format-label">Jenis tulisan<select id="article-block-format"><option value="p">Paragraf</option><option value="h2">Judul bagian</option><option value="h3">Subbagian</option><option value="blockquote">Kutipan</option></select></label>
+<?php foreach(['bold'=>'Tebal','italic'=>'Miring','insertUnorderedList'=>'Daftar poin','insertOrderedList'=>'Daftar angka','createLink'=>'Tautan','unlink'=>'Lepas tautan','undo'=>'Urungkan','redo'=>'Ulangi']as$command=>$label): ?><button type="button" class="ghost" data-editor-command="<?= h($command) ?>"><?= h($label) ?></button><?php endforeach; ?>
+</div>
+<div id="article-visual" class="article-visual-content" contenteditable="true" role="textbox" aria-label="Isi artikel" aria-multiline="true" aria-describedby="article-editor-help" spellcheck="true"><?= article_markdown($values['body'])['html'] ?></div>
+<button type="button" class="ghost article-source-toggle" id="article-source-toggle">Buka mode teks</button>
+</div>
+<textarea id="article-body" name="body" rows="20" maxlength="60000" aria-label="Isi artikel dalam mode teks"><?= h($values['body']) ?></textarea>
+<input type="hidden" name="body_mode" id="article-body-mode" value="markdown">
+<textarea name="body_html" id="article-body-html" hidden><?php if(($_POST['body_mode']??'')==='visual'&&is_string($_POST['body_html']??null))echo h($_POST['body_html']); ?></textarea>
+<p id="article-editor-status" class="sub" role="status" aria-live="polite"></p>
+</div>
+<details class="article-help"><summary>Bantuan menulis artikel</summary><p>Gunakan tombol format untuk judul bagian, tulisan tebal atau miring, daftar, dan tautan. Tautan dapat memakai alamat website lengkap atau alamat halaman seperti /menu/. Gunakan Lihat tampilan untuk memeriksa hasil sebelum menyimpan. Artikel lama dan tabel sederhana tetap dapat dibuka. Daftar bertingkat dan gabungan format pada teks yang sama belum didukung.</p><p>Mode teks adalah pilihan lanjutan untuk format Markdown. Tanpa JavaScript, isi tetap dapat disunting melalui mode teks.</p><p>Tulisan [PERLU KONFIRMASI] menandakan informasi belum pasti. Lengkapi dan hapus penanda tersebut sebelum menerbitkan artikel.</p></details>
 <?php for($i=0;$i<3;$i++): ?><label>Produk / halaman terkait <?= $i+1 ?><select name="related<?= $i ?>"><option value="">Tidak ada</option><?php foreach($links as$url=>$name): ?><option value="<?= h($url) ?>" <?= ($values['related'][$i]??'')===$url?'selected':'' ?>><?= h($name) ?></option><?php endforeach; ?></select></label><?php endfor; ?>
 <label>Sampul opsional (JPG/PNG/WebP, maksimal 2 MB)<input name="article_cover" type="file" accept="image/jpeg,image/png,image/webp"></label>
 <p class="sub">Disarankan memakai foto yang sesuai isi artikel. Sampul tampil pada detail dan seluruh kartu artikel; tanpa sampul, kartu tetap berupa teks. Foto pada halaman artikel tampil utuh. Foto kecil di daftar artikel menyesuaikan bingkai dan dapat terpotong.</p>

@@ -33,6 +33,8 @@ Dokumen upgrade mencatat perubahan rilis tertentu. Pemindahan dokumentasi ini ti
 
 ## Khusus staging
 
+- [Editor visual Artikel](ARTICLE-VISUAL-EDITOR.md)
+
 - [Penyelarasan main dan staging](STAGING-SYNC.md)
 - [Midtrans Sandbox](MIDTRANS-SANDBOX.md)
 - [Notifikasi Fonnte](PO-FONNTE-STAGING.md)
