@@ -27,6 +27,66 @@
    command(name);
   });
  });
+ // Simple tables share the existing Markdown table format, with native undo history.
+ const tableActions=document.getElementById('article-table-actions'),tablePicker=document.getElementById('article-table-picker');let tableSerial=0;
+ function tableContext(){
+  const range=selection()?.getRangeAt(0)||savedRange;if(!range||!editor.contains(range.commonAncestorContainer))return null;
+  const node=range.startContainer.nodeType===1?range.startContainer:range.startContainer.parentElement,cell=node.closest?.('td,th'),table=cell?.closest('table');
+  if(!table||!editor.contains(table))return null;return {table,row:cell.parentElement.rowIndex,col:cell.cellIndex};
+ }
+ function tableState(){tableActions.hidden=!visual||!tableContext();}
+ document.addEventListener('selectionchange',tableState);
+ function focusCell(table,row=1,col=0){const cell=table.rows[Math.min(row,table.rows.length-1)]?.cells[col]||table.rows[0]?.cells[0];if(!cell)return;editor.focus();const r=document.createRange();r.selectNodeContents(cell);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);remember();tableState();}
+ function insertTableHTML(table,old=null,row=1,col=0){
+  const key='table-'+(++tableSerial);table.dataset.editorTable=key;
+  if(old){const r=document.createRange();r.selectNode(old);savedRange=r;}
+  command('insertHTML',table.outerHTML+(old?'':'<p><br></p>'));
+  const inserted=editor.querySelector('[data-editor-table="'+key+'"]');if(inserted){inserted.removeAttribute('data-editor-table');focusCell(inserted,row,col);}
+ }
+ document.getElementById('article-table-insert').addEventListener('click',()=>{
+  const cols=Number(document.getElementById('article-table-columns').value),rows=Number(document.getElementById('article-table-rows').value);
+  if(!Number.isInteger(cols)||cols<1||cols>6||!Number.isInteger(rows)||rows<1||rows>20){tell('Pilih 1–6 kolom dan 1–20 baris isi.');return;}
+  if(tableContext()){tell('Klik paragraf di luar tabel dulu untuk membuat tabel baru.');return;}
+  const table=document.createElement('table'),head=table.createTHead().insertRow(),body=table.createTBody();
+  for(let c=0;c<cols;c++){const th=document.createElement('th');th.scope='col';th.textContent='Kolom '+(c+1);head.append(th);}
+  for(let r=0;r<rows;r++){const tr=body.insertRow();for(let c=0;c<cols;c++)tr.insertCell().append(document.createElement('br'));}
+  insertTableHTML(table);tablePicker.open=false;tell('Tabel siap. Klik sel untuk mengisi, atau pilih kontrol baris dan kolom.');
+ });
+ tableActions.querySelectorAll('[data-table-action]').forEach(button=>{
+  button.addEventListener('mousedown',event=>event.preventDefault());button.addEventListener('click',()=>{
+   const ctx=tableContext();if(!ctx){tell('Klik sel tabel yang mau diubah dulu.');return;}
+   const {table,row,col}=ctx,copy=table.cloneNode(true),action=button.dataset.tableAction,width=table.rows[0]?.cells.length;
+   if(!width||Array.from(table.rows).some(r=>r.cells.length!==width||Array.from(r.cells).some(c=>c.colSpan!==1||c.rowSpan!==1))){tell('Kontrol ini hanya untuk tabel sederhana tanpa gabungan sel.');return;}
+   if(action==='table-delete'){
+    if(!confirm('Hapus tabel ini beserta isinya?'))return;const r=document.createRange();r.selectNode(table);savedRange=r;command('delete');savedRange=null;tableState();tell('Tabel dihapus. Klik Undo kalau ingin mengembalikannya.');return;
+   }
+   let targetRow=row,targetCol=col;
+   if(action==='row-add'){
+    if(copy.rows.length>=21){tell('Maksimal 20 baris isi per tabel.');return;}
+    const tr=document.createElement('tr');for(let c=0;c<width;c++){const td=document.createElement('td');td.append(document.createElement('br'));tr.append(td);}
+    if(row===0){let body=copy.tBodies[0]||copy.createTBody();body.insertBefore(tr,body.firstChild);}else copy.rows[row].after(tr);targetRow=row+1;
+   }
+   if(action==='column-add'){
+    if(width>=6){tell('Maksimal 6 kolom per tabel supaya tetap nyaman dibaca.');return;}
+    Array.from(copy.rows).forEach((tr,i)=>{const cell=document.createElement(i===0?'th':'td');if(i===0){cell.scope='col';cell.textContent='Kolom baru';}else cell.append(document.createElement('br'));tr.cells[col].after(cell);});targetCol=col+1;
+   }
+   if(action==='row-delete'){
+    if(row===0){tell('Baris atas adalah judul kolom. Klik selnya untuk mengganti judul.');return;}
+    if(copy.rows.length<=2){tell('Sisakan satu baris isi, atau pilih Hapus tabel.');return;}
+    if(table.rows[row].textContent.trim()&&!confirm('Hapus baris ini beserta isinya?'))return;copy.deleteRow(row);targetRow=Math.min(row,copy.rows.length-1);
+   }
+   if(action==='column-delete'){
+    if(width<=1){tell('Sisakan satu kolom, atau pilih Hapus tabel.');return;}
+    if(Array.from(table.rows).some(tr=>tr.cells[col].textContent.trim())&&!confirm('Hapus kolom ini beserta isinya?'))return;Array.from(copy.rows).forEach(tr=>tr.deleteCell(col));targetCol=Math.min(col,width-2);
+   }
+   insertTableHTML(copy,table,targetRow,targetCol);tell('Tabel diubah. Jangan lupa klik Simpan.');
+  });
+ });
+ editor.addEventListener('keydown',event=>{
+  if(event.key!=='Tab')return;const ctx=tableContext();if(!ctx)return;const cells=Array.from(ctx.table.rows).flatMap(row=>Array.from(row.cells)),current=ctx.table.rows[ctx.row].cells[ctx.col],next=cells[cells.indexOf(current)+(event.shiftKey?-1:1)];
+  if(next){event.preventDefault();focusCell(ctx.table,next.parentElement.rowIndex,next.cellIndex);}
+ });
+
  format.addEventListener('change',()=>command('formatBlock',format.value));
  // Plain-text paste prevents Word styling, remote images and executable markup entering the editor.
  editor.addEventListener('paste',event=>{event.preventDefault();command('insertText',event.clipboardData?.getData('text/plain')||'');});
@@ -39,7 +99,7 @@
    const response=await fetch('article-editor.php',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:data});const result=await response.json();if(!response.ok||typeof result.body!=='string'||typeof result.html!=='string')throw Error(result.error||'Tulisan belum bisa diproses.');
    if(visual){source.value=result.body;source.hidden=false;editor.hidden=true;shell.querySelector('.article-visual-toolbar').hidden=true;mode.value='markdown';toggle.textContent='Kembali ke editor visual';source.focus();}
    else{editor.innerHTML=result.html;source.hidden=true;editor.hidden=false;shell.querySelector('.article-visual-toolbar').hidden=false;savedRange=null;toggle.textContent='Buka mode teks';editor.focus();}
-   visual=!visual;sync();tell(visual?'Editor visual siap dipakai.':'Mode teks aktif. Jangan lupa simpan perubahannya.');
+   visual=!visual;tableState();sync();tell(visual?'Editor visual siap dipakai.':'Mode teks aktif. Jangan lupa simpan perubahannya.');
   }catch(error){tell(error.message||'Belum bisa ganti mode. Tulisan tetap ada, coba lagi.');}
   finally{busy=false;toggle.disabled=false;}
  });

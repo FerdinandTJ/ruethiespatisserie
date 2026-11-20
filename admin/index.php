@@ -303,7 +303,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=articles-20261117" defer></script>
 <link rel="stylesheet" href="admin.css?v=buttons-20261118" />
-<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=editor-mode-top-20261120"><script src="article-editor.js?v=editor-mode-top-20261120" defer></script><script src="articles.js?v=visual-20261120" defer></script><?php endif; ?>
+<?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=editor-tables-20261120"><script src="article-editor.js?v=editor-tables-20261120" defer></script><script src="articles.js?v=visual-20261120" defer></script><?php endif; ?>
 </head>
 <body>
 <a class="skip-admin" href="#admin-main">Langsung ke konten</a>

@@ -11,3 +11,8 @@ vt(!preg_match('/script|onclick|onerror|iframe|svg|javascript:|evil\(/i',$bad),'
 vt(str_contains(article_editor_markdown('<p>Ruéthies &amp; kue 🍰</p>'),'Ruéthies & kue 🍰'),'Unicode preserved');
 vt(article_input_body(['body'=>"## Original\n\n**Format**"])==="## Original\n\n**Format**",'legacy input unchanged');
 foreach([['body_mode'=>[]],['body_mode'=>'visual','body_html'=>[]],['body_mode'=>'visual','body_html'=>str_repeat('a',60001)],['body_mode'=>'visual','body_html'=>'<ul><li>A<ul><li>B</li></ul></li></ul>'],['body_mode'=>'visual','body_html'=>'<p><strong>A <em>B</em></strong></p>']]as$input){$thrown=false;try{article_input_body($input);}catch(DomainException $e){$thrown=true;}vt($thrown,'unsupported or invalid input rejected without flattening silently');}
+
+$emptyTable='<table><thead><tr><th>Kolom 1</th><th>Kolom 2</th></tr></thead><tbody><tr><td><br></td><td><br></td></tr><tr><td>Snackbox</td><td>20</td></tr></tbody></table><ul><li>Cek jumlah tamu</li></ul>';
+$converted=article_editor_markdown($emptyTable);$rendered=article_markdown($converted)['html'];
+vt(str_contains($rendered,'<td></td>')&&str_contains($rendered,'<td>Snackbox</td>')&&str_contains($rendered,'<li>Cek jumlah tamu</li>'),'new visual tables preserve blank cells, filled rows and following bullet list');
+vt(article_editor_markdown($rendered)===$converted,'new table and bullet list survive visual/Markdown roundtrip');
