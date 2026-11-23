@@ -125,6 +125,7 @@ function catalog_validate(array $items, bool $metadata = true): void {
       if (!is_array($item['detail_images']) || !array_is_list($item['detail_images']) || count($item['detail_images']) > 2) throw new RuntimeException('Foto detail tidak valid.');
       foreach ($item['detail_images'] as $image) if ($image !== '' && !catalog_image($image)) throw new RuntimeException('Foto detail tidak valid.');
     }
+    menu_variants_validate($item);
     if ($metadata) {
       if (!is_string($item['uid'] ?? null) || !preg_match('/\A[a-f0-9]{32}\z/D',$item['uid'])
         || !is_string($item['slug'] ?? null) || !preg_match('/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/D',$item['slug']) || strlen($item['slug']) > 80
@@ -192,3 +193,42 @@ function catalog_detail(array $item,string $language): string {
   if (($item['id']['n'] ?? '')!==($original[$item['slug']] ?? null)) return '';
   return $copy[$item['slug']][$language==='en'?1:0] ?? '';
 }
+
+const MENU_VARIANT_LIMIT = 8;
+function menu_variants_validate(array $item): void {
+  if (isset($item['variants_enabled']) && !is_bool($item['variants_enabled'])) throw new RuntimeException('Status varian tidak valid.');
+  $rows=$item['variants']??[];
+  if(!is_array($rows)||!array_is_list($rows)||count($rows)>MENU_VARIANT_LIMIT)throw new RuntimeException('Maksimal 8 varian per produk.');
+  $ids=[];$names=[];
+  foreach($rows as$row){
+    if(!is_array($row)||!is_string($row['uid']??null)||!preg_match('/\A[a-f0-9]{32}\z/D',$row['uid'])||isset($ids[$row['uid']]))throw new RuntimeException('ID varian tidak valid.');
+    foreach(['id','en']as$lang)foreach(['n'=>60,'d'=>300]as$key=>$limit){
+      $text=$row[$lang][$key]??null;
+      if(!is_string($text)||!mb_check_encoding($text,'UTF-8')||mb_strlen($text)>$limit||preg_match('/[\x00-\x1F\x7F]/u',$text)||strip_tags($text)!==$text)throw new RuntimeException('Isian varian harus teks biasa: nama maksimal 60, keterangan 300 karakter.');
+    }
+    $name=mb_strtolower(trim($row['id']['n']));
+    if($name===''||isset($names[$name]))throw new RuntimeException('Nama varian wajib dan tidak boleh sama.');
+    if(!is_string($row['img']??null)||($row['img']!==''&&!catalog_image($row['img'])))throw new RuntimeException('Foto varian tidak valid.');
+    $ids[$row['uid']]=true;$names[$name]=true;
+  }
+  if(!empty($item['variants_enabled'])&&!$rows)throw new RuntimeException('Tambahkan minimal satu varian atau matikan pilihan varian.');
+}
+function menu_variants_input(array $input,?array $old): array {
+  if(($input['variants_present']??'')!=='1')return ['variants_enabled'=>$old['variants_enabled']??false,'variants'=>$old['variants']??[]];
+  foreach(array_keys($input)as$field)if(preg_match('/\Avariant_([0-9]+)_/D',(string)$field,$match)&&(int)$match[1]>=MENU_VARIANT_LIMIT)throw new DomainException('Maksimal 8 varian per produk.');
+  $existing=array_column($old['variants']??[],null,'uid');$out=[];$seen=[];
+  for($i=0;$i<MENU_VARIANT_LIMIT;$i++){
+    $prefix='variant_'.$i.'_';$uid=$input[$prefix.'uid']??'';
+    if($uid!==''&&(!isset($existing[$uid])||isset($seen[$uid])))throw new DomainException('Varian sudah berubah. Muat ulang halaman.');
+    $seen[$uid]=true;
+    if(($input[$prefix.'delete']??'')==='1')continue;
+    $n=trim($input[$prefix.'n']??'');$ne=trim($input[$prefix.'ne']??'');$d=trim($input[$prefix.'d']??'');$de=trim($input[$prefix.'de']??'');
+    if($uid===''&&$n===''&&$ne===''&&$d===''&&$de==='')continue;
+    $out[]=['uid'=>$uid?:bin2hex(random_bytes(16)),'id'=>['n'=>$n,'d'=>$d],'en'=>['n'=>$ne?:$n,'d'=>$de?:$d],'img'=>!empty($input[$prefix.'photo_remove'])?'':($existing[$uid]['img']??''),'_slot'=>$i,'_order'=>(int)($input[$prefix.'order']??$i)];
+  }
+  usort($out,fn($a,$b)=>[$a['_order'],$a['_slot']]<=>[$b['_order'],$b['_slot']]);
+  $result=['variants_enabled'=>!empty($input['variants_enabled']),'variants'=>$out];
+  try{menu_variants_validate($result);}catch(RuntimeException $e){throw new DomainException($e->getMessage());}
+  return $result;
+}
+function menu_variant_images(array $item): array {return array_values(array_filter(array_column($item['variants']??[],'img')));}

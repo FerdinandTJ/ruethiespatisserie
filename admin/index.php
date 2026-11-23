@@ -23,7 +23,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   }
   security_upload_input($_FILES);
   if ($me && in_array($aksi,['save','galeri-save'],true)) {
-    foreach ($aksi==='save' ? ['foto','detail1','detail2'] : ['gfoto'] as $field) {
+    foreach ($aksi==='save' ? array_merge(['foto','detail1','detail2'],array_map(fn($i)=>'variant_'.$i.'_photo',range(0,MENU_VARIANT_LIMIT-1))) : ['gfoto'] as $field) {
       if (!empty($_FILES[$field]['name']) || !empty($_POST[$field.'_b64'])) security_rate_take('upload',$me['name'],20,false);
     }
   }
@@ -93,6 +93,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
   elseif ($aksi === 'save') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     $old = ($i >= 0 && isset($items[$i])) ? $items[$i] : null;
+    $variantData=menu_variants_input($_POST,$old);
     $img = $old['img'] ?? '';
     $details = array_pad(array_slice($old['detail_images'] ?? [], 0, 2), 2, '');
     $created = [];
@@ -110,6 +111,18 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         if ($perr) { $err = $perr; break; }
         if ($path) { $created[] = $path; if ($slot === 0) $img = $path; else $details[$slot-1] = $path; }
       }
+      if($err==='')foreach($variantData['variants']as&$variant){
+        if(!isset($variant['_slot']))continue;
+        $field='variant_'.$variant['_slot'].'_photo';$path=null;$perr=null;
+        if(!empty($_FILES[$field]['name']??''))[$path,$perr]=photo_upload($_FILES[$field],($_POST['n']??'menu').'-variant-'.$variant['uid'],true);
+        elseif(!empty($_POST[$field.'_b64']??'')){
+          [$raw,$perr]=b64_image($field.'_b64',3*1024*1024);
+          if(!$perr)[$path,$perr]=photo_upload_raw($raw,($_POST['n']??'menu').'-variant-'.$variant['uid'],true);
+        }
+        if($perr){$err=$perr;break;}
+        if($path){$created[]=$path;$variant['img']=$path;}
+        unset($variant['_slot'],$variant['_order']);
+      }unset($variant);
     } finally { upload_unlock($ulock); }
     if ($err === '' && $img === '') $err = 'Foto utama wajib diunggah.';
     if ($err === '') {
@@ -121,10 +134,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
           $row['id'] = array_replace($old['id'], $row['id']);
           $row['en'] = array_replace($old['en'] ?? [], $row['en']);
         }
+        $row=array_replace($row,$variantData);
         $row['updated_at'] = gmdate('Y-m-d\TH:i:s\Z');
         if ($old) $items[$i] = $row; else $items[] = $row;
         if (menu_save($items)) {
-          foreach (array_merge([$old['img'] ?? ''], $old['detail_images'] ?? []) as $previous) menu_photo_delete_unused($previous);
+          foreach (array_merge([$old['img'] ?? ''], $old['detail_images'] ?? [],menu_variant_images($old??[])) as $previous) menu_photo_delete_unused($previous);
           ruethies_log($me['name'], $old ? 'ubah' : 'tambah', $row['id']['n']); header('Location: ?ok=simpan'); exit;
         }
         $err = 'Gagal menyimpan.';
@@ -137,7 +151,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $items = menu_load(); $i = (int)($_POST['i'] ?? -1);
     if (isset($items[$i])) {
       $nm = $items[$i]['id']['n'] ?? '';
-      $images = array_merge([(string)($items[$i]['img'] ?? '')], $items[$i]['detail_images'] ?? []);
+      $images = array_merge([(string)($items[$i]['img'] ?? '')], $items[$i]['detail_images'] ?? [],menu_variant_images($items[$i]));
       array_splice($items, $i, 1);
       if (menu_save($items)) {
         $results = array_map('menu_photo_delete_unused', $images);
@@ -302,7 +316,7 @@ $filtered = array_filter($_menu, static function ($m) use ($q,$category,$availab
 <title><?= h($me ? $labels[$area] : 'Masuk') ?> — Ruethies Admin</title>
 <!-- ADMIN_BUILD=2026-11-05-ui -->
 <script src="admin.js?v=articles-20261117" defer></script>
-<link rel="stylesheet" href="admin.css?v=buttons-20261118" />
+<link rel="stylesheet" href="admin.css?v=variants-20261124" />
 <?php if($area==='artikel'&&$me): ?><link rel="stylesheet" href="articles.css?v=editor-tables-20261120"><script src="article-editor.js?v=editor-tables-20261120" defer></script><script src="articles.js?v=visual-20261120" defer></script><?php endif; ?>
 </head>
 <body>
@@ -506,6 +520,7 @@ if ($p === 'tambah' || $edit):
 <?php if ($detail): ?><label><input type="checkbox" name="detail<?= $slot ?>_remove" value="1"> Hapus foto detail <?= $slot ?></label><?php endif; ?>
 <?php endfor; ?>
 </fieldset>
+<?php require __DIR__."/variant-view.php"; ?>
 <div class="stickybar"><button><?= icon("save", 18) ?> Simpan menu</button></div>
 <p class="center"><a class="linkbtn" href="?"><?= icon("back", 15) ?> Kembali tanpa menyimpan</a></p>
 </form>
@@ -627,5 +642,6 @@ if ($p === 'faq-tambah' || $fedit):
 <?php endif; ?>
 <?php endif; ?>
 <?php if ($isGate): ?></div></div><?php else: ?></main></div></div><?php endif; ?>
+<?php if($me && in_array($p,["tambah","ubah"],true)): ?><script src="variant-editor.js?v=20261124" defer></script><?php endif; ?>
 </body>
 </html>

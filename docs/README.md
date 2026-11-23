@@ -50,3 +50,5 @@ Perintah untuk staging dijalankan dari root checkout staging (`public_html/stagi
 `docs/local/` hanya untuk catatan pribadi pada komputer lokal, diabaikan Git, dan tidak ikut push atau deployment. Folder tersebut bisa tidak ada pada checkout lain.
 
 Dokumentasi yang dilacak Git akan berpindah dari root ke `docs/` saat hosting menarik commit ini. File Markdown tambahan yang tidak dilacak Git tidak dihapus otomatis. Jika pull berhenti karena dokumen hosting telah diubah, arsipkan perubahan tersebut di luar `public_html` terlebih dahulu; jangan menghapus perubahan CMS untuk merapikan dokumentasi.
+
+- [Pilihan rasa / varian produk (staging)](PRODUCT-VARIANTS.md)

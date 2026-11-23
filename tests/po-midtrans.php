@@ -26,7 +26,7 @@ try{
  file_put_contents($private.'/po-config.php','<?php return '.var_export($config,true).';');
  file_put_contents($private.'/users.json',json_encode([['name'=>'owner','hash'=>password_hash('Demo-test-password',PASSWORD_DEFAULT),'role'=>'owner','totp'=>'','auth_version'=>str_repeat('a',64),'last_totp_counter'=>-1]]));
  file_put_contents($public.'/menu.json',json_encode([['uid'=>str_repeat('a',32),'cat'=>'cakery','img'=>'images/menu/test.jpg','id'=>['n'=>'Kue Uji','d'=>'Uji'],'available'=>true]]));
- $extraMenu=json_decode(file_get_contents($public.'/menu.json'),true);$extraMenu[]=['uid'=>str_repeat('b',32),'cat'=>'category-local-test','img'=>'images/menu/extra.jpg','id'=>['n'=>'Kue Tambahan','d'=>'Uji kategori'],'available'=>true];file_put_contents($public.'/menu.json',json_encode($extraMenu));
+ $extraMenu=json_decode(file_get_contents($public.'/menu.json'),true);$extraMenu[0]['variants_enabled']=true;$extraMenu[0]['variants']=[['uid'=>str_repeat('c',32),'id'=>['n'=>'Vanilla','d'=>''],'en'=>['n'=>'Vanilla','d'=>''],'img'=>'']];$extraMenu[]=['uid'=>str_repeat('b',32),'cat'=>'category-local-test','img'=>'images/menu/extra.jpg','id'=>['n'=>'Kue Tambahan','d'=>'Uji kategori'],'available'=>true];file_put_contents($public.'/menu.json',json_encode($extraMenu));
  $categoryRows=catalog_defaults();$categoryRows[]=['key'=>'category-local-test','id'=>'Paket Uji','en'=>'Test Boxes','updated_at'=>'2026-01-01T00:00:00Z'];file_put_contents($public.'/categories.json',json_encode($categoryRows));
 
  foreach(explode(';',file_get_contents(dirname(__DIR__).'/admin/po-schema.sql'))as$sql)if(trim($sql)!=='')$db->exec($sql);
@@ -117,8 +117,8 @@ try{
  [$code,$publicHtml]=$http('/pre-order/');mt_check($code===200&&!str_contains($publicHtml,'Default Sandbox'),'open retired schedule is excluded from public catalog');
  [$code,$admin]=$http('/admin/po.php?view=jadwal');mt_check($code===200&&!str_contains($admin,'Default Sandbox'),'retired schedule is excluded from admin list');
  [$code]=$http('/admin/po.php?view=jadwal&edit=1&slot='.$defaultSlot);mt_check($code===404,'direct editing of retired schedule returns 404');
- [$code,$admin]=$http('/admin/po.php?view=jadwal&edit=new');mt_check($code===200&&str_contains($admin,'Midtrans Sandbox')&&!str_contains($admin,'name="flow_version"')&&!str_contains($admin,'view=rekening'),'admin has one Midtrans flow without type selector or bank tab');
- [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$f['id']);mt_check($code===200&&str_contains($admin,'Periksa Midtrans Sandbox')&&!str_contains($admin,'name="decision"'),'gateway admin detail has status check without manual approval form');
+ [$code,$admin]=$http('/admin/po.php?view=jadwal&edit=new');mt_check($code===200&&str_contains($admin,'Pembayaran uji coba melalui Midtrans')&&!str_contains($admin,'name="flow_version"')&&!str_contains($admin,'view=rekening'),'admin has one Midtrans flow without type selector or bank tab');
+ [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$f['id']);mt_check($code===200&&str_contains($admin,'value="midtrans-check"')&&str_contains($admin,'Periksa status pembayaran')&&!str_contains($admin,'name="decision"'),'gateway admin detail has status check without manual approval form');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$id);mt_check($code===200&&str_contains($admin,'value="manual-fulfill"'),'paid gateway admin detail exposes fulfillment action');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&order='.$e['id']);mt_check($code===200&&str_contains($admin,'Jangan proses pesanan otomatis'),'late payment is visible to owner');
  [$code,$admin]=$http('/admin/po.php?view=pesanan&payment=paid_review');mt_check($code===200&&str_contains($admin,'Perlu ditinjau')&&str_contains($admin,$e['code'])&&!str_contains($admin,$f['code']),'review filter exposes exceptional Sandbox payments without unpaid orders');

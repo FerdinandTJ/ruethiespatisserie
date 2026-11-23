@@ -13,3 +13,16 @@ context.language='en';assert(context.updateOrder());text=new URL(sticky.href).se
 fields['order-quantity'].value='999';assert(context.updateOrder());fields['order-quantity'].value='1000';assert.equal(context.updateOrder(),false);fields['order-quantity'].value='3';fields['order-note'].value='a'.repeat(501);assert.equal(context.updateOrder(),false);fields['order-note'].value='';fields['order-date'].value='';assert(context.updateOrder());assert(!new URL(sticky.href).searchParams.get('text').includes('Date needed:'));
 assert(!source.includes('sessionStorage'));assert.equal((source.match(/localStorage.setItem/g)||[]).length,1);assert(source.includes("localStorage.setItem('ruethies-lang'"));
 console.log('PASS: WhatsApp draft validates positive whole quantities, Jakarta date boundary, optional values, note limit, Unicode/special text, language and contextual sticky link; drafts are not persisted');
+
+// Variant selection is required only on enabled products; the base link remains for no-JS.
+const radios=['a','b'].map(value=>({...input(),value,checked:false,addEventListener(){}}));
+const variantFields={'product-variants':{querySelectorAll:()=>radios,classList:{add(){}}},'variant-prompt':{},'order-quantity':input('2'),'order-date':input(),'order-note':input(),'order-whatsapp':{href:'https://wa.me/6285139281257'}};
+const variantsContext=vm.createContext({Date:Clock,Intl,product:{variants_enabled:true,id:{n:'Swiss Roll'},en:{n:'Swiss Roll'},variants:[{uid:'a',id:{n:'Vanilla & Strawberry'},en:{n:'Strawberry Vanilla'}},{uid:'b',id:{n:'Pandan Keju'},en:{n:'Pandan Cheese'}}]},data:{canonical:'https://ruethiespatisserie.com/menu/swiss-roll/'},language:'id',phrase:(id,en)=>variantsContext.language==='en'?en:id,document:{getElementById:id=>variantFields[id],querySelectorAll:()=>[]}});
+vm.runInContext(source.slice(source.indexOf('  function todayWIB'),source.indexOf('  if(product){document.querySelector')),variantsContext);
+assert.equal(variantsContext.updateOrder(true),false);assert(radios[0].reported);
+radios[0].checked=true;assert(variantsContext.updateOrder());assert(radios.every(r=>r.message===''));
+assert.match(new URL(variantFields['order-whatsapp'].href).searchParams.get('text'),/Varian: Vanilla & Strawberry/);
+variantsContext.language='en';assert(variantsContext.updateOrder());assert.match(new URL(variantFields['order-whatsapp'].href).searchParams.get('text'),/Variant: Strawberry Vanilla/);
+radios[0].checked=false;radios[1].checked=true;assert(variantsContext.updateOrder());assert.match(new URL(variantFields['order-whatsapp'].href).searchParams.get('text'),/Variant: Pandan Cheese/);
+variantsContext.product.variants_enabled=false;assert(variantsContext.updateOrder());assert(!new URL(variantFields['order-whatsapp'].href).searchParams.get('text').includes('Variant:'));
+console.log('PASS: explicit flavour choice, encoded ID/EN WhatsApp variant, stable radio selection and disabled-product fallback');

@@ -13,9 +13,27 @@
   }
   function todayWIB(){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const values=Object.fromEntries(parts.map(p=>[p.type,p.value]));return values.year+'-'+values.month+'-'+values.day;}
   const quantity=document.getElementById('order-quantity'),date=document.getElementById('order-date'),note=document.getElementById('order-note');
+  const variantRoot=document.getElementById('product-variants');
+  const variantRadios=variantRoot?[...variantRoot.querySelectorAll('input[type=radio]')]:[];
+  function selectedVariant(){return product?.variants_enabled?product.variants?.find(v=>variantRadios.some(r=>r.checked&&r.value===v.uid)):null;}
+  function renderVariant(){
+    if(!variantRoot)return;
+    const variant=selectedVariant(),description=document.getElementById('variant-description');
+    description.textContent=variant?(variant[language]?.d||variant.id.d):phrase('Pilih rasa untuk melanjutkan.','Choose a flavour to continue.');
+    const photo=document.getElementById('variant-photo'),defaults=document.getElementById('product-default-photos');
+    if(variant){
+      carousel?.pause();defaults.hidden=true;photo.hidden=false;
+      if(photo.dataset.variant!==variant.uid){photo.replaceChildren(document.getElementById('variant-photo-'+variant.uid).content.cloneNode(true));photo.dataset.variant=variant.uid;}
+      photo.querySelectorAll('img').forEach(img=>img.alt=(product[language]||product.id).n+' · '+(variant[language]?.n||variant.id.n));
+    }
+  }
+  if(variantRoot){variantRoot.classList.add('rp-variants-enhanced');document.getElementById('variant-prompt').hidden=true;variantRadios.forEach(radio=>radio.addEventListener('change',()=>{renderVariant();updateOrder();}));}
   const orderLinks=product?[document.getElementById('order-whatsapp'),...document.querySelectorAll('[data-order-link]')].filter(Boolean):[];
   function updateOrder(report=false){
     if(!product)return true;
+    const variant=selectedVariant();
+    if(variantRoot&&product.variants_enabled&&!variant){if(report){variantRadios[0].setCustomValidity(phrase('Pilih rasa terlebih dahulu.','Choose a flavour first.'));variantRadios[0].reportValidity();}return false;}
+    variantRadios.forEach(r=>r.setCustomValidity(''));
     date.min=todayWIB();const count=Number(quantity.value);
     quantity.setCustomValidity(Number.isSafeInteger(count)&&count>=1&&count<=999?'':phrase('Masukkan jumlah berupa bilangan bulat 1–999.','Enter a whole number from 1 to 999.'));
     date.setCustomValidity(date.value&&date.value<date.min?phrase('Tanggal kebutuhan tidak boleh sebelum hari ini (WIB).','The date cannot be before today in Jakarta time.'):'');
@@ -24,6 +42,7 @@
     if(invalid){if(report)invalid.reportValidity();return false;}
     const name=(product[language]||product.id).n;
     const message=language==='en'?['Hello Ruethies Patisserie! I would like to order '+name+'.','Product: '+data.canonical,'Quantity: '+count]:['Halo Ruethies Patisserie! Saya ingin memesan '+name+'.','Produk: '+data.canonical,'Jumlah: '+count];
+    if(variant)message.push(phrase('Varian: ','Variant: ')+(variant[language]?.n||variant.id.n));
     if(date.value)message.push(phrase('Tanggal kebutuhan: ','Date needed: ')+date.value);
     if(note.value.trim())message.push(phrase('Catatan: ','Notes: ')+note.value.trim());
     message.push(phrase('Mohon konfirmasi ketersediaan, harga, dan cara menerima pesanan.','Please confirm availability, prices and how to receive the order.'));
@@ -43,7 +62,7 @@
       const item=product[language]||product.id,detail=document.getElementById('rp-product-detail');detail.replaceChildren();
       (item.detail||item.d).split(/\n\s*\n/).filter(Boolean).forEach(text=>{const p=document.createElement('p');p.textContent=text;detail.appendChild(p);});
       document.querySelectorAll('.rp-product-gallery .product-photo-frame').forEach((figure,i)=>{figure.querySelector('img').alt=item.n;figure.querySelector('figcaption').textContent=item.n+(i?' · Detail '+i:'');});
-      updateOrder();
+      renderVariant();updateOrder();
     }
     document.querySelectorAll('.rp-gallery-photo img').forEach((img,i)=>{const row=data.gallery?.[i];if(row)img.alt=(row[language]||row.id).cap;});
     carousel?.localize(language==='en');
