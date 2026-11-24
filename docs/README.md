@@ -43,3 +43,10 @@ Dokumen upgrade mencatat perubahan rilis tertentu. Pemindahan dokumentasi ini ti
 Dokumentasi yang dilacak Git akan berpindah dari root ke `docs/` saat hosting menarik commit ini. File Markdown tambahan yang tidak dilacak Git tidak dihapus otomatis. Jika pull berhenti karena dokumen hosting telah diubah, arsipkan perubahan tersebut di luar `public_html` terlebih dahulu; jangan menghapus perubahan CMS untuk merapikan dokumentasi.
 
 - [Pilihan rasa / varian produk (staging)](PRODUCT-VARIANTS.md)
+
+## Audit dan optimasi SEO menyeluruh
+
+- [Audit dan inventaris URL](seo-audit.md)
+- [Peta keyword](seo-keyword-map.md)
+- [Implementasi, pengujian dan rollback](seo-implementation.md)
+- [Pemantauan GSC dan GBP](seo-monitoring.md)
