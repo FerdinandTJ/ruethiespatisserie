@@ -13,7 +13,7 @@ Artikel Indonesia dan Inggris tetap dua entri admin dengan URL, isi, status, can
 
 ## URL, SEO, data dan performa
 
-Tidak ada migrasi, pengubahan slug, redirect, penggabungan entri atau publikasi otomatis. Sitemap mempertahankan kedua URL terbit dan canonical masing-masing tetap menuju dirinya sendiri. Membuka URL detail menampilkan isi bahasa artikel tersebut; toggle header tidak otomatis memindahkan URL atau menerjemahkan isi. Link pasangan yang sudah terbit tetap tersedia pada detail.
+Tidak ada migrasi, pengubahan slug, redirect, penggabungan entri atau publikasi otomatis. Sitemap mempertahankan kedua URL terbit dan canonical masing-masing tetap menuju dirinya sendiri. Membuka URL detail menampilkan isi bahasa artikel tersebut; toggle header menavigasi ke URL pasangan terbit yang terhubung. Bahasa tombol aktif mengikuti bahasa URL artikel, bukan preferensi lama browser. Jika pasangan bahasa belum terbit, tombol bahasa tersebut dinonaktifkan; tidak ada redirect otomatis saat membuka URL. Link pasangan tetap tersedia tanpa JavaScript. Preview admin tidak menavigasi ke artikel publik.
 
 `article-cards.js` hanya dimuat jika halaman memuat kartu atau daftar artikel. Alternatif terbit berada dalam template HTML inert, tidak memuat seluruh isi artikel dan tidak mengunduh foto versi lain sampai dipilih. Pergantian bahasa tidak melakukan fetch. Filter/pagination AJAX tetap mengambil respons HTML server, lalu menerapkan bahasa aktif pada kartu baru. Tidak ada library, foto, font atau CSS tambahan.
 
@@ -27,3 +27,9 @@ Perubahan flag Artikel, penerbitan atau penyembunyian tetap memengaruhi ETag dan
 - Chromium lokal: ID/EN berulang, tautan/foto yang benar, filter/pagination AJAX, kartu beranda/produk, penundaan foto alternatif, tanpa JavaScript dan lebar 320/390/768/1440px lulus tanpa error runtime. Safari/iPhone asli belum diuji pada rilis ini.
 
 Setelah diminta push, deployment cukup backup dan pull main yang mempertahankan konten hosting. Tidak perlu menjalankan CLI draft lagi atau migrasi database. Hubungkan dan terbitkan pasangan melalui admin seperti biasa. Rollback kode tetap kompatibel dengan store artikel yang sama.
+
+## Verifikasi hosting setelah pull
+
+Pastikan `git log -1 --oneline` menunjukkan rilis yang baru di-pull. HTML `/artikel/` harus memuat `data-article-group` dan `article-cards.js`. Jika keduanya tidak ada, hosting masih melayani renderer lama: periksa versi kode yang benar dan cache halaman hosting sebelum menyalahkan preferensi browser. Pasangan harus terhubung melalui **Artikel asal yang diterjemahkan**, dan kedua versi harus terbit; judul mirip tidak dianggap hubungan terjemahan.
+
+Tidak perlu CLI upgrade atau perubahan data manual untuk rilis toggle bahasa ini. Jangan menjalankan seed kembali untuk memperbaiki tampilan kartu.

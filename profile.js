@@ -5,6 +5,8 @@
   const data=JSON.parse(dataElement.textContent),product=data.product,carousel=window.RuethiesCarousel?.(document.getElementById('product-carousel'));
   const fonts=document.getElementById('site-fonts');if(fonts)fonts.media='all';
   let language='id';try{if(localStorage.getItem('ruethies-lang')==='en')language='en';}catch{}
+  // A detail URL owns its language, even when a previous page saved another preference.
+  if(data.articleLang==='id'||data.articleLang==='en')language=data.articleLang;
   const phrase=(id,en)=>language==='en'?en:id;
   function answer(node,raw){
     node.replaceChildren();const pattern=/\[([^\[\]]{1,80})\]\((https?:\/\/[^\s()<>\"]{1,300})\)/g;let last=0;
@@ -51,7 +53,24 @@
     burger?.setAttribute('aria-label',menu?.hidden===false?phrase('Tutup navigasi','Close navigation'):phrase('Buka navigasi','Open navigation'));
     const search=document.getElementById('rp-search');if(search)search.placeholder=phrase('Brownies, pastel, snackbox…','Brownies, savoury bites, snack boxes…');
   }
-  document.querySelectorAll('[data-language]').forEach(button=>{button.disabled=false;button.addEventListener('click',()=>{language=button.dataset.language;try{localStorage.setItem('ruethies-lang',language);}catch{}render();});});
+  document.querySelectorAll('[data-language]').forEach(button=>{
+    const target=button.dataset.language;
+    const path=data.articleTranslations?.[target];
+    const validPath=typeof path==='string'&&/^\/artikel\/[a-z0-9]+(?:-[a-z0-9]+)*\/$/.test(path);
+    button.disabled=!!data.articleLang&&target!==data.articleLang&&!validPath;
+    if(button.disabled)button.title=target==='en'?'Versi Inggris belum tersedia':'Indonesian version is not available yet';
+    button.addEventListener('click',()=>{
+      if(data.articleLang&&target!==data.articleLang){
+        if(!validPath)return;
+        try{localStorage.setItem('ruethies-lang',target);}catch{}
+        location.assign(path);return;
+      }
+      language=target;try{localStorage.setItem('ruethies-lang',language);}catch{}render();
+    });
+  });
+  document.querySelectorAll('[data-article-translation]').forEach(link=>link.addEventListener('click',()=>{
+    try{localStorage.setItem('ruethies-lang',link.dataset.articleTranslation);}catch{}
+  }));
   const burger=document.getElementById('rp-burger'),menu=document.getElementById('rp-mobile-menu');
   if(burger&&menu){
     const header=burger.closest('.rp-header'),desktop=window.matchMedia('(min-width:1101px)');

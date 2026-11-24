@@ -55,6 +55,18 @@ function article_listing(string $template,array $state,array $query): ?string{
  $schema=['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/'],['@type'=>'ListItem','position'=>2,'name'=>'Artikel','item'=>CATALOG_ORIGIN.'/artikel/']]];
  return profile_shell($template,$body,'/artikel/','Artikel Ruethies'.($page>1?' — Halaman '.$page:'').' | Ruethies Patisserie',($page>1?'Halaman '.$page.'. ':'').'Panduan pemesanan, inspirasi acara dan tips sajian Ruethies Patisserie di Lippo Cikarang.','images/hero-marble-cake.jpg',[$schema],['articlePage'=>true],$cat!==''||$page>1);
 }
+// Only published, explicitly linked translations may become navigation targets.
+function article_language_paths(array $row,array $published,bool $preview=false): array {
+ $paths=[$row['lang']=>article_path($row)];if($preview)return $paths;
+ foreach(article_groups(array_merge([$row],$published))as$group){
+  $matches=$group['id']===$row['id'];
+  foreach($group['versions']as$version)if($version['id']===$row['id'])$matches=true;
+  if(!$matches)continue;
+  foreach($group['versions']as$lang=>$version)if($lang!==$row['lang'])$paths[$lang]=article_path($version);
+  break;
+ }
+ return $paths;
+}
 function article_detail(string $template,array $row,array $items,array $published=[],bool $preview=false): string{
  $rendered=article_markdown($row['body']);$url=article_path($row);$body='<main id="home" class="container rp-page articles-page">';
  if($preview)$body.='<p class="article-preview">Contoh tampilan · Hanya terlihat oleh tim pengelola · '.($row['status']==='published'?'Sudah diterbitkan':'Belum diterbitkan').' · <a href="/admin/?p=artikel-ubah&amp;id='.$row['id'].'">Kembali menulis artikel</a></p>';
@@ -64,13 +76,13 @@ function article_detail(string $template,array $row,array $items,array $publishe
  $body.=article_minutes($row['body']).' '.profile_text('menit baca','min read').'</p><p class="rp-lead">'.article_escape($row['description']).'</p></header>';
  if($row['cover']!==''&&($dimensions=article_image_info($row['cover']))){$body.='<img class="article-cover" src="/'.$row['cover'].'" alt="'.article_escape($row['coverAlt']).'" width="'.$dimensions[0].'" height="'.$dimensions[1].'" decoding="async">';}
  if(count($rendered['toc'])>=3){$body.='<nav class="article-toc" aria-label="Daftar isi" data-article-label-id="Daftar isi" data-article-label-en="Table of contents"><h2>'.profile_text('Dalam artikel ini','In this article').'</h2><ol>';foreach($rendered['toc']as$heading)$body.='<li><a href="#'.article_escape($heading['id']).'">'.article_escape($heading['text']).'</a></li>';$body.='</ol></nav>';}
- foreach($published as$other)if($other['lang']!==$row['lang']&&($other['translationOf']===$row['id']||$row['translationOf']===$other['id']))$body.='<p><a href="'.article_path($other).'" hreflang="'.$other['lang'].'">'.($other['lang']==='en'?'Read the English version':'Baca versi bahasa Indonesia').'</a></p>';
+ $languagePaths=article_language_paths($row,$published,$preview);foreach($languagePaths as$lang=>$path)if($lang!==$row['lang'])$body.='<p><a href="'.$path.'" hreflang="'.$lang.'" data-article-translation="'.$lang.'">'.($lang==='en'?'Read the English version':'Baca versi bahasa Indonesia').'</a></p>';
  $message="Halo Ruethies Patisserie! Saya baru membaca artikel '".$row['title']."' dan ingin bertanya.";$wa='https://wa.me/6285139281257?text='.rawurlencode($message);
  $body.='<div class="article-body">'.$rendered['html'].'</div><aside class="article-cta"><h2>'.profile_text('Bicarakan kebutuhan Anda','Tell us what you have in mind').'</h2><a class="rp-button" href="'.article_escape($wa).'" target="_blank" rel="noopener" data-article-wa>'.profile_text('Tanyakan melalui WhatsApp','Ask us on WhatsApp').'</a></aside></article>';
  $body.=article_related_choices($row['related'],$items);
  $other=[];foreach(article_groups(array_merge([$row],$published))as$group){$current=false;foreach($group['versions']as$version)if($version['id']===$row['id'])$current=true;if(!$current)$other[]=$group;}$other=array_slice($other,0,3);if($other){$body.='<section class="rp-section"><h2>'.profile_text('Artikel lain','More articles').'</h2><div class="article-grid">';foreach($other as$group)$body.=article_group_card($group,false,'h3');$body.='</div></section>';}$body.='</main>';
  $crumbs=[['@type'=>'ListItem','position'=>1,'name'=>'Beranda','item'=>CATALOG_ORIGIN.'/'],['@type'=>'ListItem','position'=>2,'name'=>'Artikel','item'=>CATALOG_ORIGIN.'/artikel/'],['@type'=>'ListItem','position'=>3,'name'=>$row['title'],'item'=>CATALOG_ORIGIN.$url]];
  $schema=['@context'=>'https://schema.org','@type'=>'Article','articleSection'=>article_category_names($row['category'])[$row['lang']==='en'?1:0],'headline'=>$row['title'],'description'=>$row['description'],'dateModified'=>$row['updatedAt'],'author'=>['@type'=>'Organization','name'=>'Ruethies Patisserie'],'publisher'=>['@type'=>'Organization','name'=>'Ruethies Patisserie'],'inLanguage'=>$row['lang'],'mainEntityOfPage'=>CATALOG_ORIGIN.$url];if($row['publishedAt']!==null)$schema['datePublished']=$row['publishedAt'];$image=$row['cover']?:'images/hero-marble-cake.jpg';$schema['image']=CATALOG_ORIGIN.'/'.$image;
- $html=profile_shell($template,$body,$url,$row['title'].' | Ruethies Patisserie',$row['description'],$image,[$schema,['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>$crumbs]],['articlePage'=>true,'articleTitle'=>$row['title'],'articleLang'=>$row['lang']],$preview);
+ $html=profile_shell($template,$body,$url,$row['title'].' | Ruethies Patisserie',$row['description'],$image,[$schema,['@context'=>'https://schema.org','@type'=>'BreadcrumbList','itemListElement'=>$crumbs]],['articlePage'=>true,'articleTitle'=>$row['title'],'articleLang'=>$row['lang'],'articleTranslations'=>$languagePaths],$preview);
  return $preview?str_replace('content="noindex, follow"','content="noindex, nofollow"',$html):$html;
 }

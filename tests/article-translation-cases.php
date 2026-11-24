@@ -21,6 +21,13 @@ try{
  [$code,$home]=$http('anon','/');$homeDom=ar_xpath($home);at($code===200&&$homeDom->query('//article[@data-article-group]')->length===3&&$homeDom->query('//article[@data-article-group="paired-en"]')->length===1&&str_contains($home,'article-cards.js'),'home displays three distinct families and loads only the small shared card enhancement');
  [$code,$product]=$http('anon','/snack-box-cikarang/');$productDom=ar_xpath($product);at($code===200&&$productDom->query('//article[@data-article-group="paired-en"]/div/h3/a[@href="/artikel/paired-id/"]')->length===1,'read-also selects a whole translation family even if only its English record marks the product related');
  foreach(['paired-id','paired-en']as$id){[$code,$detail]=$http('anon','/artikel/'.$id.'/');$detailDom=ar_xpath($detail);at($code===200&&$detailDom->query('//link[@rel="canonical"]')->item(0)->getAttribute('href')==='https://ruethiespatisserie.com/artikel/'.$id.'/','each published translation keeps its own canonical URL: '.$id);at($detailDom->query('//section//article[@data-article-group="paired-en"]')->length===0,'more articles excludes the entire current translation family: '.$id);}
+ foreach(['paired-id'=>'id','paired-en'=>'en','english-only'=>'en','indonesian-only'=>'id']as$id=>$lang){
+  [$code,$detail]=$http('anon','/artikel/'.$id.'/');$node=ar_xpath($detail)->query('//script[@id="profile-data"]')->item(0);$snapshot=json_decode($node->textContent,true);
+  at($snapshot['articleLang']===$lang&&($snapshot['articleTranslations'][$lang]??'')==='/artikel/'.$id.'/','detail snapshot keeps URL language as toggle source: '.$id);
+  $expected=str_starts_with($id,'paired-')?2:1;
+  at(count($snapshot['articleTranslations'])===$expected,'toggle exposes only published paired destinations: '.$id);
+  if($expected===2)at(str_contains($detail,'data-article-translation="'.($lang==='id'?'en':'id').'"'),'native counterpart link remains usable without JavaScript: '.$id);
+ }
  [$code,$xml]=$http('anon','/sitemap.xml');at(str_contains($xml,'/artikel/paired-id/')&&str_contains($xml,'/artikel/paired-en/')&&!str_contains($xml,'/artikel/hidden-id/'),'sitemap retains both published URLs and excludes draft translations');
  [$code,$admin]=$http('owner','/admin/?p=artikel&status=all');at(str_contains($admin,'Title paired-id')&&str_contains($admin,'Title paired-en'),'admin retains separate editable entries for both languages');
  at(file_get_contents($private.'/articles.json')===json_encode($translationState),'public grouping never rewrites the article store');
