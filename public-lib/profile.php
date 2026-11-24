@@ -85,7 +85,7 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $head.='<link rel="stylesheet" href="/mobile-whatsapp.css?v=20261116"><script src="/mobile-whatsapp.js?v=20261116" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/mobile-reading.css?v=blue-cream-20261118"><script src="/mobile-reading.js?v=20261116" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/mobile-favourites.css?v=20261116"><script src="/mobile-favourites.js?v=20261116" defer></script>';
-  $head.='<link rel="stylesheet" href="/mobile-hours.css?v=20261116"><script src="/mobile-hours.js?v=20261116" defer></script>';
+  $head.='<link rel="stylesheet" href="/mobile-hours.css?v=pin-20261124"><script src="/mobile-hours.js?v=20261116" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/mobile-category-stack.css?v=spacing-20261118"><script src="/mobile-category-stack.js?v=20261116" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/mobile-section-themes.css?v=blue-cream-20261118">';
   if(isset($snapshot['product']))$head.='<link rel="stylesheet" href="/mobile-quantity.css?v=20261116"><script src="/mobile-quantity.js?v=20261116" defer></script>';
