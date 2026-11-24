@@ -42,7 +42,7 @@
     document.addEventListener('visibilitychange',schedule);
     motion.addEventListener('change',()=>{if(motion.matches)running=false;schedule();});
     if('IntersectionObserver' in window)new IntersectionObserver(entries=>{visible=entries.some(e=>e.isIntersecting);schedule();},{threshold:.15}).observe(root);
-    schedule();return{localize(en){english=en;labels();}};
+    schedule();return{pause(){running=false;schedule();},localize(en){english=en;labels();}};
   }
   window.RuethiesCarousel=initCarousel;
 })();

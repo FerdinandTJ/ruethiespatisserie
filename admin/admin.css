@@ -49,3 +49,10 @@ button,.btn{line-height:1.35;text-align:center;max-width:100%;overflow-wrap:anyw
 .category-delete-buttons{gap:10px}
 @media(max-width:899px){.topbar .ticon{width:44px;height:44px;min-height:44px}}
 @media(max-width:620px){.item .actions{gap:10px}.item .actions>.btn,.item .actions>form{flex:1 1 auto}.item .actions>form>button{width:100%}}
+
+/* Optional product variants reuse the menu editor and existing controls. */
+.variant-editor{margin-block:28px;padding-block:20px;border-top:1px solid var(--line,#e8d8c7)}
+.variant-row{border:1px solid var(--line,#e8d8c7);border-radius:12px;padding:16px;margin:12px 0}
+.variant-row>summary{cursor:pointer;display:flex;justify-content:space-between;gap:12px;min-height:44px;align-items:center;overflow-wrap:anywhere}
+.variant-row[open]>summary{margin-bottom:16px}.variant-actions{display:flex;gap:8px;margin:12px 0}
+.variant-row[hidden],#variant-rows[hidden]{display:none}
