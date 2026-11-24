@@ -68,10 +68,14 @@
 .rp-variants legend{font-weight:600;margin-bottom:12px}
 .rp-variant-options{display:flex;flex-wrap:wrap;gap:10px}
 .rp-variant-option{max-width:100%;min-width:0}
-.rp-variant-option label{display:flex;align-items:center;gap:8px;min-height:44px;padding:10px 16px;border:1px solid currentColor;border-radius:24px;cursor:pointer;overflow-wrap:anywhere}
-.rp-variant-option label:has(input:checked){background:var(--wine,#7a0000);color:var(--cream,#fff3e1)}
-.rp-variant-option label:focus-within{outline:2px solid currentColor;outline-offset:3px}
-.rp-variant-option input{width:16px;height:16px;flex-shrink:0;margin:0;accent-color:currentColor}
+.rp-order .rp-variant-option label{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;margin:0;padding:10px 15px;border:1px solid var(--wine-12);border-radius:12px;background:var(--paper);color:var(--wine-ink);font-size:.85rem;font-weight:500;line-height:1.4;cursor:pointer;overflow-wrap:anywhere}
+.rp-order .rp-variant-option label::after{content:"";width:14px;flex:0 0 14px;text-align:center;font:600 14px/1 Arial,sans-serif}
+.rp-order .rp-variant-option label:has(input:checked){background:var(--brand-blue,#8acef1);border-color:var(--brand-blue,#8acef1);color:var(--brand-ink,#143e55)}
+.rp-order .rp-variant-option label:has(input:checked)::after{content:"✓"}
+.rp-order .rp-variant-option label:has(input:focus-visible){outline:2px solid var(--wine);outline-offset:3px}
+.rp-order .rp-variant-option input[type=radio]{position:absolute;width:1px;height:1px;min-height:0;padding:0;margin:0;border:0;clip-path:inset(50%);overflow:hidden;white-space:nowrap}
+@media(hover:hover){.rp-order .rp-variant-option label:hover{border-color:var(--wine)}}
+@media(prefers-reduced-motion:no-preference){.rp-order .rp-variant-option label{transition:background-color .15s ease,border-color .15s ease}}
 .rp-variants-enhanced .rp-variant-description,.rp-variants-enhanced .rp-variant-fallback{display:none}
 #variant-description{font-size:1rem;line-height:1.6;margin-top:14px;overflow-wrap:anywhere}
 .rp-variant-list{font-size:.875rem;overflow-wrap:anywhere}

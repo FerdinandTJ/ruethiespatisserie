@@ -78,7 +78,7 @@ function profile_shell(string $template,string $body,string $path,string $title,
   $head=preg_replace('~<script src="[^\"]+"[^>]*></script>|<link rel="preload"[^>]*>~','',$head[1]);
   $head=preg_replace('~href="styles\.css\?[^\"]+"~','href="/styles.css?v=profile-faq-consistency-20261117"',$head);
   if($noindex)$head=preg_replace('~<meta name="robots"[^>]*>~','<meta name="robots" content="noindex, follow">',$head);
-  $head.='<link rel="stylesheet" href="/profile.css?v=variants-20261124"><script src="/carousel.js?v=variants-20261124" defer></script><script src="/profile.js?v=variants-20261124" defer></script>';
+  $head.='<link rel="stylesheet" href="/profile.css?v=variant-options-20261124"><script src="/carousel.js?v=variants-20261124" defer></script><script src="/profile.js?v=variants-20261124" defer></script>';
   if(!empty($snapshot['articlePage']))$head.='<link rel="stylesheet" href="/articles.css?v=spacing-20261118"><script src="/articles.js?v=20261117" defer></script>';
   if($path==='/')$head.='<link rel="stylesheet" href="/order-story.css?v=spacing-20261118"><script src="/order-story.js?v=spacing-20261118" defer></script>';
   $head.='<script src="/mobile-motion.js?v=20261116" defer></script><link rel="stylesheet" href="/mobile-header.css?v=20261116"><script src="/mobile-header.js?v=20261116" defer></script>';
