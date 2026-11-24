@@ -28,6 +28,15 @@ try{
   at(count($snapshot['articleTranslations'])===$expected,'toggle exposes only published paired destinations: '.$id);
   if($expected===2)at(str_contains($detail,'data-article-translation="'.($lang==='id'?'en':'id').'"'),'native counterpart link remains usable without JavaScript: '.$id);
  }
+ foreach(['paired-id'=>'id','paired-en'=>'en']as$id=>$lang){
+  [$code,$detail]=$http('anon','/artikel/'.$id.'/');$x=ar_xpath($detail);
+  at($x->query('//html')->item(0)->getAttribute('lang')===$lang,'initial HTML language matches article without JavaScript: '.$id);
+  at($x->query('//meta[@property="og:type"]')->item(0)->getAttribute('content')==='article','article Open Graph uses article type: '.$id);
+  foreach(['id'=>'paired-id','en'=>'paired-en']as$alternate=>$slug)at($x->query('//link[@rel="alternate" and @hreflang="'.$alternate.'" and @href="https://ruethiespatisserie.com/artikel/'.$slug.'/"]')->length===1,'reciprocal self and counterpart hreflang: '.$id.' '.$alternate);
+  at($x->query('//link[@rel="canonical"]')->item(0)->getAttribute('href')==='https://ruethiespatisserie.com/artikel/'.$id.'/','localized canonical remains self-referencing: '.$id);
+  if($lang==='en')at(str_contains($detail,'>Published</span>')&&str_contains($detail,'>Order now</span>'),'English article labels are server rendered, not waiting for JavaScript');
+ }
+ [$code,$single]=$http('anon','/artikel/english-only/');at(ar_xpath($single)->query('//link[@hreflang]')->length===0,'no alternate URL is fabricated for untranslated article');
  [$code,$xml]=$http('anon','/sitemap.xml');at(str_contains($xml,'/artikel/paired-id/')&&str_contains($xml,'/artikel/paired-en/')&&!str_contains($xml,'/artikel/hidden-id/'),'sitemap retains both published URLs and excludes draft translations');
  [$code,$admin]=$http('owner','/admin/?p=artikel&status=all');at(str_contains($admin,'Title paired-id')&&str_contains($admin,'Title paired-en'),'admin retains separate editable entries for both languages');
  at(file_get_contents($private.'/articles.json')===json_encode($translationState),'public grouping never rewrites the article store');

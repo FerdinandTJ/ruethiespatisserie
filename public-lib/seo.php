@@ -67,6 +67,7 @@ function seo_business(string $template): array {
     $data=json_decode($raw,true,64,JSON_THROW_ON_ERROR);
     if (($data['@type'] ?? '')==='CafeOrCoffeeShop' || ($data['@type'] ?? '')==='Bakery') {
       $data['@type']='Bakery';$data['menu']=CATALOG_ORIGIN.'/menu/';$data['image']=CATALOG_ORIGIN.'/images/hero-marble-cake.jpg';
+      $data['@id']=$data['@id']??CATALOG_ORIGIN.'/#bakery';$data['address']['streetAddress']='Ruko The Neo Patio East No. 51, Lippo Cikarang';unset($data['areaServed']);
       return $data;
     }
   }
@@ -79,7 +80,46 @@ function seo_menu_schema(array $items): array {
     foreach($items as $m) if($m['cat']===$category) $rows[]=['@type'=>'MenuItem','name'=>$m['id']['n'],'description'=>$m['id']['d'],'url'=>CATALOG_ORIGIN.catalog_path($m),'image'=>CATALOG_ORIGIN.'/'.$m['img']];
     if($rows)$sections[]=['@type'=>'MenuSection','name'=>$label,'hasMenuItem'=>$rows];
   }
-  return ['@context'=>'https://schema.org','@type'=>'Menu','name'=>'Menu Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/menu/','hasMenuSection'=>$sections];
+  return ['@context'=>'https://schema.org','@type'=>'Menu','@id'=>CATALOG_ORIGIN.'/menu/#menu','name'=>'Menu Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/menu/','hasMenuSection'=>$sections];
+}
+function seo_excerpt(string $text,int $limit=160): string {
+  $text=trim(preg_replace('/\s+/u',' ',$text));if(mb_strlen($text)<=$limit)return $text;
+  $short=mb_substr($text,0,$limit-1);$space=mb_strrpos($short,' ');return ($space!==false&&$space>$limit/2?mb_substr($short,0,$space):$short).'…';
+}
+// Fixed-page intent here; product and article metadata always come from hosting CMS content.
+function seo_page_metadata(string $path,string $title,string $description,array $snapshot=[]): array {
+  if(!empty($snapshot['articlePage']))return [$title,$description];
+  $pages=[
+    '/'=>['Toko Kue & Snack Box Lippo Cikarang | Ruethies Patisserie','Toko kue di Lippo Cikarang dengan pilihan kue, jajanan pasar, camilan gurih dan snack box. Lihat menu Ruethies dan tanyakan pemesanan via WhatsApp.'],
+    '/menu/'=>['Menu Ruethies Patisserie di Cikarang | Kue & Camilan','Jelajahi katalog Ruethies Patisserie: kue, jajanan, camilan gurih dan paket sajian di Lippo Cikarang. Tanyakan pilihan dan pemesanan melalui WhatsApp.'],
+    '/tentang-kami/'=>['Tentang Ruethies Patisserie | Toko Kue Lippo Cikarang','Kenali Ruethies Patisserie di Lippo Cikarang: pilihan kue, jajanan, camilan gurih, snack box, dan galeri sajian. Temukan menu serta kontak toko.'],
+    '/hubungi-kami/'=>['Lokasi & Kontak Ruethies Patisserie | Lippo Cikarang','Kunjungi Ruethies Patisserie di Ruko The Neo Patio East No. 51, Lippo Cikarang. Buka setiap hari 07.00–21.00 WIB. Lihat rute, WhatsApp, dan email.'],
+    '/cara-pesan/'=>['Cara Pesan Kue & Snack Box Ruethies | WhatsApp & FAQ','Cara memesan kue dan snack box Ruethies di Lippo Cikarang melalui WhatsApp: pilih sajian, sampaikan jumlah dan tanggal, lalu konfirmasikan pesanan.'],
+  ];
+  if(isset($pages[$path]))return $pages[$path];
+  if(isset($snapshot['product'])){
+    $m=$snapshot['product'];$name=$m['id']['n'];
+    $title=($m['slug']==='snackbox'?'Snack Box Cikarang untuk Rapat & Acara':($m['slug']==='platter'?'Platter Kudapan di Cikarang':$name.' di Cikarang')).' | Ruethies Patisserie';
+    $description=seo_excerpt(($m['slug']==='snackbox'?'Snack box untuk rapat, arisan dan pertemuan di Lippo Cikarang. Lihat foto Ruethies, lalu konfirmasikan isi, jumlah, tanggal dan harga melalui WhatsApp.':$name.' di Lippo Cikarang. '.$m['id']['d'].' Tanyakan pilihan dan pemesanan melalui WhatsApp.'));
+  }
+  return [$title,$description];
+}
+function seo_entity_schemas(array $schemas,string $path,string $title,string $language): array {
+  $business=null;foreach($schemas as$schema)if(($schema['@type']??'')==='Bakery')$business=$schema;
+  if(!$business)return $schemas;$businessId=$business['@id'];$websiteId=CATALOG_ORIGIN.'/#website';$pageId=CATALOG_ORIGIN.$path.'#webpage';$hasWebsite=false;$hasPage=false;
+  foreach($schemas as&$schema){$type=$schema['@type']??'';
+    if($type==='WebSite'){$hasWebsite=true;$schema['@id']=$websiteId;$schema['publisher']=['@id'=>$businessId];}
+    if(in_array($type,['WebPage','AboutPage','ContactPage'],true)){$hasPage=true;$schema['@id']=$pageId;$schema['isPartOf']=['@id'=>$websiteId];$schema['about']=['@id'=>$businessId];$schema['inLanguage']=$language;}
+    if($type==='Article'){$schema['@id']=CATALOG_ORIGIN.$path.'#article';$schema['author']=['@type'=>'Organization','@id'=>$businessId,'name'=>$business['name']];$schema['publisher']=$schema['author'];$schema['mainEntityOfPage']=['@id'=>$pageId];}
+  }unset($schema);
+  if(!$hasWebsite)$schemas[]=['@context'=>'https://schema.org','@type'=>'WebSite','@id'=>$websiteId,'name'=>'Ruethies Patisserie','url'=>CATALOG_ORIGIN.'/','publisher'=>['@id'=>$businessId]];
+  if(!$hasPage)$schemas[]=['@context'=>'https://schema.org','@type'=>'WebPage','@id'=>$pageId,'url'=>CATALOG_ORIGIN.$path,'name'=>$title,'inLanguage'=>$language,'isPartOf'=>['@id'=>$websiteId],'about'=>['@id'=>$businessId]];
+  return $schemas;
+}
+// Generated labels contain plain escaped text; preserve the ID/EN attributes for client toggles.
+function seo_localized_labels(string $html,string $language): string {
+  if($language!=='en')return $html;
+  return preg_replace_callback('~(<([a-z][a-z0-9]*)\b[^>]*\bdata-id="[^"]*"\s+data-en="([^"]*)"[^>]*>)[^<]*(</\2>)~u',fn($m)=>$m[1].$m[3].$m[4],$html);
 }
 function seo_head(string $html,string $title,string $description,string $path,string $image,array $schemas): string {
   $html=preg_replace_callback('~<title>.*?</title>~s',fn()=>'<title>'.catalog_escape($title).'</title>',$html);

@@ -30,7 +30,8 @@ try {
   $faq=catalog_read_json(__DIR__.'/faq.json');seo_faq($faq);
   $template=@file_get_contents(__DIR__.'/index.html');
   if($template===false)throw new RuntimeException('Template tidak tersedia.');
-  $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
+  $rendererModified=max(filemtime(__FILE__),filemtime(__DIR__.'/public-lib/seo.php'),filemtime(__DIR__.'/public-lib/profile.php'));
+  $modified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json'),$rendererModified,catalog_category_modified());
   // Publishing/hiding also changes discovery links and sections on existing pages.
   $articleFile=article_file();
   if(is_file($articleFile))$modified=max($modified,(int)filemtime($articleFile));
@@ -43,9 +44,9 @@ try {
     seo_reply($html,'text/html',max($modified,filemtime(article_file()),filemtime(__DIR__.'/public-lib/articles-public.php')));exit;
   }
   if($path==='/sitemap.xml') {
-    $baseModified=max(filemtime(__DIR__.'/index.html'),filemtime(__DIR__.'/public-lib/profile.php'),catalog_category_modified());
+    $baseModified=max(filemtime(__DIR__.'/index.html'),$rendererModified,catalog_category_modified());
     $pageModified=['/'=>max($baseModified,filemtime(__DIR__.'/menu.json'),filemtime(__DIR__.'/faq.json')),'/menu/'=>max($baseModified,filemtime(__DIR__.'/menu.json')),'/tentang-kami/'=>max($baseModified,is_file(__DIR__.'/atmosphere.json')?filemtime(__DIR__.'/atmosphere.json'):0),'/hubungi-kami/'=>$baseModified,'/cara-pesan/'=>max($baseModified,filemtime(__DIR__.'/faq.json'))];
-    $xml=seo_sitemap($items,$modified,$pageModified,filemtime(__DIR__.'/public-lib/profile.php'));require_once __DIR__.'/public-lib/articles.php';try{$articleState=article_read();$published=article_published($articleState);}catch(Throwable $e){$published=[];error_log('Ruethies: artikel tidak tersedia untuk sitemap.');}
+    $xml=seo_sitemap($items,$modified,$pageModified,$rendererModified);require_once __DIR__.'/public-lib/articles.php';try{$articleState=article_read();$published=article_published($articleState);}catch(Throwable $e){$published=[];error_log('Ruethies: artikel tidak tersedia untuk sitemap.');}
     if($published){$articleModified=filemtime(article_file());$extra='<url><loc>'.CATALOG_ORIGIN.'/artikel/</loc><lastmod>'.gmdate('c',$articleModified).'</lastmod></url>';foreach($published as$row)$extra.='<url><loc>'.CATALOG_ORIGIN.'/artikel/'.article_escape($row['slug']).'/</loc><lastmod>'.$row['updatedAt'].'</lastmod></url>';$xml=str_replace('</urlset>',$extra.'</urlset>',$xml);$modified=max($modified,$articleModified);}
     seo_reply($xml,'application/xml',max($modified,...array_values($pageModified)));exit;
   }

@@ -32,7 +32,7 @@ try{
  seo_test($code===200&&$x->query('//article[@class="rp-card"]')->length===3,'home presents three actual featured products without JavaScript');
  seo_test($x->query('//a[starts-with(@href,"/pre-order")]')->length===0,'production public motion does not expose staging pre-order navigation');
  seo_test($x->query('//section[@id="faq"]//details')->length===count(json_decode(file_get_contents($public.'/faq.json'),true)),'home renders hosting FAQ as native expandable answers');
- seo_test($x->query('//script[@type="application/ld+json"]')->length===3,'home includes FAQ schema alongside its visible FAQ');
+ seo_test($x->query('//script[@type="application/ld+json"]')->length===4,'home includes FAQ schema alongside its visible FAQ');
  seo_test($x->query('//h1')->length===1&&str_contains($x->query('//title')->item(0)->textContent,'Toko Kue & Snack Box Lippo Cikarang'),'home keeps local search title and one primary heading');
  [$catalogCode,$catalogHtml,$catalogHeaders]=$get('/menu/');$catalogEtag=$catalogHeaders['etag'];$catalogDom=seo_test_xpath($catalogHtml);seo_test($catalogDom->query('//article[@data-product-uid]')->length===10,'animated filtering retains permanent product identities');seo_test($catalogDom->query('//*[@id="catalog-filter-status" and @aria-live="polite"]')->length===1,'catalogue exposes an accessible reserved filter status');seo_test(!str_contains($catalogHtml,'order-story.css')&&!str_contains($catalogHtml,'data-order-story'),'ordering story markup and assets are excluded from catalogue pages');seo_test($catalogCode===200&&$catalogDom->query('//article[@class="rp-card"]')->length===10,'catalogue exposes all ten approved products on real crawlable pages');
  seo_test(str_contains($x->query('//p[contains(@class,"rp-lead")]')->item(0)->textContent,'toko kue di Lippo Cikarang'),'home exposes factual local shop context in server-rendered copy');
@@ -40,7 +40,8 @@ try{
  $schemas=[];foreach($x->query('//script[@type="application/ld+json"]')as$s)$schemas[]=json_decode($s->textContent,true,64,JSON_THROW_ON_ERROR);
  seo_test($schemas[0]['@type']==='Bakery'&&!str_contains(json_encode($schemas),'aggregateRating')&&!str_contains(json_encode($schemas),'"offers"'),'business schema is Bakery without fictional ratings, prices or stock');
  seo_test($schemas[0]['menu']==='https://ruethiespatisserie.com/menu/','Bakery menu points to the full catalogue instead of the old home anchor');
- $homeFaq=end($schemas);seo_test($homeFaq['@type']==='FAQPage'&&count($homeFaq['mainEntity'])===$x->query('//section[@id="faq"]//details')->length,'home FAQ schema matches visible answers');
+ $entity=array_column($schemas,null,'@type');seo_test($entity['WebSite']['publisher']['@id']===$entity['Bakery']['@id']&&$entity['WebPage']['about']['@id']===$entity['Bakery']['@id'],'initial HTML schemas refer to one stable business identity');
+ $homeFaq=array_values(array_filter($schemas,fn($schema)=>$schema['@type']==='FAQPage'))[0];seo_test($homeFaq['@type']==='FAQPage'&&count($homeFaq['mainEntity'])===$x->query('//section[@id="faq"]//details')->length,'home FAQ schema matches visible answers');
  seo_test($catalogDom->query('//meta[@name="robots"]')->item(0)->getAttribute('content')==='index, follow, max-image-preview:large','unfiltered catalogue remains indexable');
  [$code,$body,$headers]=$get('/');$etag=$headers['etag'];seo_test(str_contains($headers['cache-control'],'must-revalidate')&&isset($headers['last-modified']),'HTML revalidates with ETag and Last-Modified');
  [$code,$body]=$get('/',null,['If-None-Match: '.$etag]);seo_test($code===304&&$body==='','unchanged HTML returns a bodyless 304');
